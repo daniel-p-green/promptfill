@@ -2,8 +2,8 @@
   "name": "promptfill",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix web run dev",
-    "dev:web": "npm --prefix web run dev",
+    "dev": "npm --prefix web run dev -- --port 3100",
+    "dev:web": "npm --prefix web run dev -- --port 3100",
     "dev:video": "npm --prefix video run dev",
     "build:web": "npm --prefix web run build",
     "test:web": "npm --prefix web run test",

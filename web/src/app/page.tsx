@@ -174,6 +174,109 @@ const createPrompt = (name: string): PromptItem => ({
   values: { variables: "" },
 });
 
+const encodeBase64Url = (value: string) => {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+const decodeBase64Url = (value: string) => {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+};
+
+const randomPromptId = () => `prompt-${Math.random().toString(36).slice(2, 10)}`;
+
+const normalizeImportedType = (value: unknown): VariableType =>
+  value === "string" || value === "text" || value === "number" || value === "boolean" || value === "enum"
+    ? value
+    : "string";
+
+const cloneVariable = (variable: unknown): Variable => {
+  const record =
+    variable && typeof variable === "object"
+      ? (variable as Record<string, unknown>)
+      : {};
+  const options = Array.isArray(record.options)
+    ? record.options.filter((option) => typeof option === "string")
+    : undefined;
+  return {
+    name: typeof record.name === "string" ? record.name : "variable",
+    type: normalizeImportedType(record.type),
+    required: Boolean(record.required),
+    defaultValue: typeof record.defaultValue === "string" ? record.defaultValue : "",
+    options,
+  };
+};
+
+const clonePrompt = (prompt: unknown): PromptItem | null => {
+  if (!prompt || typeof prompt !== "object") return null;
+  const record = prompt as Record<string, unknown>;
+  if (typeof record.template !== "string") return null;
+  const variables = Array.isArray(record.variables) ? record.variables.map(cloneVariable) : [];
+  const values: Record<string, string | number | boolean> = {};
+  if (record.values && typeof record.values === "object") {
+    Object.entries(record.values as Record<string, unknown>).forEach(([key, value]) => {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        values[key] = value;
+      }
+    });
+  }
+  return {
+    id: typeof record.id === "string" ? record.id : randomPromptId(),
+    name: typeof record.name === "string" ? record.name : "Imported prompt",
+    description: typeof record.description === "string" ? record.description : "",
+    tags: Array.isArray(record.tags) ? record.tags.filter((tag) => typeof tag === "string") : [],
+    template: record.template,
+    variables,
+    values,
+  };
+};
+
+const mergePromptLibraries = (existing: PromptItem[], incoming: PromptItem[]) => {
+  const existingIds = new Set(existing.map((prompt) => prompt.id));
+  const existingNames = new Set(existing.map((prompt) => prompt.name));
+
+  const imported: PromptItem[] = [];
+
+  for (const raw of incoming) {
+    const cloned = clonePrompt(raw);
+    if (!cloned) continue;
+
+    let id = cloned.id;
+    while (existingIds.has(id)) id = randomPromptId();
+
+    let name = cloned.name;
+    if (existingNames.has(name)) name = `${name} (imported)`;
+
+    existingIds.add(id);
+    existingNames.add(name);
+
+    imported.push({
+      ...cloned,
+      id,
+      name,
+      tags: [...cloned.tags],
+      variables: cloned.variables.map((variable) => ({
+        ...variable,
+        options: variable.options ? [...variable.options] : undefined,
+      })),
+      values: { ...cloned.values },
+    });
+  }
+
+  return {
+    imported,
+    merged: imported.length ? [...imported, ...existing] : existing,
+  };
+};
+
 const emptyDraft = (): VariableDraft => ({
   name: "",
   type: "string",
@@ -217,6 +320,46 @@ const Modal = ({
   );
 };
 
+const Drawer = ({
+  open,
+  title,
+  description,
+  children,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50">
+      <button
+        className="absolute inset-0 bg-black/30"
+        aria-label="Close drawer"
+        onClick={onClose}
+      />
+      <div className="absolute right-0 top-0 h-full w-full max-w-[440px] overflow-auto border-l border-black/10 bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-lg font-semibold text-zinc-900">{title}</div>
+            {description ? <div className="mt-1 text-sm text-zinc-500">{description}</div> : null}
+          </div>
+          <button
+            className="rounded-full border border-black/10 px-3 py-1 text-xs text-zinc-500"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [prompts, setPrompts] = useState<PromptItem[]>(defaultPrompts);
   const [selectedId, setSelectedId] = useState<string>(defaultPrompts()[0].id);
@@ -224,11 +367,15 @@ export default function Home() {
   const [notice, setNotice] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVariableModalOpen, setIsVariableModalOpen] = useState(false);
+  const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
   const [variableDraft, setVariableDraft] = useState<VariableDraft>(emptyDraft);
+  const [pendingImport, setPendingImport] = useState<PromptItem[] | null>(null);
   const [showTagInput, setShowTagInput] = useState(false);
   const [newTagValue, setNewTagValue] = useState("");
+  const [activePanel, setActivePanel] = useState<"fill" | "build">("fill");
 
   useEffect(() => {
     if (!notice) return;
@@ -248,6 +395,37 @@ export default function Home() {
       }
     } catch {
       // ignore storage errors
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  /* eslint-disable react-hooks/set-state-in-effect -- URL-based imports are intentionally handled on mount for this MVP. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const encoded = url.searchParams.get("import");
+    if (!encoded) return;
+
+    // Remove the param immediately so refresh doesn't re-trigger an import.
+    url.searchParams.delete("import");
+    window.history.replaceState({}, "", url.toString());
+
+    try {
+      const decoded = decodeBase64Url(encoded);
+      const parsed = JSON.parse(decoded) as { prompts?: PromptItem[] };
+      if (!parsed.prompts?.length) {
+        setNotice("Share link did not contain any prompts.");
+        return;
+      }
+      const incoming = parsed.prompts.map(clonePrompt).filter(Boolean) as PromptItem[];
+      if (!incoming.length) {
+        setNotice("Share link did not contain any valid prompts.");
+        return;
+      }
+      setPendingImport(incoming);
+      setIsImportOpen(true);
+    } catch {
+      setNotice("Invalid share link.");
     }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -302,6 +480,12 @@ export default function Home() {
     return JSON.stringify({ prompts: [selectedPrompt] }, null, 2);
   }, [selectedPrompt]);
 
+  const shareLink = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    if (!sharePayload) return "";
+    return `${window.location.origin}${window.location.pathname}?import=${encodeBase64Url(sharePayload)}`;
+  }, [sharePayload]);
+
   const updatePrompt = (updater: (prompt: PromptItem) => PromptItem) => {
     setPrompts((items) =>
       items.map((item) => (item.id === activePromptId ? updater(item) : item))
@@ -320,6 +504,27 @@ export default function Home() {
     }
   };
 
+  const handleResetValues = () => {
+    if (!selectedPrompt) return;
+    updatePrompt((prompt) => ({
+      ...prompt,
+      values: prompt.variables.reduce<Record<string, string | number | boolean>>((acc, variable) => {
+        if (variable.type === "boolean") {
+          acc[variable.name] = variable.defaultValue === "true";
+          return acc;
+        }
+        if (variable.type === "number") {
+          acc[variable.name] =
+            variable.defaultValue === "" ? "" : Number(variable.defaultValue);
+          return acc;
+        }
+        acc[variable.name] = variable.defaultValue || "";
+        return acc;
+      }, {}),
+    }));
+    setNotice("Reset values to defaults.");
+  };
+
   const handleExtract = () => {
     if (!selectedPrompt) return;
     const { names, normalized } = extractVariableNames(selectedPrompt.template);
@@ -334,7 +539,7 @@ export default function Home() {
         return acc;
       }, {}),
     }));
-    setNotice(`Found ${names.length} variables. Review before applying.`);
+    setNotice(`Found ${names.length} variables. Review the list.`);
   };
 
   const handleAddVariable = () => {
@@ -438,6 +643,16 @@ export default function Home() {
     }
   };
 
+  const handleCopyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setNotice("Copied share link.");
+    } catch {
+      setNotice("Copy link failed. Your browser may be blocking clipboard access.");
+    }
+  };
+
   const handleAddTag = () => {
     const tag = normalizeName(newTagValue).replace(/_/g, "-");
     if (!tag) {
@@ -470,6 +685,7 @@ export default function Home() {
     const promptItem = createPrompt("New prompt");
     setPrompts((items) => [promptItem, ...items]);
     setSelectedId(promptItem.id);
+    setActivePanel("build");
   };
 
   const handleExport = () => {
@@ -483,16 +699,45 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const handleConfirmImport = () => {
+    if (!pendingImport?.length) {
+      setIsImportOpen(false);
+      return;
+    }
+    const { merged, imported } = mergePromptLibraries(prompts, pendingImport);
+    if (!imported.length) {
+      setNotice("Nothing to import.");
+      setIsImportOpen(false);
+      setPendingImport(null);
+      return;
+    }
+    setPrompts(merged);
+    setSelectedId(imported[0].id);
+    setActivePanel("fill");
+    setNotice(`Imported ${imported.length} prompt${imported.length === 1 ? "" : "s"}.`);
+    setIsImportOpen(false);
+    setPendingImport(null);
+  };
+
   const handleImport = (file: File | null) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result)) as { prompts?: PromptItem[] };
-        if (parsed.prompts?.length) {
-          setPrompts(parsed.prompts);
-          setSelectedId(parsed.prompts[0].id);
+        if (!parsed.prompts?.length) {
+          setNotice("Import file did not contain any prompts.");
+          return;
         }
+        const { merged, imported } = mergePromptLibraries(prompts, parsed.prompts);
+        if (!imported.length) {
+          setNotice("Nothing to import.");
+          return;
+        }
+        setPrompts(merged);
+        setSelectedId(imported[0].id);
+        setActivePanel("fill");
+        setNotice(`Imported ${imported.length} prompt${imported.length === 1 ? "" : "s"}.`);
       } catch {
         setNotice("Import failed. Please check the JSON file.");
       }
@@ -501,32 +746,24 @@ export default function Home() {
   };
 
   if (!selectedPrompt) {
-    return <div className="min-h-screen bg-[#f6f6f3]" />;
+    return <div className="min-h-screen bg-[#f7f7f8]" />;
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f3] text-zinc-900">
-      <header className="border-b border-black/5 bg-white/70 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-[#f7f7f8] text-zinc-900">
+      <header className="border-b border-black/5 bg-white">
+        <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div
-              className="h-9 w-9 rounded-full"
-              style={{
-                background: accent,
-                boxShadow: "0 8px 24px rgba(16,163,127,0.25)",
-              }}
-            />
+            <div className="h-2.5 w-2.5 rounded-full" style={{ background: accent }} />
             <div>
-              <div className="text-sm uppercase tracking-[0.28em] text-zinc-500">
-                PromptFill
-              </div>
-              <div className="text-lg font-semibold tracking-tight">
-                Shareable prompts. Painless customization.
+              <div className="text-sm font-semibold tracking-tight">PromptFill</div>
+              <div className="text-xs text-zinc-500">
+                Shareable prompts, painless customization.
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <label className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-zinc-700">
+            <label className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-zinc-700">
               Import
               <input
                 type="file"
@@ -536,55 +773,45 @@ export default function Home() {
               />
             </label>
             <button
-              className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-zinc-700"
+              className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-zinc-700"
               onClick={handleExport}
             >
               Export
             </button>
             <button
-              className="rounded-full px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
               style={{ background: accent }}
               onClick={handleNewPrompt}
             >
-              New prompt
+              New
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1280px] px-6 py-6">
-        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)_360px]">
-          <section className="rounded-3xl border border-black/10 bg-white p-4">
+      <main className="mx-auto w-full max-w-[1100px] px-6 py-6">
+        <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="rounded-2xl border border-black/10 bg-white p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-zinc-800">Library</div>
-              <button className="text-xs font-medium text-zinc-500">View all</button>
+              <div className="text-xs text-zinc-500">{prompts.length} prompts</div>
             </div>
             <div className="mt-3">
               <input
                 type="text"
                 placeholder="Search prompts"
-                className="w-full rounded-2xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm focus:outline-none"
+                className="w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm focus:outline-none"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {["email", "summary", "rewrite", "tasks", "product"].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-2">
               {filteredPrompts.map((item) => (
                 <div
                   key={item.id}
-                  className={`rounded-2xl border px-3 py-3 transition ${
+                  className={`rounded-xl border px-3 py-3 transition hover:bg-[#fafafa] ${
                     item.id === activePromptId
-                      ? "border-emerald-200 bg-emerald-50/60"
+                      ? "border-black/20 bg-[#fafafa]"
                       : "border-black/10 bg-white"
                   }`}
                   role="button"
@@ -594,397 +821,340 @@ export default function Home() {
                     if (event.key === "Enter") setSelectedId(item.id);
                   }}
                 >
-                  <div className="text-sm font-semibold text-zinc-900">{item.name}</div>
-                  <div className="mt-1 text-xs text-zinc-500">{item.description}</div>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {item.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-white px-2 py-[2px] text-[10px] text-zinc-500"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  <div className="truncate text-sm font-semibold text-zinc-900">{item.name}</div>
+                  <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{item.description}</div>
+                  {item.tags.length ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {item.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-[#fafafa] px-2 py-[2px] text-[10px] text-zinc-500"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
-          </section>
+          </aside>
 
-          <section className="rounded-3xl border border-black/10 bg-white p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <input
-                  value={selectedPrompt.name}
-                  onChange={(event) =>
-                    updatePrompt((prompt) => ({ ...prompt, name: event.target.value }))
-                  }
-                  className="text-2xl font-semibold tracking-tight text-zinc-900 focus:outline-none"
-                />
-                <div className="mt-1 text-sm text-zinc-500">
+          <section className="overflow-hidden rounded-2xl border border-black/10 bg-white">
+            <div className="border-b border-black/10 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <input
+                    value={selectedPrompt.name}
+                    onChange={(event) =>
+                      updatePrompt((prompt) => ({ ...prompt, name: event.target.value }))
+                    }
+                    className="w-full truncate text-xl font-semibold tracking-tight text-zinc-900 focus:outline-none"
+                  />
                   <input
                     value={selectedPrompt.description}
                     onChange={(event) =>
                       updatePrompt((prompt) => ({ ...prompt, description: event.target.value }))
                     }
-                    className="w-full text-sm text-zinc-500 focus:outline-none"
+                    className="mt-1 w-full text-sm text-zinc-500 focus:outline-none"
                   />
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  {selectedPrompt.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-black/10 bg-white px-3 py-1 text-zinc-500"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {showTagInput ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        value={newTagValue}
-                        onChange={(event) => setNewTagValue(event.target.value)}
-                        placeholder="tag-name"
-                        className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600 focus:outline-none"
-                      />
-                      <button
-                        className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600"
-                        onClick={handleAddTag}
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                    {selectedPrompt.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-black/10 bg-white px-3 py-1 text-zinc-500"
                       >
-                        Add
-                      </button>
+                        {tag}
+                      </span>
+                    ))}
+                    {showTagInput ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={newTagValue}
+                          onChange={(event) => setNewTagValue(event.target.value)}
+                          placeholder="tag-name"
+                          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600 focus:outline-none"
+                        />
+                        <button
+                          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600"
+                          onClick={handleAddTag}
+                        >
+                          Add
+                        </button>
+                        <button
+                          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-500"
+                          onClick={() => {
+                            setNewTagValue("");
+                            setShowTagInput(false);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-500"
-                        onClick={() => {
-                          setNewTagValue("");
-                          setShowTagInput(false);
-                        }}
+                        className="rounded-full border border-dashed border-black/10 bg-white px-3 py-1 text-zinc-500"
+                        onClick={() => setShowTagInput(true)}
                       >
-                        Cancel
+                        + tag
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="rounded-full border border-dashed border-black/10 bg-white px-3 py-1 text-zinc-500"
-                      onClick={() => setShowTagInput(true)}
-                    >
-                      + tag
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold"
-                  onClick={handleSharePrompt}
-                >
-                  Share
-                </button>
-                <button
-                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold"
-                  onClick={handleDuplicate}
-                >
-                  Duplicate
-                </button>
-                <button
-                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-red-500"
-                  onClick={() => setIsDeleteOpen(true)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_220px]">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-zinc-800">Template</div>
+                <div className="flex shrink-0 items-center gap-2">
                   <button
-                    className="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold"
+                    onClick={handleSharePrompt}
+                  >
+                    Share
+                  </button>
+                  <button
+                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold"
+                    onClick={handleDuplicate}
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-red-500"
+                    onClick={() => setIsDeleteOpen(true)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <div className="inline-flex rounded-xl border border-black/10 bg-[#fafafa] p-1 text-xs font-semibold text-zinc-600">
+                  <button
+                    className={`rounded-lg px-3 py-1.5 ${
+                      activePanel === "fill" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600"
+                    }`}
+                    onClick={() => setActivePanel("fill")}
+                  >
+                    Fill
+                  </button>
+                  <button
+                    className={`rounded-lg px-3 py-1.5 ${
+                      activePanel === "build" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600"
+                    }`}
+                    onClick={() => setActivePanel("build")}
+                  >
+                    Build
+                  </button>
+                </div>
+
+                {activePanel === "build" ? (
+                  <button
+                    className="rounded-xl px-3 py-2 text-xs font-semibold text-white"
                     style={{ background: accent }}
                     onClick={handleExtract}
                   >
                     Extract variables
                   </button>
-                </div>
-                <textarea
-                  className="mt-2 h-[260px] w-full rounded-2xl border border-black/10 bg-[#fafafa] p-4 font-mono text-[13px] leading-6 text-zinc-800 focus:outline-none"
-                  value={selectedPrompt.template}
-                  onChange={(event) =>
-                    updatePrompt((prompt) => ({ ...prompt, template: event.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="rounded-2xl border border-black/10 bg-white p-3">
-                <div className="text-xs font-semibold text-zinc-700">Option sets</div>
-                <div className="mt-2 space-y-3">
-                  {optionSets.map((set) => (
-                    <div key={set.name} className="rounded-xl border border-black/10 px-3 py-2">
-                      <div className="text-xs font-semibold text-zinc-800">{set.name}</div>
-                      <div className="mt-1 text-[11px] text-zinc-500">
-                        {set.options.join("  /  ")}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button className="mt-3 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-600">
-                  New option set
-                </button>
+                ) : null}
               </div>
             </div>
 
-            <div className="mt-6">
-              <div className="text-sm font-semibold text-zinc-800">Variables</div>
-              <div className="mt-3 overflow-hidden rounded-2xl border border-black/10">
-                <div className="grid grid-cols-[1fr_100px_90px_1fr] gap-2 border-b border-black/10 bg-[#fafafa] px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                  <div>Name</div>
-                  <div>Type</div>
-                  <div>Required</div>
-                  <div>Default</div>
-                </div>
-                {selectedPrompt.variables.map((variable) => (
-                  <div key={variable.name} className="border-b border-black/5 last:border-b-0">
-                    <div className="grid grid-cols-[1fr_100px_90px_1fr] gap-2 px-4 py-3 text-sm text-zinc-700">
-                      <input
-                        className="font-mono text-[12px] text-zinc-800 focus:outline-none"
-                        value={variable.name}
-                        onChange={(event) => handleRenameVariable(variable.name, event.target.value)}
-                      />
-                      <select
-                        className="text-xs uppercase tracking-wide text-zinc-500 focus:outline-none"
-                        value={variable.type}
-                        onChange={(event) =>
-                          updatePrompt((prompt) => ({
-                            ...prompt,
-                            variables: prompt.variables.map((item) =>
-                              item.name === variable.name
-                                ? {
-                                    ...item,
-                                    type: event.target.value as VariableType,
-                                    options:
-                                      event.target.value === "enum"
-                                        ? item.options || optionSets[0].options
-                                        : item.options,
-                                  }
-                                : item
-                            ),
-                          }))
-                        }
-                      >
-                        {["string", "text", "number", "boolean", "enum"].map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="text-xs">
-                        <input
-                          type="checkbox"
-                          checked={variable.required}
-                          onChange={(event) =>
-                            updatePrompt((prompt) => ({
-                              ...prompt,
-                              variables: prompt.variables.map((item) =>
-                                item.name === variable.name
-                                  ? { ...item, required: event.target.checked }
-                                  : item
-                              ),
-                            }))
-                          }
-                        />
-                      </div>
-                      <input
-                        className="text-xs text-zinc-500 focus:outline-none"
-                        value={variable.defaultValue}
-                        onChange={(event) =>
-                          updatePrompt((prompt) => ({
-                            ...prompt,
-                            variables: prompt.variables.map((item) =>
-                              item.name === variable.name
-                                ? { ...item, defaultValue: event.target.value }
-                                : item
-                            ),
-                          }))
-                        }
-                      />
-                      <button
-                        className="text-[10px] text-red-500"
-                        onClick={() => handleDeleteVariable(variable.name)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    {variable.type === "enum" && (
-                      <div className="px-4 pb-3 text-xs text-zinc-500">
-                        <div className="mb-1 font-semibold uppercase tracking-wide text-[10px]">
-                          Options
+            <div className="p-5">
+              {activePanel === "fill" ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-zinc-800">Rendered prompt</div>
+                        <div className="mt-1 text-xs text-zinc-500">
+                          Fill variables once, then copy anywhere.
                         </div>
-                        <input
-                          className="w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-xs text-zinc-600 focus:outline-none"
-                          value={(variable.options || optionSets[0].options).join(", ")}
-                          onChange={(event) =>
-                            updatePrompt((prompt) => ({
-                              ...prompt,
-                              variables: prompt.variables.map((item) =>
-                                item.name === variable.name
-                                  ? {
-                                      ...item,
-                                      options: event.target.value
-                                        .split(",")
-                                        .map((option) => option.trim())
-                                        .filter(Boolean),
-                                    }
-                                  : item
-                              ),
-                            }))
-                          }
-                        />
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"
+                          onClick={() => setIsFillDrawerOpen(true)}
+                        >
+                          Variables ({selectedPrompt.variables.length})
+                          {missingRequired.length ? (
+                            <span className="ml-2 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+                              {missingRequired.length} required
+                            </span>
+                          ) : null}
+                        </button>
+                        <button
+                          className="rounded-xl px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                          style={{ background: accent }}
+                          onClick={handleCopy}
+                          disabled={missingRequired.length > 0}
+                        >
+                          {copyState === "success"
+                            ? "Copied"
+                            : copyState === "error"
+                              ? "Copy failed"
+                              : "Copy"}
+                        </button>
+                      </div>
+                    </div>
+                    {missingRequired.length > 0 ? (
+                      <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-600">
+                        Missing required fields:{" "}
+                        <span className="font-semibold">
+                          {missingRequired.map((item) => item.name).join(", ")}
+                        </span>
+                        .{" "}
+                        <button
+                          className="underline underline-offset-2"
+                          onClick={() => setIsFillDrawerOpen(true)}
+                        >
+                          Fill them
+                        </button>
+                        .
+                      </div>
+                    ) : null}
+                    <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-black/10 bg-white p-3 text-xs leading-5 text-zinc-800">
+                      {preview}
+                    </pre>
                   </div>
-                ))}
-              </div>
-              <button
-                className="mt-3 rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-zinc-600"
-                onClick={handleAddVariable}
-              >
-                Add variable
-              </button>
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-black/10 bg-white p-5">
-            <div className="text-sm font-semibold text-zinc-800">Fill + Preview</div>
-            <div className="mt-4 space-y-3">
-              {selectedPrompt.variables.map((variable) => {
-                const value = selectedPrompt.values[variable.name];
-                const common = {
-                  className:
-                    "mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none",
-                };
-                if (variable.type === "text") {
-                  return (
-                    <label key={variable.name} className="block text-xs text-zinc-500">
-                      {variable.name}
-                      <textarea
-                        {...common}
-                        value={String(value ?? "")}
-                        onChange={(event) =>
-                          updatePrompt((prompt) => ({
-                            ...prompt,
-                            values: { ...prompt.values, [variable.name]: event.target.value },
-                          }))
-                        }
-                      />
-                    </label>
-                  );
-                }
-                if (variable.type === "enum") {
-                  const options = variable.options || optionSets[0].options;
-                  const selectedValue =
-                    value === undefined || value === "" ? variable.defaultValue : value;
-                  return (
-                    <label key={variable.name} className="block text-xs text-zinc-500">
-                      {variable.name}
-                      <select
-                        {...common}
-                        value={String(selectedValue)}
-                        onChange={(event) =>
-                          updatePrompt((prompt) => ({
-                            ...prompt,
-                            values: { ...prompt.values, [variable.name]: event.target.value },
-                          }))
-                        }
-                      >
-                        {options.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  );
-                }
-                if (variable.type === "boolean") {
-                  const boolValue =
-                    value === undefined ? variable.defaultValue === "true" : Boolean(value);
-                  return (
-                    <label key={variable.name} className="flex items-center gap-2 text-xs text-zinc-500">
-                      <input
-                        type="checkbox"
-                        checked={boolValue}
-                        onChange={(event) =>
-                          updatePrompt((prompt) => ({
-                            ...prompt,
-                            values: { ...prompt.values, [variable.name]: event.target.checked },
-                          }))
-                        }
-                      />
-                      {variable.name}
-                    </label>
-                  );
-                }
-                if (variable.type === "number") {
-                  return (
-                    <label key={variable.name} className="block text-xs text-zinc-500">
-                      {variable.name}
-                      <input
-                        {...common}
-                        type="number"
-                        value={String(value ?? "")}
-                        onChange={(event) =>
-                          updatePrompt((prompt) => ({
-                            ...prompt,
-                            values: {
-                              ...prompt.values,
-                              [variable.name]: event.target.value === "" ? "" : Number(event.target.value),
-                            },
-                          }))
-                        }
-                      />
-                    </label>
-                  );
-                }
-                return (
-                  <label key={variable.name} className="block text-xs text-zinc-500">
-                    {variable.name}
-                    <input
-                      {...common}
-                      type="text"
-                      value={String(value ?? "")}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-4">
+                    <div className="text-sm font-semibold text-zinc-800">Template</div>
+                    <textarea
+                      className="mt-3 h-[240px] w-full rounded-xl border border-black/10 bg-white p-3 font-mono text-[13px] leading-6 text-zinc-800 focus:outline-none"
+                      value={selectedPrompt.template}
                       onChange={(event) =>
-                        updatePrompt((prompt) => ({
-                          ...prompt,
-                          values: { ...prompt.values, [variable.name]: event.target.value },
-                        }))
+                        updatePrompt((prompt) => ({ ...prompt, template: event.target.value }))
                       }
                     />
-                  </label>
-                );
-              })}
+                    <div className="mt-2 text-xs text-zinc-500">
+                      Tip: Use placeholders like{" "}
+                      <span className="font-mono">{"{{recipient_name}}"}</span>.
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-2xl border border-black/10 bg-white">
+                    <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
+                      <div className="text-sm font-semibold text-zinc-800">Variables</div>
+                      <button
+                        className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"
+                        onClick={handleAddVariable}
+                      >
+                        Add variable
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-[1fr_110px_90px_1fr] gap-2 border-b border-black/10 bg-[#fafafa] px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                      <div>Name</div>
+                      <div>Type</div>
+                      <div>Req</div>
+                      <div>Default</div>
+                    </div>
+                    {selectedPrompt.variables.map((variable) => (
+                      <div key={variable.name} className="border-b border-black/5 last:border-b-0">
+                        <div className="grid grid-cols-[1fr_110px_90px_1fr] items-center gap-2 px-4 py-3 text-sm text-zinc-700">
+                          <input
+                            className="w-full font-mono text-[12px] text-zinc-800 focus:outline-none"
+                            value={variable.name}
+                            onChange={(event) =>
+                              handleRenameVariable(variable.name, event.target.value)
+                            }
+                          />
+                          <select
+                            className="text-xs uppercase tracking-wide text-zinc-500 focus:outline-none"
+                            value={variable.type}
+                            onChange={(event) =>
+                              updatePrompt((prompt) => ({
+                                ...prompt,
+                                variables: prompt.variables.map((item) =>
+                                  item.name === variable.name
+                                    ? {
+                                        ...item,
+                                        type: event.target.value as VariableType,
+                                        options:
+                                          event.target.value === "enum"
+                                            ? item.options || optionSets[0].options
+                                            : item.options,
+                                      }
+                                    : item
+                                ),
+                              }))
+                            }
+                          >
+                            {["string", "text", "number", "boolean", "enum"].map((type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="text-xs">
+                            <input
+                              type="checkbox"
+                              checked={variable.required}
+                              onChange={(event) =>
+                                updatePrompt((prompt) => ({
+                                  ...prompt,
+                                  variables: prompt.variables.map((item) =>
+                                    item.name === variable.name
+                                      ? { ...item, required: event.target.checked }
+                                      : item
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <input
+                              className="w-full text-xs text-zinc-500 focus:outline-none"
+                              value={variable.defaultValue}
+                              onChange={(event) =>
+                                updatePrompt((prompt) => ({
+                                  ...prompt,
+                                  variables: prompt.variables.map((item) =>
+                                    item.name === variable.name
+                                      ? { ...item, defaultValue: event.target.value }
+                                      : item
+                                  ),
+                                }))
+                              }
+                            />
+                            <button
+                              className="text-[10px] text-red-500"
+                              onClick={() => handleDeleteVariable(variable.name)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        {variable.type === "enum" ? (
+                          <div className="px-4 pb-3 text-xs text-zinc-500">
+                            <div className="mb-1 font-semibold uppercase tracking-wide text-[10px]">
+                              Options
+                            </div>
+                            <input
+                              className="w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-xs text-zinc-600 focus:outline-none"
+                              value={(variable.options || optionSets[0].options).join(", ")}
+                              onChange={(event) =>
+                                updatePrompt((prompt) => ({
+                                  ...prompt,
+                                  variables: prompt.variables.map((item) =>
+                                    item.name === variable.name
+                                      ? {
+                                          ...item,
+                                          options: event.target.value
+                                            .split(",")
+                                            .map((option) => option.trim())
+                                            .filter(Boolean),
+                                        }
+                                      : item
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="mt-4 rounded-2xl border border-black/10 bg-[#fafafa] p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                Preview
-              </div>
-              <pre className="mt-2 whitespace-pre-wrap text-xs leading-5 text-zinc-800">
-                {preview}
-              </pre>
-            </div>
-            {missingRequired.length > 0 && (
-              <div className="mt-3 text-xs text-red-500">
-                Fill required fields: {missingRequired.map((item) => item.name).join(", ")}
-              </div>
-            )}
-            <button
-              className="mt-4 w-full rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-              style={{ background: accent }}
-              onClick={handleCopy}
-              disabled={missingRequired.length > 0}
-            >
-              {copyState === "success" ? "Copied" : copyState === "error" ? "Copy failed" : "Copy prompt"}
-            </button>
           </section>
         </div>
       </main>
@@ -998,21 +1168,98 @@ export default function Home() {
       <Modal
         open={isShareOpen}
         title="Share this prompt"
-        description="Copy the JSON payload and send it to someone. They can Import it to add the prompt."
+        description="Copy a link or payload. Recipients can import it into PromptFill."
         onClose={() => setIsShareOpen(false)}
       >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              Share link
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                readOnly
+                value={shareLink}
+                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+              />
+              <button
+                className="rounded-xl px-3 py-2 text-xs font-semibold text-white"
+                style={{ background: accent }}
+                onClick={handleCopyShareLink}
+              >
+                Copy
+              </button>
+            </div>
+            <div className="mt-2 text-xs text-zinc-500">
+              Best for small prompts. Very long templates may not fit in a URL.
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                Share payload
+              </div>
+              <button
+                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"
+                onClick={handleCopySharePayload}
+              >
+                Copy payload
+              </button>
+            </div>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-xl border border-black/10 bg-white p-3 text-xs text-zinc-700">
+              {sharePayload}
+            </pre>
+            <div className="mt-2 text-xs text-zinc-500">
+              Includes template, variables, and defaults.
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={isImportOpen}
+        title="Import shared prompt"
+        description="Review what you're importing before it is added to your library."
+        onClose={() => {
+          setIsImportOpen(false);
+          setPendingImport(null);
+        }}
+      >
         <div className="space-y-3">
-          <pre className="max-h-64 overflow-auto rounded-2xl border border-black/10 bg-[#fafafa] p-3 text-xs text-zinc-700">
-            {sharePayload}
-          </pre>
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-xs text-zinc-500">Share includes template, variables, and defaults.</div>
+          <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-3 text-sm text-zinc-700">
+            {pendingImport?.length ? (
+              <div className="space-y-1">
+                {pendingImport.slice(0, 5).map((prompt) => (
+                  <div key={prompt.id} className="truncate">
+                    {prompt.name}
+                  </div>
+                ))}
+                {pendingImport.length > 5 ? (
+                  <div className="text-xs text-zinc-500">...and {pendingImport.length - 5} more</div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-500">No prompts found.</div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-zinc-600"
+              onClick={() => {
+                setIsImportOpen(false);
+                setPendingImport(null);
+              }}
+            >
+              Cancel
+            </button>
             <button
               className="rounded-full px-4 py-2 text-xs font-semibold text-white"
               style={{ background: accent }}
-              onClick={handleCopySharePayload}
+              onClick={handleConfirmImport}
+              disabled={!pendingImport?.length}
             >
-              Copy payload
+              Import
             </button>
           </div>
         </div>
@@ -1021,7 +1268,7 @@ export default function Home() {
       <Modal
         open={isVariableModalOpen}
         title="Add variable"
-        description="Define a new variable and how it should render in the fill sidebar."
+        description="Define a new variable and how it should render in the variables drawer."
         onClose={() => setIsVariableModalOpen(false)}
       >
         <div className="space-y-3">
@@ -1116,6 +1363,179 @@ export default function Home() {
           </div>
         </div>
       </Modal>
+
+      <Drawer
+        open={isFillDrawerOpen}
+        title="Variables"
+        description="Fill in values for this prompt."
+        onClose={() => setIsFillDrawerOpen(false)}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold text-zinc-900">
+              {selectedPrompt.name}
+            </div>
+            <div className="mt-1 text-xs text-zinc-500">
+              {selectedPrompt.variables.length} variables
+            </div>
+          </div>
+          <button
+            className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-zinc-600"
+            onClick={handleResetValues}
+          >
+            Reset
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {selectedPrompt.variables.map((variable) => {
+            const value = selectedPrompt.values[variable.name];
+            const common = {
+              className:
+                "mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none",
+            };
+            if (variable.type === "text") {
+              return (
+                <label key={variable.name} className="block text-xs text-zinc-500">
+                  <span className="flex items-center gap-2">
+                    <span>{variable.name}</span>
+                    {variable.required ? (
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                        required
+                      </span>
+                    ) : null}
+                  </span>
+                  <textarea
+                    {...common}
+                    value={String(value ?? "")}
+                    className={`${common.className} min-h-28`}
+                    onChange={(event) =>
+                      updatePrompt((prompt) => ({
+                        ...prompt,
+                        values: { ...prompt.values, [variable.name]: event.target.value },
+                      }))
+                    }
+                  />
+                </label>
+              );
+            }
+            if (variable.type === "enum") {
+              const options = variable.options || optionSets[0].options;
+              const selectedValue =
+                value === undefined || value === "" ? variable.defaultValue : value;
+              return (
+                <label key={variable.name} className="block text-xs text-zinc-500">
+                  <span className="flex items-center gap-2">
+                    <span>{variable.name}</span>
+                    {variable.required ? (
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                        required
+                      </span>
+                    ) : null}
+                  </span>
+                  <select
+                    {...common}
+                    value={String(selectedValue)}
+                    onChange={(event) =>
+                      updatePrompt((prompt) => ({
+                        ...prompt,
+                        values: { ...prompt.values, [variable.name]: event.target.value },
+                      }))
+                    }
+                  >
+                    {options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            }
+            if (variable.type === "boolean") {
+              const boolValue =
+                value === undefined ? variable.defaultValue === "true" : Boolean(value);
+              return (
+                <label
+                  key={variable.name}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-700"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm">{variable.name}</span>
+                    {variable.required ? (
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                        required
+                      </span>
+                    ) : null}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={boolValue}
+                    onChange={(event) =>
+                      updatePrompt((prompt) => ({
+                        ...prompt,
+                        values: { ...prompt.values, [variable.name]: event.target.checked },
+                      }))
+                    }
+                  />
+                </label>
+              );
+            }
+            if (variable.type === "number") {
+              return (
+                <label key={variable.name} className="block text-xs text-zinc-500">
+                  <span className="flex items-center gap-2">
+                    <span>{variable.name}</span>
+                    {variable.required ? (
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                        required
+                      </span>
+                    ) : null}
+                  </span>
+                  <input
+                    {...common}
+                    type="number"
+                    value={String(value ?? "")}
+                    onChange={(event) =>
+                      updatePrompt((prompt) => ({
+                        ...prompt,
+                        values: {
+                          ...prompt.values,
+                          [variable.name]:
+                            event.target.value === "" ? "" : Number(event.target.value),
+                        },
+                      }))
+                    }
+                  />
+                </label>
+              );
+            }
+            return (
+              <label key={variable.name} className="block text-xs text-zinc-500">
+                <span className="flex items-center gap-2">
+                  <span>{variable.name}</span>
+                  {variable.required ? (
+                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                      required
+                    </span>
+                  ) : null}
+                </span>
+                <input
+                  {...common}
+                  type="text"
+                  value={String(value ?? "")}
+                  onChange={(event) =>
+                    updatePrompt((prompt) => ({
+                      ...prompt,
+                      values: { ...prompt.values, [variable.name]: event.target.value },
+                    }))
+                  }
+                />
+              </label>
+            );
+          })}
+        </div>
+      </Drawer>
 
       <Modal
         open={isDeleteOpen}
