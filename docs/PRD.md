@@ -19,6 +19,7 @@ People store prompts in docs, snippets, DMs, repos, and note apps. Reuse is pain
 ## Goals (MVP)
 - Make prompts easy to manage: searchable library with fast reuse.
 - Make prompts flexible: variables + dropdown selectors + defaults + required fields.
+- Make prompts shareable: export/import flows that preserve structure and customization.
 - Make it feel magical: AI proposes variables and selectors from raw prompt text.
 - Keep it safe and simple: local-first by default with export/import.
 - "OpenAI-adjacent" aesthetic: calm, minimal, editorial, confident.
