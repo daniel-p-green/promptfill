@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { renderTemplate } from "@/lib/templateRender";
+import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Toggle } from "@/components/ui/Toggle";
+import { cx } from "@/components/ui/cx";
 
-const accent = "#10a37f";
+const brand = "var(--pf-accent)";
 const storageKey = "promptfill:library:v1";
+const uiKey = "promptfill:ui:v1";
 
 type VariableType = "string" | "text" | "number" | "boolean" | "enum";
 
@@ -191,7 +196,72 @@ const decodeBase64Url = (value: string) => {
   return new TextDecoder().decode(bytes);
 };
 
+const toMarkdownCodeFence = (text: string) => {
+  const matches = text.match(/`+/g) || [];
+  const longest = matches.reduce((max, run) => Math.max(max, run.length), 0);
+  const fence = "`".repeat(Math.max(3, longest + 1));
+  return `${fence}text\n${text}\n${fence}`;
+};
+
 const randomPromptId = () => `prompt-${Math.random().toString(36).slice(2, 10)}`;
+
+const getPromptInitials = (name: string) => {
+  const cleaned = name.trim();
+  if (!cleaned) return "P";
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+};
+
+const IconChevronLeft = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M12.5 4.5L7 10l5.5 5.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const IconChevronRight = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M7.5 4.5L13 10l-5.5 5.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const IconPlus = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M10 4.5v11M4.5 10h11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </svg>
+);
 
 const normalizeImportedType = (value: unknown): VariableType =>
   value === "string" || value === "text" || value === "number" || value === "boolean" || value === "enum"
@@ -301,18 +371,17 @@ const Modal = ({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white p-6 shadow-xl">
+      <div className="w-full max-w-xl rounded-[24px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-6 shadow-[var(--pf-shadow-elevated)]">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-lg font-semibold text-zinc-900">{title}</div>
-            {description ? <div className="mt-1 text-sm text-zinc-500">{description}</div> : null}
+            <div className="text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
+            {description ? (
+              <div className="mt-1 text-sm text-[color:var(--pf-text-tertiary)]">{description}</div>
+            ) : null}
           </div>
-          <button
-            className="rounded-full border border-black/10 px-3 py-1 text-xs text-zinc-500"
-            onClick={onClose}
-          >
+          <Button type="button" size="sm" variant="secondary" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
         <div className="mt-4">{children}</div>
       </div>
@@ -341,18 +410,17 @@ const Drawer = ({
         aria-label="Close drawer"
         onClick={onClose}
       />
-      <div className="absolute right-0 top-0 h-full w-full max-w-[440px] overflow-auto border-l border-black/10 bg-white p-6 shadow-2xl">
+      <div className="absolute right-0 top-0 h-full w-full max-w-[420px] overflow-auto border-l border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-6 shadow-[var(--pf-shadow-elevated)]">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-lg font-semibold text-zinc-900">{title}</div>
-            {description ? <div className="mt-1 text-sm text-zinc-500">{description}</div> : null}
+            <div className="text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
+            {description ? (
+              <div className="mt-1 text-sm text-[color:var(--pf-text-tertiary)]">{description}</div>
+            ) : null}
           </div>
-          <button
-            className="rounded-full border border-black/10 px-3 py-1 text-xs text-zinc-500"
-            onClick={onClose}
-          >
+          <Button type="button" size="sm" variant="secondary" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
         <div className="mt-5">{children}</div>
       </div>
@@ -365,12 +433,12 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string>(defaultPrompts()[0].id);
   const [searchQuery, setSearchQuery] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
-  const [copyState, setCopyState] = useState<"idle" | "success" | "error">("idle");
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVariableModalOpen, setIsVariableModalOpen] = useState(false);
   const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
+  const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
   const [variableDraft, setVariableDraft] = useState<VariableDraft>(emptyDraft);
   const [pendingImport, setPendingImport] = useState<PromptItem[] | null>(null);
   const [showTagInput, setShowTagInput] = useState(false);
@@ -393,6 +461,19 @@ export default function Home() {
         setPrompts(parsed.prompts);
         setSelectedId(parsed.selectedId || parsed.prompts[0].id);
       }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  /* eslint-disable react-hooks/set-state-in-effect -- One-time UI state hydration from localStorage after mount is intentional. */
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(uiKey) : null;
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as { libraryCollapsed?: unknown };
+      if (typeof parsed.libraryCollapsed === "boolean") setIsLibraryCollapsed(parsed.libraryCollapsed);
     } catch {
       // ignore storage errors
     }
@@ -442,6 +523,11 @@ export default function Home() {
     window.localStorage.setItem(storageKey, payload);
   }, [prompts, activePromptId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(uiKey, JSON.stringify({ libraryCollapsed: isLibraryCollapsed }));
+  }, [isLibraryCollapsed]);
+
   const filteredPrompts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return prompts;
@@ -483,7 +569,9 @@ export default function Home() {
   const shareLink = useMemo(() => {
     if (typeof window === "undefined") return "";
     if (!sharePayload) return "";
-    return `${window.location.origin}${window.location.pathname}?import=${encodeBase64Url(sharePayload)}`;
+    const configuredOrigin = process.env.NEXT_PUBLIC_SHARE_ORIGIN?.trim();
+    const origin = configuredOrigin || window.location.origin;
+    return `${origin}${window.location.pathname}?import=${encodeBase64Url(sharePayload)}`;
   }, [sharePayload]);
 
   const updatePrompt = (updater: (prompt: PromptItem) => PromptItem) => {
@@ -492,15 +580,14 @@ export default function Home() {
     );
   };
 
-  const handleCopy = async () => {
+  const handleCopy = async (format: "plain" | "markdown") => {
     if (!selectedPrompt || missingRequired.length > 0) return;
     try {
-      await navigator.clipboard.writeText(preview);
-      setCopyState("success");
-      setTimeout(() => setCopyState("idle"), 1600);
+      const textToCopy = format === "markdown" ? toMarkdownCodeFence(preview) : preview;
+      await navigator.clipboard.writeText(textToCopy);
+      setNotice(format === "markdown" ? "Copied as Markdown." : "Copied.");
     } catch {
-      setCopyState("error");
-      setTimeout(() => setCopyState("idle"), 1600);
+      setNotice("Copy failed. Your browser may be blocking clipboard access.");
     }
   };
 
@@ -688,6 +775,11 @@ export default function Home() {
     setActivePanel("build");
   };
 
+  const handleToggleLibrary = () => {
+    if (!isLibraryCollapsed) setSearchQuery("");
+    setIsLibraryCollapsed((value) => !value);
+  };
+
   const handleExport = () => {
     const payload = JSON.stringify({ prompts }, null, 2);
     const blob = new Blob([payload], { type: "application/json" });
@@ -746,24 +838,24 @@ export default function Home() {
   };
 
   if (!selectedPrompt) {
-    return <div className="min-h-screen bg-[#f7f7f8]" />;
+    return <div className="min-h-screen bg-[color:var(--pf-bg)]" />;
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f8] text-zinc-900">
-      <header className="border-b border-black/5 bg-white">
-        <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-[color:var(--pf-bg)] text-[color:var(--pf-text)]">
+      <header className="border-b border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]">
+        <div className="mx-auto flex w-full max-w-none items-center justify-between px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="h-2.5 w-2.5 rounded-full" style={{ background: accent }} />
+            <div className="h-2.5 w-2.5 rounded-full" style={{ background: brand }} />
             <div>
               <div className="text-sm font-semibold tracking-tight">PromptFill</div>
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs text-[color:var(--pf-text-tertiary)]">
                 Shareable prompts, painless customization.
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <label className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-zinc-700">
+            <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-[color:var(--pf-interactive-secondary-border)] bg-[color:var(--pf-interactive-secondary-bg)] px-4 py-2 text-sm font-medium text-[color:var(--pf-interactive-secondary-label)] hover:border-[color:var(--pf-interactive-secondary-border-hover)] hover:bg-[color:var(--pf-interactive-secondary-bg-hover)] hover:text-[color:var(--pf-interactive-secondary-label-hover)] active:border-[color:var(--pf-interactive-secondary-border-press)] active:bg-[color:var(--pf-interactive-secondary-bg-press)] active:text-[color:var(--pf-interactive-secondary-label-press)]">
               Import
               <input
                 type="file"
@@ -772,76 +864,158 @@ export default function Home() {
                 onChange={(event) => handleImport(event.target.files?.[0] ?? null)}
               />
             </label>
-            <button
-              className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-zinc-700"
-              onClick={handleExport}
-            >
+            <Button variant="secondary" onClick={handleExport}>
               Export
-            </button>
-            <button
-              className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
-              style={{ background: accent }}
-              onClick={handleNewPrompt}
-            >
-              New
-            </button>
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1100px] px-6 py-6">
-        <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="rounded-2xl border border-black/10 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-zinc-800">Library</div>
-              <div className="text-xs text-zinc-500">{prompts.length} prompts</div>
+      <main className="mx-auto w-full max-w-none">
+        <div
+          className={cx(
+            "grid min-h-[calc(100vh-56px)]",
+            isLibraryCollapsed
+              ? "lg:grid-cols-[72px_minmax(0,1fr)]"
+              : "lg:grid-cols-[320px_minmax(0,1fr)]"
+          )}
+        >
+          <aside
+            className={cx(
+              "border-b border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-4 lg:border-b-0 lg:border-r",
+              isLibraryCollapsed ? "lg:p-2" : ""
+            )}
+          >
+            {/* Collapsed rail (desktop only). */}
+            <div
+              className={cx(
+                "hidden flex-col items-center gap-2",
+                isLibraryCollapsed ? "lg:flex" : "lg:hidden"
+              )}
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-9 w-9 justify-center p-0"
+                aria-label="Expand library"
+                onClick={handleToggleLibrary}
+              >
+                <IconChevronRight className="h-5 w-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="h-9 w-9 justify-center p-0"
+                aria-label="New prompt"
+                onClick={handleNewPrompt}
+              >
+                <IconPlus className="h-5 w-5" />
+              </Button>
+              <div className="my-3 h-px w-full bg-[color:var(--pf-border)]" />
+              <div className="flex flex-col items-center gap-2">
+                {filteredPrompts.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    title={item.name}
+                    className={cx(
+                      "flex h-10 w-10 items-center justify-center rounded-full border text-xs font-semibold transition",
+                      item.id === activePromptId
+                        ? "border-[color:rgba(13,13,13,0.2)] bg-[color:var(--pf-surface-muted)] text-[color:var(--pf-text)]"
+                        : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] text-[color:var(--pf-text-tertiary)] hover:bg-[color:var(--pf-surface-muted)]"
+                    )}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    {getPromptInitials(item.name)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="mt-3">
-              <input
-                type="text"
-                placeholder="Search prompts"
-                className="w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm focus:outline-none"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-              />
-            </div>
-            <div className="mt-4 space-y-2">
-              {filteredPrompts.map((item) => (
-                <div
-                  key={item.id}
-                  className={`rounded-xl border px-3 py-3 transition hover:bg-[#fafafa] ${
-                    item.id === activePromptId
-                      ? "border-black/20 bg-[#fafafa]"
-                      : "border-black/10 bg-white"
-                  }`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedId(item.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") setSelectedId(item.id);
-                  }}
-                >
-                  <div className="truncate text-sm font-semibold text-zinc-900">{item.name}</div>
-                  <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{item.description}</div>
-                  {item.tags.length ? (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {item.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-[#fafafa] px-2 py-[2px] text-[10px] text-zinc-500"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
+
+            {/* Full sidebar (always on mobile, optional on desktop). */}
+            <div className={cx(isLibraryCollapsed ? "lg:hidden" : "")}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-[color:var(--pf-text)]">Library</div>
+                  <div className="text-xs text-[color:var(--pf-text-tertiary)]">{prompts.length} prompts</div>
                 </div>
-              ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="hidden h-9 w-9 justify-center p-0 lg:inline-flex"
+                  aria-label="Collapse library"
+                  onClick={handleToggleLibrary}
+                >
+                  <IconChevronLeft className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  className="w-full justify-center gap-2"
+                  onClick={handleNewPrompt}
+                >
+                  <IconPlus className="h-4 w-4" />
+                  New prompt
+                </Button>
+              </div>
+              <div className="mt-3">
+                <input
+                  type="text"
+                  placeholder="Search prompts"
+                  className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                />
+              </div>
+              <div className="mt-4 space-y-2">
+                {filteredPrompts.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={cx(
+                      "w-full rounded-[12px] border px-3 py-3 text-left transition hover:bg-[color:var(--pf-surface-muted)]",
+                      item.id === activePromptId
+                        ? "border-[color:rgba(13,13,13,0.2)] bg-[color:var(--pf-surface-muted)]"
+                        : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]"
+                    )}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <div className="truncate text-sm font-semibold text-[color:var(--pf-text)]">{item.name}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-[color:var(--pf-text-tertiary)]">
+                      {item.description}
+                    </div>
+                    {item.tags.length ? (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-[color:var(--pf-surface-muted)] px-2 py-[2px] text-[10px] text-[color:var(--pf-text-tertiary)]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </button>
+                ))}
+                {filteredPrompts.length === 0 ? (
+                  <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-3 text-xs text-[color:var(--pf-text-tertiary)]">
+                    No prompts match that search.
+                  </div>
+                ) : null}
+              </div>
             </div>
           </aside>
 
-          <section className="overflow-hidden rounded-2xl border border-black/10 bg-white">
-            <div className="border-b border-black/10 p-5">
+          <section className="bg-[color:var(--pf-surface)]">
+            <div className="border-b border-[color:var(--pf-border)]">
+              <div className="mx-auto w-full max-w-[960px] px-4 py-5 md:px-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <input
@@ -849,20 +1023,20 @@ export default function Home() {
                     onChange={(event) =>
                       updatePrompt((prompt) => ({ ...prompt, name: event.target.value }))
                     }
-                    className="w-full truncate text-xl font-semibold tracking-tight text-zinc-900 focus:outline-none"
+                    className="w-full truncate text-lg font-semibold tracking-tight text-[color:var(--pf-text)] focus:outline-none"
                   />
                   <input
                     value={selectedPrompt.description}
                     onChange={(event) =>
                       updatePrompt((prompt) => ({ ...prompt, description: event.target.value }))
                     }
-                    className="mt-1 w-full text-sm text-zinc-500 focus:outline-none"
+                    className="mt-1 w-full text-sm text-[color:var(--pf-text-tertiary)] focus:outline-none"
                   />
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                     {selectedPrompt.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-full border border-black/10 bg-white px-3 py-1 text-zinc-500"
+                        className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-[color:var(--pf-text-tertiary)]"
                       >
                         {tag}
                       </span>
@@ -873,125 +1047,114 @@ export default function Home() {
                           value={newTagValue}
                           onChange={(event) => setNewTagValue(event.target.value)}
                           placeholder="tag-name"
-                          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600 focus:outline-none"
+                          className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-xs text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
                         />
-                        <button
-                          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-600"
-                          onClick={handleAddTag}
-                        >
+                        <Button type="button" size="sm" variant="secondary" onClick={handleAddTag}>
                           Add
-                        </button>
-                        <button
-                          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-zinc-500"
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
                           onClick={() => {
                             setNewTagValue("");
                             setShowTagInput(false);
                           }}
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     ) : (
-                      <button
-                        className="rounded-full border border-dashed border-black/10 bg-white px-3 py-1 text-zinc-500"
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="border-dashed text-[color:var(--pf-text-tertiary)]"
                         onClick={() => setShowTagInput(true)}
                       >
                         + tag
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold"
-                    onClick={handleSharePrompt}
-                  >
+                  <Button type="button" size="sm" variant="secondary" onClick={handleSharePrompt}>
                     Share
-                  </button>
-                  <button
-                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold"
-                    onClick={handleDuplicate}
-                  >
+                  </Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={handleDuplicate}>
                     Duplicate
-                  </button>
-                  <button
-                    className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-red-500"
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="dangerSecondary"
                     onClick={() => setIsDeleteOpen(true)}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="mt-4 flex items-center justify-between gap-3">
-                <div className="inline-flex rounded-xl border border-black/10 bg-[#fafafa] p-1 text-xs font-semibold text-zinc-600">
-                  <button
-                    className={`rounded-lg px-3 py-1.5 ${
-                      activePanel === "fill" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600"
-                    }`}
-                    onClick={() => setActivePanel("fill")}
-                  >
-                    Fill
-                  </button>
-                  <button
-                    className={`rounded-lg px-3 py-1.5 ${
-                      activePanel === "build" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600"
-                    }`}
-                    onClick={() => setActivePanel("build")}
-                  >
-                    Build
-                  </button>
-                </div>
+                <SegmentedControl
+                  size="sm"
+                  value={activePanel}
+                  onChange={setActivePanel}
+                  options={[
+                    { label: "Fill", value: "fill" },
+                    { label: "Build", value: "build" },
+                  ]}
+                />
 
                 {activePanel === "build" ? (
-                  <button
-                    className="rounded-xl px-3 py-2 text-xs font-semibold text-white"
-                    style={{ background: accent }}
-                    onClick={handleExtract}
-                  >
+                  <Button type="button" size="sm" variant="primary" onClick={handleExtract}>
                     Extract variables
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </div>
+            </div>
 
-            <div className="p-5">
+            <div className="mx-auto w-full max-w-[960px] px-4 py-5 md:px-6">
               {activePanel === "fill" ? (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-4">
+                  <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-sm font-semibold text-zinc-800">Rendered prompt</div>
-                        <div className="mt-1 text-xs text-zinc-500">
+                        <div className="text-sm font-semibold text-[color:var(--pf-text)]">Rendered prompt</div>
+                        <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
                           Fill variables once, then copy anywhere.
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"
-                          onClick={() => setIsFillDrawerOpen(true)}
-                        >
+                        <Button size="sm" variant="secondary" onClick={() => setIsFillDrawerOpen(true)}>
                           Variables ({selectedPrompt.variables.length})
                           {missingRequired.length ? (
                             <span className="ml-2 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-600">
                               {missingRequired.length} required
                             </span>
                           ) : null}
-                        </button>
-                        <button
-                          className="rounded-xl px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
-                          style={{ background: accent }}
-                          onClick={handleCopy}
-                          disabled={missingRequired.length > 0}
-                        >
-                          {copyState === "success"
-                            ? "Copied"
-                            : copyState === "error"
-                              ? "Copy failed"
-                              : "Copy"}
-                        </button>
-                      </div>
-                    </div>
+	                        </Button>
+	                        <Button
+	                          type="button"
+	                          size="sm"
+	                          variant="primary"
+	                          onClick={() => handleCopy("plain")}
+	                          disabled={missingRequired.length > 0}
+	                        >
+	                          Copy
+	                        </Button>
+	                        <Button
+	                          type="button"
+	                          size="sm"
+	                          variant="secondary"
+	                          onClick={() => handleCopy("markdown")}
+	                          disabled={missingRequired.length > 0}
+	                        >
+	                          Copy Markdown
+	                        </Button>
+	                      </div>
+	                    </div>
                     {missingRequired.length > 0 ? (
                       <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-600">
                         Missing required fields:{" "}
@@ -1008,56 +1171,56 @@ export default function Home() {
                         .
                       </div>
                     ) : null}
-                    <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-black/10 bg-white p-3 text-xs leading-5 text-zinc-800">
+                    <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3 text-xs leading-5 text-[color:var(--pf-text)]">
                       {preview}
                     </pre>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-4">
-                    <div className="text-sm font-semibold text-zinc-800">Template</div>
+                  <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
+                    <div className="text-sm font-semibold text-[color:var(--pf-text)]">Template</div>
                     <textarea
-                      className="mt-3 h-[240px] w-full rounded-xl border border-black/10 bg-white p-3 font-mono text-[13px] leading-6 text-zinc-800 focus:outline-none"
+                      className="mt-3 h-[240px] w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3 font-mono text-[13px] leading-6 text-[color:var(--pf-text)] focus:outline-none"
                       value={selectedPrompt.template}
                       onChange={(event) =>
                         updatePrompt((prompt) => ({ ...prompt, template: event.target.value }))
                       }
                     />
-                    <div className="mt-2 text-xs text-zinc-500">
+                    <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
                       Tip: Use placeholders like{" "}
                       <span className="font-mono">{"{{recipient_name}}"}</span>.
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-2xl border border-black/10 bg-white">
-                    <div className="flex items-center justify-between border-b border-black/10 px-4 py-3">
-                      <div className="text-sm font-semibold text-zinc-800">Variables</div>
-                      <button
-                        className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"
-                        onClick={handleAddVariable}
-                      >
-                        Add variable
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-[1fr_110px_90px_1fr] gap-2 border-b border-black/10 bg-[#fafafa] px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+	                  <div className="overflow-hidden rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]">
+	                    <div className="flex items-center justify-between border-b border-[color:var(--pf-border)] px-4 py-3">
+	                      <div className="text-sm font-semibold text-[color:var(--pf-text)]">Variables</div>
+	                      <Button type="button" size="sm" variant="secondary" onClick={handleAddVariable}>
+	                        Add variable
+	                      </Button>
+	                    </div>
+                    <div className="grid grid-cols-[1fr_110px_90px_1fr] gap-2 border-b border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
                       <div>Name</div>
                       <div>Type</div>
                       <div>Req</div>
                       <div>Default</div>
                     </div>
                     {selectedPrompt.variables.map((variable) => (
-                      <div key={variable.name} className="border-b border-black/5 last:border-b-0">
-                        <div className="grid grid-cols-[1fr_110px_90px_1fr] items-center gap-2 px-4 py-3 text-sm text-zinc-700">
+                      <div
+                        key={variable.name}
+                        className="border-b border-[color:var(--pf-border)] last:border-b-0"
+                      >
+                        <div className="grid grid-cols-[1fr_110px_90px_1fr] items-center gap-2 px-4 py-3 text-sm text-[color:var(--pf-text-secondary)]">
                           <input
-                            className="w-full font-mono text-[12px] text-zinc-800 focus:outline-none"
+                            className="w-full font-mono text-[12px] text-[color:var(--pf-text)] focus:outline-none"
                             value={variable.name}
                             onChange={(event) =>
                               handleRenameVariable(variable.name, event.target.value)
                             }
                           />
                           <select
-                            className="text-xs uppercase tracking-wide text-zinc-500 focus:outline-none"
+                            className="text-xs uppercase tracking-wide text-[color:var(--pf-text-tertiary)] focus:outline-none"
                             value={variable.type}
                             onChange={(event) =>
                               updatePrompt((prompt) => ({
@@ -1101,7 +1264,7 @@ export default function Home() {
                           </div>
                           <div className="flex items-center justify-between gap-2">
                             <input
-                              className="w-full text-xs text-zinc-500 focus:outline-none"
+                              className="w-full text-xs text-[color:var(--pf-text-tertiary)] focus:outline-none"
                               value={variable.defaultValue}
                               onChange={(event) =>
                                 updatePrompt((prompt) => ({
@@ -1115,7 +1278,7 @@ export default function Home() {
                               }
                             />
                             <button
-                              className="text-[10px] text-red-500"
+                              className="text-[10px] text-red-600"
                               onClick={() => handleDeleteVariable(variable.name)}
                             >
                               Delete
@@ -1123,12 +1286,12 @@ export default function Home() {
                           </div>
                         </div>
                         {variable.type === "enum" ? (
-                          <div className="px-4 pb-3 text-xs text-zinc-500">
+                          <div className="px-4 pb-3 text-xs text-[color:var(--pf-text-tertiary)]">
                             <div className="mb-1 font-semibold uppercase tracking-wide text-[10px]">
                               Options
                             </div>
                             <input
-                              className="w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-xs text-zinc-600 focus:outline-none"
+                              className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-xs text-[color:var(--pf-text)] focus:outline-none"
                               value={(variable.options || optionSets[0].options).join(", ")}
                               onChange={(event) =>
                                 updatePrompt((prompt) => ({
@@ -1160,7 +1323,7 @@ export default function Home() {
       </main>
 
       {notice && (
-        <div className="fixed bottom-6 right-6 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm shadow-lg">
+        <div className="fixed bottom-6 right-6 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-4 py-3 text-sm text-[color:var(--pf-text)] shadow-[var(--pf-shadow-elevated)]">
           {notice}
         </div>
       )}
@@ -1172,45 +1335,38 @@ export default function Home() {
         onClose={() => setIsShareOpen(false)}
       >
         <div className="space-y-4">
-          <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+          <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
               Share link
             </div>
             <div className="mt-2 flex items-center gap-2">
               <input
                 readOnly
                 value={shareLink}
-                className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-xs text-zinc-700 focus:outline-none"
+                className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-xs text-[color:var(--pf-text)] focus:outline-none"
               />
-              <button
-                className="rounded-xl px-3 py-2 text-xs font-semibold text-white"
-                style={{ background: accent }}
-                onClick={handleCopyShareLink}
-              >
+              <Button type="button" size="sm" variant="primary" onClick={handleCopyShareLink}>
                 Copy
-              </button>
+              </Button>
             </div>
-            <div className="mt-2 text-xs text-zinc-500">
+            <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
               Best for small prompts. Very long templates may not fit in a URL.
             </div>
           </div>
 
-          <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-3">
+          <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
                 Share payload
               </div>
-              <button
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"
-                onClick={handleCopySharePayload}
-              >
+              <Button type="button" size="sm" variant="secondary" onClick={handleCopySharePayload}>
                 Copy payload
-              </button>
+              </Button>
             </div>
-            <pre className="mt-2 max-h-64 overflow-auto rounded-xl border border-black/10 bg-white p-3 text-xs text-zinc-700">
+            <pre className="mt-2 max-h-64 overflow-auto rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3 text-xs text-[color:var(--pf-text)]">
               {sharePayload}
             </pre>
-            <div className="mt-2 text-xs text-zinc-500">
+            <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
               Includes template, variables, and defaults.
             </div>
           </div>
@@ -1227,7 +1383,7 @@ export default function Home() {
         }}
       >
         <div className="space-y-3">
-          <div className="rounded-2xl border border-black/10 bg-[#fafafa] p-3 text-sm text-zinc-700">
+          <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3 text-sm text-[color:var(--pf-text)]">
             {pendingImport?.length ? (
               <div className="space-y-1">
                 {pendingImport.slice(0, 5).map((prompt) => (
@@ -1236,31 +1392,34 @@ export default function Home() {
                   </div>
                 ))}
                 {pendingImport.length > 5 ? (
-                  <div className="text-xs text-zinc-500">...and {pendingImport.length - 5} more</div>
+                  <div className="text-xs text-[color:var(--pf-text-tertiary)]">...and {pendingImport.length - 5} more</div>
                 ) : null}
               </div>
             ) : (
-              <div className="text-xs text-zinc-500">No prompts found.</div>
+              <div className="text-xs text-[color:var(--pf-text-tertiary)]">No prompts found.</div>
             )}
           </div>
           <div className="flex justify-end gap-2">
-            <button
-              className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-zinc-600"
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
               onClick={() => {
                 setIsImportOpen(false);
                 setPendingImport(null);
               }}
             >
               Cancel
-            </button>
-            <button
-              className="rounded-full px-4 py-2 text-xs font-semibold text-white"
-              style={{ background: accent }}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="primary"
               onClick={handleConfirmImport}
               disabled={!pendingImport?.length}
             >
               Import
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>
@@ -1272,19 +1431,19 @@ export default function Home() {
         onClose={() => setIsVariableModalOpen(false)}
       >
         <div className="space-y-3">
-          <label className="block text-xs text-zinc-500">
+          <label className="block text-xs text-[color:var(--pf-text-tertiary)]">
             Name
             <input
               value={variableDraft.name}
               onChange={(event) =>
                 setVariableDraft((draft) => ({ ...draft, name: event.target.value }))
               }
-              className="mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none"
+              className="mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
               placeholder="e.g. recipient_name"
             />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-zinc-500">
+            <label className="block text-xs text-[color:var(--pf-text-tertiary)]">
               Type
               <select
                 value={variableDraft.type}
@@ -1294,7 +1453,7 @@ export default function Home() {
                     type: event.target.value as VariableType,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none"
+                className="mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
               >
                 {["string", "text", "number", "boolean", "enum"].map((type) => (
                   <option key={type} value={type}>
@@ -1303,7 +1462,7 @@ export default function Home() {
                 ))}
               </select>
             </label>
-            <label className="block text-xs text-zinc-500">
+            <label className="block text-xs text-[color:var(--pf-text-tertiary)]">
               Default
               <input
                 value={variableDraft.defaultValue}
@@ -1313,11 +1472,11 @@ export default function Home() {
                     defaultValue: event.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none"
+                className="mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
               />
             </label>
           </div>
-          <label className="flex items-center gap-2 text-xs text-zinc-500">
+          <label className="flex items-center gap-2 text-xs text-[color:var(--pf-text-tertiary)]">
             <input
               type="checkbox"
               checked={variableDraft.required}
@@ -1331,7 +1490,7 @@ export default function Home() {
             Required field
           </label>
           {variableDraft.type === "enum" && (
-            <label className="block text-xs text-zinc-500">
+            <label className="block text-xs text-[color:var(--pf-text-tertiary)]">
               Options (comma-separated)
               <input
                 value={variableDraft.options}
@@ -1341,28 +1500,21 @@ export default function Home() {
                     options: event.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none"
+                className="mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
                 placeholder="concise, friendly, direct"
               />
             </label>
-          )}
-          <div className="flex justify-end gap-2">
-            <button
-              className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-zinc-600"
-              onClick={() => setIsVariableModalOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="rounded-full px-4 py-2 text-xs font-semibold text-white"
-              style={{ background: accent }}
-              onClick={handleConfirmAddVariable}
-            >
-              Add variable
-            </button>
-          </div>
-        </div>
-      </Modal>
+	          )}
+	          <div className="flex justify-end gap-2">
+	            <Button type="button" size="sm" variant="secondary" onClick={() => setIsVariableModalOpen(false)}>
+	              Cancel
+	            </Button>
+	            <Button type="button" size="sm" variant="primary" onClick={handleConfirmAddVariable}>
+	              Add variable
+	            </Button>
+	          </div>
+	        </div>
+	      </Modal>
 
       <Drawer
         open={isFillDrawerOpen}
@@ -1371,36 +1523,33 @@ export default function Home() {
         onClose={() => setIsFillDrawerOpen(false)}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-zinc-900">
-              {selectedPrompt.name}
-            </div>
-            <div className="mt-1 text-xs text-zinc-500">
+	          <div className="min-w-0">
+	            <div className="truncate text-sm font-semibold text-[color:var(--pf-text)]">
+	              {selectedPrompt.name}
+	            </div>
+            <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
               {selectedPrompt.variables.length} variables
-            </div>
-          </div>
-          <button
-            className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-zinc-600"
-            onClick={handleResetValues}
-          >
-            Reset
-          </button>
-        </div>
+	            </div>
+	          </div>
+	          <Button type="button" size="sm" variant="secondary" onClick={handleResetValues}>
+	            Reset
+	          </Button>
+	        </div>
 
         <div className="mt-4 space-y-3">
           {selectedPrompt.variables.map((variable) => {
             const value = selectedPrompt.values[variable.name];
             const common = {
               className:
-                "mt-1 w-full rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-800 focus:outline-none",
+                "mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none",
             };
             if (variable.type === "text") {
               return (
-                <label key={variable.name} className="block text-xs text-zinc-500">
+                <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
                   <span className="flex items-center gap-2">
                     <span>{variable.name}</span>
                     {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
                         required
                       </span>
                     ) : null}
@@ -1424,11 +1573,11 @@ export default function Home() {
               const selectedValue =
                 value === undefined || value === "" ? variable.defaultValue : value;
               return (
-                <label key={variable.name} className="block text-xs text-zinc-500">
+                <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
                   <span className="flex items-center gap-2">
                     <span>{variable.name}</span>
                     {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
                         required
                       </span>
                     ) : null}
@@ -1458,23 +1607,23 @@ export default function Home() {
               return (
                 <label
                   key={variable.name}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-black/10 bg-[#fafafa] px-3 py-2 text-sm text-zinc-700"
+                  className="flex items-center justify-between gap-2 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-sm text-[color:var(--pf-text-secondary)]"
                 >
                   <span className="flex items-center gap-2">
                     <span className="text-sm">{variable.name}</span>
                     {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
                         required
                       </span>
                     ) : null}
                   </span>
-                  <input
-                    type="checkbox"
+                  <Toggle
                     checked={boolValue}
-                    onChange={(event) =>
+                    aria-label={variable.name}
+                    onCheckedChange={(checked) =>
                       updatePrompt((prompt) => ({
                         ...prompt,
-                        values: { ...prompt.values, [variable.name]: event.target.checked },
+                        values: { ...prompt.values, [variable.name]: checked },
                       }))
                     }
                   />
@@ -1483,11 +1632,11 @@ export default function Home() {
             }
             if (variable.type === "number") {
               return (
-                <label key={variable.name} className="block text-xs text-zinc-500">
+                <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
                   <span className="flex items-center gap-2">
                     <span>{variable.name}</span>
                     {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
                         required
                       </span>
                     ) : null}
@@ -1511,11 +1660,11 @@ export default function Home() {
               );
             }
             return (
-              <label key={variable.name} className="block text-xs text-zinc-500">
+              <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
                 <span className="flex items-center gap-2">
                   <span>{variable.name}</span>
                   {variable.required ? (
-                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-zinc-500">
+                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
                       required
                     </span>
                   ) : null}
@@ -1544,29 +1693,27 @@ export default function Home() {
         onClose={() => setIsDeleteOpen(false)}
       >
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm text-zinc-600">
-            Are you sure you want to delete {selectedPrompt.name}?
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="rounded-full border border-black/10 px-4 py-2 text-xs font-semibold text-zinc-600"
-              onClick={() => setIsDeleteOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="rounded-full px-4 py-2 text-xs font-semibold text-white"
-              style={{ background: "#ef4444" }}
-              onClick={() => {
-                handleDeletePrompt();
-                setIsDeleteOpen(false);
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      </Modal>
+	          <div className="text-sm text-[color:var(--pf-text-secondary)]">
+	            Are you sure you want to delete {selectedPrompt.name}?
+	          </div>
+	          <div className="flex items-center gap-2">
+	            <Button type="button" size="sm" variant="secondary" onClick={() => setIsDeleteOpen(false)}>
+	              Cancel
+	            </Button>
+	            <Button
+	              type="button"
+	              size="sm"
+	              variant="danger"
+	              onClick={() => {
+	                handleDeletePrompt();
+	                setIsDeleteOpen(false);
+	              }}
+	            >
+	              Delete
+	            </Button>
+	          </div>
+	        </div>
+	      </Modal>
     </div>
   );
 }

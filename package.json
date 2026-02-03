@@ -2,12 +2,12 @@
   "name": "promptfill",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix web run dev -- --port 3100",
-    "dev:web": "npm --prefix web run dev -- --port 3100",
-    "dev:video": "npm --prefix video run dev",
-    "build:web": "npm --prefix web run build",
-    "test:web": "npm --prefix web run test",
-    "lint:web": "npm --prefix web run lint",
-    "lint:video": "npm --prefix video run lint"
+    "dev": "cd web && npm run dev -- --port 3100",
+    "dev:web": "cd web && npm run dev -- --port 3100",
+    "dev:video": "cd video && npm run dev",
+    "build:web": "cd web && npm run build",
+    "test:web": "cd web && npm run test",
+    "lint:web": "cd web && npm run lint",
+    "lint:video": "cd video && npm run lint"
   }
 }

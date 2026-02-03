@@ -9,13 +9,13 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="PromptFillDemo"
           component={PromptFillDemo}
-          durationInFrames={60 * 30}
+          durationInFrames={36 * 30}
           fps={30}
           width={1280}
           height={720}
           defaultProps={
             {
-              accent: "#22c55e",
+              accent: "#10a37f",
               productName: "PromptFill",
             } satisfies PromptFillDemoProps
           }
