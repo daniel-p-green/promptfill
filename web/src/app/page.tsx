@@ -213,6 +213,24 @@ const getPromptInitials = (name: string) => {
   return (words[0][0] + words[1][0]).toUpperCase();
 };
 
+const humanizeVariableName = (name: string) => {
+  const words = name
+    .trim()
+    .split(/_+/)
+    .filter(Boolean);
+  if (!words.length) return "Variable";
+  return words
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (lower === "cta") return "CTA";
+      if (lower === "id") return "ID";
+      if (lower === "url") return "URL";
+      if (lower === "ai") return "AI";
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+};
+
 const IconChevronLeft = ({ className }: { className?: string }) => (
   <svg
     className={className}
@@ -393,13 +411,17 @@ const Drawer = ({
   open,
   title,
   description,
+  actions,
   children,
+  footer,
   onClose,
 }: {
   open: boolean;
   title: string;
   description?: string;
+  actions?: React.ReactNode;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   onClose: () => void;
 }) => {
   if (!open) return null;
@@ -410,19 +432,29 @@ const Drawer = ({
         aria-label="Close drawer"
         onClick={onClose}
       />
-      <div className="absolute right-0 top-0 h-full w-full max-w-[420px] overflow-auto border-l border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-6 shadow-[var(--pf-shadow-elevated)]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
-            {description ? (
-              <div className="mt-1 text-sm text-[color:var(--pf-text-tertiary)]">{description}</div>
-            ) : null}
+      <div className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col border-l border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] shadow-[var(--pf-shadow-elevated)]">
+        <div className="border-b border-[color:var(--pf-border)] px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="truncate text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
+              {description ? (
+                <div className="mt-1 text-sm text-[color:var(--pf-text-tertiary)]">{description}</div>
+              ) : null}
+            </div>
+            <div className="flex flex-none items-center gap-2">
+              {actions}
+              <Button type="button" size="sm" variant="secondary" onClick={onClose}>
+                Close
+              </Button>
+            </div>
           </div>
-          <Button type="button" size="sm" variant="secondary" onClick={onClose}>
-            Close
-          </Button>
         </div>
-        <div className="mt-5">{children}</div>
+        <div className="flex-1 overflow-auto px-6 py-5">{children}</div>
+        {footer ? (
+          <div className="border-t border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-6 py-4">
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -440,6 +472,7 @@ export default function Home() {
   const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
   const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
   const [variableDraft, setVariableDraft] = useState<VariableDraft>(emptyDraft);
+  const [variableNameDrafts, setVariableNameDrafts] = useState<Record<string, string>>({});
   const [pendingImport, setPendingImport] = useState<PromptItem[] | null>(null);
   const [showTagInput, setShowTagInput] = useState(false);
   const [newTagValue, setNewTagValue] = useState("");
@@ -558,6 +591,14 @@ export default function Home() {
       const value = selectedPrompt.values[variable.name];
       const fallback = variable.defaultValue;
       return value === undefined || value === "" ? fallback === "" : false;
+    });
+  }, [selectedPrompt]);
+
+  const sortedFillVariables = useMemo(() => {
+    if (!selectedPrompt) return [];
+    return [...selectedPrompt.variables].sort((a, b) => {
+      if (a.required !== b.required) return a.required ? -1 : 1;
+      return a.name.localeCompare(b.name);
     });
   }, [selectedPrompt]);
 
@@ -881,6 +922,7 @@ export default function Home() {
           )}
         >
           <aside
+            data-pf-video="library"
             className={cx(
               "border-b border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-4 lg:border-b-0 lg:border-r",
               isLibraryCollapsed ? "lg:p-2" : ""
@@ -935,7 +977,7 @@ export default function Home() {
             </div>
 
             {/* Full sidebar (always on mobile, optional on desktop). */}
-            <div className={cx(isLibraryCollapsed ? "lg:hidden" : "")}>
+            <div data-pf-video="library-pane" className={cx(isLibraryCollapsed ? "lg:hidden" : "")}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-[color:var(--pf-text)]">Library</div>
@@ -1126,7 +1168,7 @@ export default function Home() {
                           Fill variables once, then copy anywhere.
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div data-pf-video="copy-actions" className="flex items-center gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setIsFillDrawerOpen(true)}>
                           Variables ({selectedPrompt.variables.length})
                           {missingRequired.length ? (
@@ -1200,120 +1242,331 @@ export default function Home() {
 	                        Add variable
 	                      </Button>
 	                    </div>
-                    <div className="grid grid-cols-[1fr_110px_90px_1fr] gap-2 border-b border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
-                      <div>Name</div>
-                      <div>Type</div>
-                      <div>Req</div>
-                      <div>Default</div>
-                    </div>
-                    {selectedPrompt.variables.map((variable) => (
-                      <div
-                        key={variable.name}
-                        className="border-b border-[color:var(--pf-border)] last:border-b-0"
-                      >
-                        <div className="grid grid-cols-[1fr_110px_90px_1fr] items-center gap-2 px-4 py-3 text-sm text-[color:var(--pf-text-secondary)]">
-                          <input
-                            className="w-full font-mono text-[12px] text-[color:var(--pf-text)] focus:outline-none"
-                            value={variable.name}
-                            onChange={(event) =>
-                              handleRenameVariable(variable.name, event.target.value)
+                    <div className="space-y-3 p-4">
+                      {selectedPrompt.variables.length ? (
+                        selectedPrompt.variables.map((variable) => {
+                          const nameDraft = variableNameDrafts[variable.name] ?? variable.name;
+                          const normalizedDraft = normalizeName(nameDraft);
+                          const enumOptions = variable.options || optionSets[0].options;
+                          const enumDefault = enumOptions.includes(variable.defaultValue)
+                            ? variable.defaultValue
+                            : enumOptions[0] || "";
+
+                          const commitRename = () => {
+                            const trimmed = nameDraft.trim();
+                            if (!trimmed) {
+                              setVariableNameDrafts((drafts) => {
+                                const next = { ...drafts };
+                                delete next[variable.name];
+                                return next;
+                              });
+                              return;
                             }
-                          />
-                          <select
-                            className="text-xs uppercase tracking-wide text-[color:var(--pf-text-tertiary)] focus:outline-none"
-                            value={variable.type}
-                            onChange={(event) =>
-                              updatePrompt((prompt) => ({
-                                ...prompt,
-                                variables: prompt.variables.map((item) =>
-                                  item.name === variable.name
-                                    ? {
-                                        ...item,
-                                        type: event.target.value as VariableType,
-                                        options:
-                                          event.target.value === "enum"
-                                            ? item.options || optionSets[0].options
-                                            : item.options,
-                                      }
-                                    : item
-                                ),
-                              }))
+                            if (!normalizedDraft || normalizedDraft === variable.name) {
+                              setVariableNameDrafts((drafts) => {
+                                const next = { ...drafts };
+                                delete next[variable.name];
+                                return next;
+                              });
+                              return;
                             }
-                          >
-                            {["string", "text", "number", "boolean", "enum"].map((type) => (
-                              <option key={type} value={type}>
-                                {type}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="text-xs">
-                            <input
-                              type="checkbox"
-                              checked={variable.required}
-                              onChange={(event) =>
-                                updatePrompt((prompt) => ({
-                                  ...prompt,
-                                  variables: prompt.variables.map((item) =>
-                                    item.name === variable.name
-                                      ? { ...item, required: event.target.checked }
-                                      : item
-                                  ),
-                                }))
-                              }
+                            if (selectedPrompt.variables.some((item) => item.name === normalizedDraft)) {
+                              setNotice("Variable already exists.");
+                              return;
+                            }
+                            handleRenameVariable(variable.name, normalizedDraft);
+                            setVariableNameDrafts((drafts) => {
+                              const next = { ...drafts };
+                              delete next[variable.name];
+                              return next;
+                            });
+                          };
+
+                          const requiredDot = variable.required ? (
+                            <span
+                              className="h-1.5 w-1.5 rounded-full bg-[color:var(--pf-accent)]"
+                              aria-hidden="true"
                             />
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <input
-                              className="w-full text-xs text-[color:var(--pf-text-tertiary)] focus:outline-none"
-                              value={variable.defaultValue}
-                              onChange={(event) =>
-                                updatePrompt((prompt) => ({
-                                  ...prompt,
-                                  variables: prompt.variables.map((item) =>
-                                    item.name === variable.name
-                                      ? { ...item, defaultValue: event.target.value }
-                                      : item
-                                  ),
-                                }))
-                              }
-                            />
-                            <button
-                              className="text-[10px] text-red-600"
-                              onClick={() => handleDeleteVariable(variable.name)}
+                          ) : (
+                            <span className="h-1.5 w-1.5 rounded-full bg-transparent" aria-hidden="true" />
+                          );
+
+                          return (
+                            <div
+                              key={variable.name}
+                              className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4"
                             >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                        {variable.type === "enum" ? (
-                          <div className="px-4 pb-3 text-xs text-[color:var(--pf-text-tertiary)]">
-                            <div className="mb-1 font-semibold uppercase tracking-wide text-[10px]">
-                              Options
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    {requiredDot}
+                                    <div className="truncate text-sm font-semibold text-[color:var(--pf-text)]">
+                                      {humanizeVariableName(variable.name)}
+                                    </div>
+                                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
+                                      {variable.type}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 truncate font-mono text-[11px] text-[color:var(--pf-text-tertiary)]">
+                                    {"{{"}
+                                    {variable.name}
+                                    {"}}"}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="dangerSecondary"
+                                  onClick={() => handleDeleteVariable(variable.name)}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                <label className="block text-xs text-[color:var(--pf-text-tertiary)]">
+                                  Name
+                                  <input
+                                    className="mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 font-mono text-[12px] text-[color:var(--pf-text)] focus:outline-none"
+                                    value={nameDraft}
+                                    onChange={(event) =>
+                                      setVariableNameDrafts((drafts) => ({
+                                        ...drafts,
+                                        [variable.name]: event.target.value,
+                                      }))
+                                    }
+                                    onBlur={commitRename}
+                                    onKeyDown={(event) => {
+                                      if (event.key !== "Enter") return;
+                                      event.preventDefault();
+                                      event.currentTarget.blur();
+                                    }}
+                                  />
+                                  {normalizedDraft && normalizedDraft !== variable.name ? (
+                                    <div className="mt-1 text-[11px] text-[color:var(--pf-text-tertiary)]">
+                                      Saves as{" "}
+                                      <span className="font-mono text-[color:var(--pf-text-secondary)]">
+                                        {normalizedDraft}
+                                      </span>
+                                      .
+                                    </div>
+                                  ) : null}
+                                </label>
+
+                                <label className="block text-xs text-[color:var(--pf-text-tertiary)]">
+                                  Type
+                                  <select
+                                    className="mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
+                                    value={variable.type}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => ({
+                                        ...prompt,
+                                        variables: prompt.variables.map((item) =>
+                                          item.name === variable.name
+                                            ? {
+                                                ...item,
+                                                type: event.target.value as VariableType,
+                                                options:
+                                                  event.target.value === "enum"
+                                                    ? item.options || optionSets[0].options
+                                                    : item.options,
+                                              }
+                                            : item
+                                        ),
+                                      }))
+                                    }
+                                  >
+                                    {["string", "text", "number", "boolean", "enum"].map((type) => (
+                                      <option key={type} value={type}>
+                                        {type}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+
+                              <div className="mt-3 flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2">
+                                <div className="text-xs text-[color:var(--pf-text-tertiary)]">Required</div>
+                                <Toggle
+                                  checked={variable.required}
+                                  aria-label={`Required: ${variable.name}`}
+                                  onCheckedChange={(checked) =>
+                                    updatePrompt((prompt) => ({
+                                      ...prompt,
+                                      variables: prompt.variables.map((item) =>
+                                        item.name === variable.name ? { ...item, required: checked } : item
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </div>
+
+                              <div className="mt-3 space-y-2">
+                                <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                                  Default
+                                </div>
+
+                                {variable.type === "boolean" ? (
+                                  <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2">
+                                    <div className="text-xs text-[color:var(--pf-text-tertiary)]">False / True</div>
+                                    <Toggle
+                                      checked={variable.defaultValue === "true"}
+                                      aria-label={`Default: ${variable.name}`}
+                                      onCheckedChange={(checked) =>
+                                        updatePrompt((prompt) => {
+                                          const current = prompt.values[variable.name];
+                                          const oldDefault = variable.defaultValue === "true";
+                                          const shouldUpdateValue =
+                                            current === undefined || current === "" || Boolean(current) === oldDefault;
+                                          return {
+                                            ...prompt,
+                                            variables: prompt.variables.map((item) =>
+                                              item.name === variable.name
+                                                ? { ...item, defaultValue: checked ? "true" : "false" }
+                                                : item
+                                            ),
+                                            values: shouldUpdateValue
+                                              ? { ...prompt.values, [variable.name]: checked }
+                                              : prompt.values,
+                                          };
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                ) : variable.type === "enum" ? (
+                                  <select
+                                    className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
+                                    value={enumDefault}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => {
+                                        const current = prompt.values[variable.name];
+                                        const shouldUpdateValue =
+                                          current === undefined ||
+                                          current === "" ||
+                                          String(current) === variable.defaultValue;
+                                        return {
+                                          ...prompt,
+                                          variables: prompt.variables.map((item) =>
+                                            item.name === variable.name
+                                              ? { ...item, defaultValue: event.target.value }
+                                              : item
+                                          ),
+                                          values: shouldUpdateValue
+                                            ? { ...prompt.values, [variable.name]: event.target.value }
+                                            : prompt.values,
+                                        };
+                                      })
+                                    }
+                                  >
+                                    {enumOptions.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : variable.type === "number" ? (
+                                  <input
+                                    className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
+                                    type="number"
+                                    value={variable.defaultValue}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => {
+                                        const current = prompt.values[variable.name];
+                                        const oldDefault =
+                                          variable.defaultValue === "" ? null : Number(variable.defaultValue);
+                                        const currentNum =
+                                          current === undefined || current === ""
+                                            ? null
+                                            : typeof current === "number"
+                                              ? current
+                                              : Number(current);
+                                        const shouldUpdateValue =
+                                          current === undefined ||
+                                          current === "" ||
+                                          (oldDefault !== null && currentNum === oldDefault);
+                                        return {
+                                          ...prompt,
+                                          variables: prompt.variables.map((item) =>
+                                            item.name === variable.name
+                                              ? { ...item, defaultValue: event.target.value }
+                                              : item
+                                          ),
+                                          values: shouldUpdateValue
+                                            ? {
+                                                ...prompt.values,
+                                                [variable.name]:
+                                                  event.target.value === "" ? "" : Number(event.target.value),
+                                              }
+                                            : prompt.values,
+                                        };
+                                      })
+                                    }
+                                  />
+                                ) : (
+                                  <input
+                                    className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
+                                    value={variable.defaultValue}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => {
+                                        const current = prompt.values[variable.name];
+                                        const shouldUpdateValue =
+                                          current === undefined ||
+                                          current === "" ||
+                                          String(current) === variable.defaultValue;
+                                        return {
+                                          ...prompt,
+                                          variables: prompt.variables.map((item) =>
+                                            item.name === variable.name
+                                              ? { ...item, defaultValue: event.target.value }
+                                              : item
+                                          ),
+                                          values: shouldUpdateValue
+                                            ? { ...prompt.values, [variable.name]: event.target.value }
+                                            : prompt.values,
+                                        };
+                                      })
+                                    }
+                                  />
+                                )}
+                              </div>
+
+                              {variable.type === "enum" ? (
+                                <div className="mt-3 space-y-2">
+                                  <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                                    Options
+                                  </div>
+                                  <input
+                                    className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none"
+                                    value={enumOptions.join(", ")}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => ({
+                                        ...prompt,
+                                        variables: prompt.variables.map((item) =>
+                                          item.name === variable.name
+                                            ? {
+                                                ...item,
+                                                options: event.target.value
+                                                  .split(",")
+                                                  .map((option) => option.trim())
+                                                  .filter(Boolean),
+                                              }
+                                            : item
+                                        ),
+                                      }))
+                                    }
+                                    placeholder="concise, friendly, direct"
+                                  />
+                                </div>
+                              ) : null}
                             </div>
-                            <input
-                              className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-xs text-[color:var(--pf-text)] focus:outline-none"
-                              value={(variable.options || optionSets[0].options).join(", ")}
-                              onChange={(event) =>
-                                updatePrompt((prompt) => ({
-                                  ...prompt,
-                                  variables: prompt.variables.map((item) =>
-                                    item.name === variable.name
-                                      ? {
-                                          ...item,
-                                          options: event.target.value
-                                            .split(",")
-                                            .map((option) => option.trim())
-                                            .filter(Boolean),
-                                        }
-                                      : item
-                                  ),
-                                }))
-                              }
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
+                          );
+                        })
+                      ) : (
+                        <div className="rounded-[16px] border border-dashed border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-4 py-3 text-xs text-[color:var(--pf-text-tertiary)]">
+                          No variables yet. Use Extract variables or Add variable.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1339,7 +1592,7 @@ export default function Home() {
             <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
               Share link
             </div>
-            <div className="mt-2 flex items-center gap-2">
+            <div data-pf-video="share-link-row" className="mt-2 flex items-center gap-2">
               <input
                 readOnly
                 value={shareLink}
@@ -1514,109 +1767,121 @@ export default function Home() {
 	            </Button>
 	          </div>
 	        </div>
-	      </Modal>
+      </Modal>
 
       <Drawer
         open={isFillDrawerOpen}
-        title="Variables"
-        description="Fill in values for this prompt."
+        title={selectedPrompt.name}
+        description={`Fill ${selectedPrompt.variables.length} variable${
+          selectedPrompt.variables.length === 1 ? "" : "s"
+        }, then copy.`}
+        actions={
+          <Button type="button" size="sm" variant="secondary" onClick={handleResetValues}>
+            Reset
+          </Button>
+        }
+        footer={
+          <div className="flex flex-col gap-3">
+            {missingRequired.length ? (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-600">
+                Missing required:{" "}
+                <span className="font-semibold">
+                  {missingRequired.map((item) => humanizeVariableName(item.name)).join(", ")}
+                </span>
+                .
+              </div>
+            ) : (
+              <div className="text-xs text-[color:var(--pf-text-tertiary)]">Ready to copy.</div>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="primary"
+                onClick={() => handleCopy("plain")}
+                disabled={missingRequired.length > 0}
+              >
+                Copy
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => handleCopy("markdown")}
+                disabled={missingRequired.length > 0}
+              >
+                Copy Markdown
+              </Button>
+            </div>
+          </div>
+        }
         onClose={() => setIsFillDrawerOpen(false)}
       >
-        <div className="flex items-center justify-between gap-3">
-	          <div className="min-w-0">
-	            <div className="truncate text-sm font-semibold text-[color:var(--pf-text)]">
-	              {selectedPrompt.name}
-	            </div>
-            <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
-              {selectedPrompt.variables.length} variables
-	            </div>
-	          </div>
-	          <Button type="button" size="sm" variant="secondary" onClick={handleResetValues}>
-	            Reset
-	          </Button>
-	        </div>
-
-        <div className="mt-4 space-y-3">
-          {selectedPrompt.variables.map((variable) => {
+        <div data-pf-video="drawer-fields" className="space-y-2">
+          {sortedFillVariables.map((variable) => {
             const value = selectedPrompt.values[variable.name];
-            const common = {
-              className:
-                "mt-1 w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none",
-            };
-            if (variable.type === "text") {
-              return (
-                <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
-                  <span className="flex items-center gap-2">
-                    <span>{variable.name}</span>
-                    {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
-                        required
-                      </span>
-                    ) : null}
-                  </span>
-                  <textarea
-                    {...common}
-                    value={String(value ?? "")}
-                    className={`${common.className} min-h-28`}
-                    onChange={(event) =>
-                      updatePrompt((prompt) => ({
-                        ...prompt,
-                        values: { ...prompt.values, [variable.name]: event.target.value },
-                      }))
-                    }
-                  />
-                </label>
-              );
-            }
+            const commonClassName =
+              "w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none";
+            const header = (
+              <div className="flex min-w-0 items-center gap-2">
+                {variable.required ? (
+                  <span className="h-1.5 w-1.5 flex-none rounded-full bg-red-500" aria-hidden="true" />
+                ) : (
+                  <span className="h-1.5 w-1.5 flex-none rounded-full bg-transparent" aria-hidden="true" />
+                )}
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-[color:var(--pf-text)]">
+                    {humanizeVariableName(variable.name)}
+                  </div>
+                  <div className="truncate font-mono text-[11px] text-[color:var(--pf-text-tertiary)]">
+                    {"{{"}
+                    {variable.name}
+                    {"}}"}
+                  </div>
+                </div>
+              </div>
+            );
             if (variable.type === "enum") {
               const options = variable.options || optionSets[0].options;
-              const selectedValue =
-                value === undefined || value === "" ? variable.defaultValue : value;
+              const resolved = String(value ?? variable.defaultValue ?? "");
               return (
-                <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
-                  <span className="flex items-center gap-2">
-                    <span>{variable.name}</span>
-                    {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
-                        required
-                      </span>
-                    ) : null}
-                  </span>
-                  <select
-                    {...common}
-                    value={String(selectedValue)}
-                    onChange={(event) =>
-                      updatePrompt((prompt) => ({
-                        ...prompt,
-                        values: { ...prompt.values, [variable.name]: event.target.value },
-                      }))
-                    }
-                  >
-                    {options.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div
+                  key={variable.name}
+                  className="rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    {header}
+                    <div className="w-[210px] flex-none">
+                      <select
+                        className={commonClassName}
+                        value={resolved}
+                        onChange={(event) =>
+                          updatePrompt((prompt) => ({
+                            ...prompt,
+                            values: { ...prompt.values, [variable.name]: event.target.value },
+                          }))
+                        }
+                      >
+                        {options.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               );
             }
             if (variable.type === "boolean") {
               const boolValue =
                 value === undefined ? variable.defaultValue === "true" : Boolean(value);
               return (
-                <label
+                <div
                   key={variable.name}
-                  className="flex items-center justify-between gap-2 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2 text-sm text-[color:var(--pf-text-secondary)]"
+                  className="flex items-center justify-between gap-3 rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2"
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm">{variable.name}</span>
-                    {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
-                        required
-                      </span>
-                    ) : null}
-                  </span>
+                  {header}
                   <Toggle
                     checked={boolValue}
                     aria-label={variable.name}
@@ -1627,60 +1892,84 @@ export default function Home() {
                       }))
                     }
                   />
-                </label>
+                </div>
               );
             }
             if (variable.type === "number") {
+              const resolved = value ?? variable.defaultValue ?? "";
               return (
-                <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
-                  <span className="flex items-center gap-2">
-                    <span>{variable.name}</span>
-                    {variable.required ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
-                        required
-                      </span>
-                    ) : null}
-                  </span>
-                  <input
-                    {...common}
-                    type="number"
-                    value={String(value ?? "")}
+                <div
+                  key={variable.name}
+                  className="rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    {header}
+                    <div className="w-[210px] flex-none">
+                      <input
+                        className={commonClassName}
+                        type="number"
+                        value={String(resolved)}
+                        onChange={(event) =>
+                          updatePrompt((prompt) => ({
+                            ...prompt,
+                            values: {
+                              ...prompt.values,
+                              [variable.name]:
+                                event.target.value === "" ? "" : Number(event.target.value),
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            if (variable.type === "text") {
+              const resolved = String(value ?? variable.defaultValue ?? "");
+              return (
+                <div
+                  key={variable.name}
+                  className="rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2"
+                >
+                  {header}
+                  <textarea
+                    className={cx(commonClassName, "mt-2 min-h-[92px] resize-y")}
+                    value={resolved}
                     onChange={(event) =>
                       updatePrompt((prompt) => ({
                         ...prompt,
-                        values: {
-                          ...prompt.values,
-                          [variable.name]:
-                            event.target.value === "" ? "" : Number(event.target.value),
-                        },
+                        values: { ...prompt.values, [variable.name]: event.target.value },
                       }))
                     }
+                    placeholder="Type here…"
                   />
-                </label>
+                </div>
               );
             }
+            const resolved = String(value ?? variable.defaultValue ?? "");
             return (
-              <label key={variable.name} className="block text-xs text-[color:var(--pf-text-tertiary)]">
-                <span className="flex items-center gap-2">
-                  <span>{variable.name}</span>
-                  {variable.required ? (
-                    <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--pf-text-tertiary)]">
-                      required
-                    </span>
-                  ) : null}
-                </span>
-                <input
-                  {...common}
-                  type="text"
-                  value={String(value ?? "")}
-                  onChange={(event) =>
-                    updatePrompt((prompt) => ({
-                      ...prompt,
-                      values: { ...prompt.values, [variable.name]: event.target.value },
-                    }))
-                  }
-                />
-              </label>
+              <div
+                key={variable.name}
+                className="rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-3 py-2"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  {header}
+                  <div className="w-[210px] flex-none">
+                    <input
+                      className={commonClassName}
+                      type="text"
+                      value={resolved}
+                      onChange={(event) =>
+                        updatePrompt((prompt) => ({
+                          ...prompt,
+                          values: { ...prompt.values, [variable.name]: event.target.value },
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>

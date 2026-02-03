@@ -20,6 +20,14 @@ npm run dev:web
 npm run dev:video
 ```
 
+## Video assets
+The explainer video uses real screenshots from the web app plus highlight boxes.
+
+```bash
+cd video
+npm run capture:ui
+```
+
 ## Tests
 ```bash
 cd web

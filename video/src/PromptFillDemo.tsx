@@ -8,6 +8,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { HIGHLIGHTS_1280x720 } from "./ui/highlights";
 
 const grainSvg =
   "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221280%22 height=%22720%22%3E%3Cfilter id=%22n%22 x=%220%22 y=%220%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%221280%22 height=%22720%22 filter=%22url(%23n)%22 opacity=%220.25%22/%3E%3C/svg%3E";
@@ -150,6 +151,15 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
   const closingStart = 32 * fps; // 32s
   const totalFrames = 36 * fps; // 36s
 
+  /**
+   * Highlight boxes are based on Playwright-measured DOM bounding boxes at a
+   * 1280x720 viewport. If the UI layout changes, re-capture and update.
+   */
+  const uiLibraryBox = HIGHLIGHTS_1280x720.ui.library;
+  const uiCopyBox = HIGHLIGHTS_1280x720.ui.copyActions;
+  const drawerFieldsBox = HIGHLIGHTS_1280x720.drawer.fields;
+  const shareLinkBox = HIGHLIGHTS_1280x720.share.linkRow;
+
   return (
     <AbsoluteFill
       style={{
@@ -241,19 +251,19 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
             <Shot src={staticFile("ui/promptfill-ui-1280x720.png")} opacity={opacity} scale={scale}>
               <StepPill label="1 · Choose a prompt" accent={accent} opacity={highlightOpacity} />
               <HighlightBox
-                x={38}
-                y={110}
-                w={360}
-                h={540}
+                x={uiLibraryBox.x}
+                y={uiLibraryBox.y}
+                w={uiLibraryBox.w}
+                h={uiLibraryBox.h}
                 label="Library"
                 accent={accent}
                 opacity={highlightOpacity}
               />
               <HighlightBox
-                x={840}
-                y={258}
-                w={350}
-                h={64}
+                x={uiCopyBox.x}
+                y={uiCopyBox.y}
+                w={uiCopyBox.w}
+                h={uiCopyBox.h}
                 label="Copy anywhere"
                 accent={accent}
                 opacity={highlightOpacity}
@@ -273,10 +283,10 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
           <Shot src={staticFile("ui/promptfill-drawer-1280x720.png")} opacity={opacity} scale={scale}>
             <StepPill label="2 · Fill variables" accent={accent} opacity={highlightOpacity} />
             <HighlightBox
-              x={812}
-              y={58}
-              w={452}
-              h={604}
+              x={drawerFieldsBox.x}
+              y={drawerFieldsBox.y}
+              w={drawerFieldsBox.w}
+              h={drawerFieldsBox.h}
               label="Dropdowns, text, booleans"
               accent={accent}
               opacity={highlightOpacity}
@@ -295,10 +305,10 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
           <Shot src={staticFile("ui/promptfill-share-1280x720.png")} opacity={opacity} scale={scale}>
             <StepPill label="3 · Share and reuse" accent={accent} opacity={highlightOpacity} />
             <HighlightBox
-              x={338}
-              y={96}
-              w={604}
-              h={520}
+              x={shareLinkBox.x}
+              y={shareLinkBox.y}
+              w={shareLinkBox.w}
+              h={shareLinkBox.h}
               label="Send a link"
               accent={accent}
               opacity={highlightOpacity}
