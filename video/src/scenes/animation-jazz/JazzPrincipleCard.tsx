@@ -11,231 +11,150 @@ import {
 type Principle = {
   number: number;
   name: string;
-  subtitle: string;
-  lines: string[];
-  tip: string;
+  explanation: string;
+  keyPoint: string;
 };
 
 type JazzPrincipleCardProps = {
   principle: Principle;
-  gold: string;
+  index: number;
+  total: number;
+  amber: string;
   cream: string;
-  burgundy: string;
-  totalPrinciples: number;
+  brown: string;
+  warmBlack: string;
 };
 
-// Large, clear animated demonstrations for each principle
+// Large, clear animated demonstrations
 const PrincipleDemo: React.FC<{
-  principleNumber: number;
+  num: number;
   frame: number;
-  gold: string;
+  amber: string;
   cream: string;
-  burgundy: string;
-}> = ({ principleNumber, frame, gold, cream, burgundy }) => {
-  // Larger demo area: 320x240
-  const W = 320;
-  const H = 240;
+  brown: string;
+}> = ({ num, frame, amber, cream, brown }) => {
+  const W = 400;
+  const H = 300;
 
   const demos: Record<number, React.ReactNode> = {
-    // 1. Squash & Stretch - clear bouncing ball demonstration
+    // 1. Squash & Stretch
     1: (() => {
-      const cycle = (frame % 90) / 90;
-      const bounceY = Math.abs(Math.sin(cycle * Math.PI));
-      const y = 40 + (1 - bounceY) * 140;
-      const impactProximity = Math.max(0, 1 - (180 - y) / 30);
-      const squashX = 1 + impactProximity * 0.4;
-      const squashY = 1 - impactProximity * 0.3;
-      const stretchAmount = bounceY > 0.85 ? (bounceY - 0.85) * 4 : 0;
-      const stretchX = 1 - stretchAmount * 0.2;
-      const stretchY = 1 + stretchAmount * 0.3;
+      const cycle = (frame % 80) / 80;
+      const bounce = Math.abs(Math.sin(cycle * Math.PI));
+      const y = 50 + (1 - bounce) * 180;
+      const impact = Math.max(0, 1 - (230 - y) / 40);
+      const squashX = 1 + impact * 0.5;
+      const squashY = 1 - impact * 0.35;
+      const stretch = bounce > 0.8 ? (bounce - 0.8) * 5 : 0;
+      const stretchX = 1 - stretch * 0.25;
+      const stretchY = 1 + stretch * 0.35;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Ground */}
-          <line x1="40" y1="200" x2="280" y2="200" stroke={gold} strokeWidth="2" opacity="0.5" />
-
-          {/* Shadow */}
+          <line x1="50" y1="250" x2="350" y2="250" stroke={amber} strokeWidth="3" opacity="0.5" />
+          <ellipse cx="200" cy="260" rx={45 * squashX} ry="8" fill={amber} opacity={0.25 * (1 - bounce * 0.6)} />
           <ellipse
-            cx="160"
-            cy="205"
-            rx={30 * squashX}
-            ry="6"
-            fill={gold}
-            opacity={0.2 * (1 - bounceY * 0.7)}
-          />
-
-          {/* Ball */}
-          <ellipse
-            cx="160"
+            cx="200"
             cy={y}
-            rx={28 * squashX * stretchX}
-            ry={28 * squashY * stretchY}
-            fill={burgundy}
-            stroke={gold}
-            strokeWidth="3"
+            rx={40 * squashX * stretchX}
+            ry={40 * squashY * stretchY}
+            fill={brown}
+            stroke={amber}
+            strokeWidth="4"
           />
-
-          {/* Labels */}
-          {impactProximity > 0.3 && (
-            <g opacity={impactProximity}>
-              <text x="220" y={y + 5} fontSize="14" fill={cream} fontWeight="500">
-                SQUASH
-              </text>
-              <line x1="195" y1={y} x2="215" y2={y} stroke={cream} strokeWidth="1" opacity="0.5" />
-            </g>
+          {impact > 0.2 && (
+            <text x="290" y={y + 8} fontSize="22" fill={cream} fontWeight="600">
+              SQUASH
+            </text>
           )}
-          {stretchAmount > 0.1 && (
-            <g opacity={stretchAmount * 3}>
-              <text x="220" y={y} fontSize="14" fill={cream} fontWeight="500">
-                STRETCH
-              </text>
-              <line x1="195" y1={y} x2="215" y2={y} stroke={cream} strokeWidth="1" opacity="0.5" />
-            </g>
+          {stretch > 0.15 && (
+            <text x="290" y={y} fontSize="22" fill={cream} fontWeight="600">
+              STRETCH
+            </text>
           )}
-
-          {/* Volume indicator */}
-          <text x="160" y="230" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Volume stays constant
-          </text>
         </svg>
       );
     })(),
 
-    // 2. Anticipation - character jumping with clear wind-up
+    // 2. Anticipation
     2: (() => {
-      const cycle = (frame % 120) / 120;
-      let phase = "ready";
-      let bodyY = 120;
+      const cycle = (frame % 100) / 100;
+      let bodyY = 140;
       let crouch = 0;
-      let bodyScale = 1;
+      let phase = "";
 
       if (cycle < 0.35) {
-        // Wind-up phase
-        phase = "anticipate";
-        const t = cycle / 0.35;
-        crouch = Math.sin(t * Math.PI * 0.5) * 30;
-        bodyY = 120 + crouch;
-        bodyScale = 1 - t * 0.1;
+        phase = "wind-up";
+        crouch = Math.sin((cycle / 0.35) * Math.PI * 0.5) * 40;
+        bodyY = 140 + crouch;
       } else if (cycle < 0.5) {
-        // Jump phase
         phase = "jump";
-        const t = (cycle - 0.35) / 0.15;
-        bodyY = 150 - t * 110;
-        bodyScale = 1 + t * 0.15;
+        bodyY = 180 - ((cycle - 0.35) / 0.15) * 140;
       } else if (cycle < 0.65) {
-        // Fall phase
         phase = "fall";
-        const t = (cycle - 0.5) / 0.15;
-        bodyY = 40 + t * 110;
-        bodyScale = 1.15 - t * 0.15;
+        bodyY = 40 + ((cycle - 0.5) / 0.15) * 140;
       } else {
-        // Land and settle
-        phase = "settle";
-        const t = (cycle - 0.65) / 0.35;
-        crouch = Math.sin((1 - t) * Math.PI * 0.5) * 15;
-        bodyY = 150 - crouch * 0.5;
-        bodyScale = 1 - (1 - t) * 0.05;
+        phase = "land";
+        crouch = Math.sin(((1 - (cycle - 0.65) / 0.35)) * Math.PI * 0.5) * 20;
+        bodyY = 180 - crouch * 0.5;
       }
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Ground */}
-          <line x1="40" y1="200" x2="280" y2="200" stroke={gold} strokeWidth="2" opacity="0.5" />
-
-          {/* Character */}
-          <g transform={`translate(160, ${bodyY}) scale(${bodyScale})`}>
-            {/* Body */}
-            <ellipse cx="0" cy="25" rx="25" ry="22" fill={burgundy} stroke={gold} strokeWidth="2" />
-            {/* Head */}
-            <circle cx="0" cy="-5" r="18" fill={burgundy} stroke={gold} strokeWidth="2" />
-            {/* Eyes */}
-            <circle cx="-6" cy="-8" r="3" fill={cream} />
-            <circle cx="6" cy="-8" r="3" fill={cream} />
-            {/* Legs */}
-            <line x1="-10" y1="45" x2={-15 - crouch * 0.3} y2="75" stroke={gold} strokeWidth="4" strokeLinecap="round" />
-            <line x1="10" y1="45" x2={15 + crouch * 0.3} y2="75" stroke={gold} strokeWidth="4" strokeLinecap="round" />
+          <line x1="50" y1="260" x2="350" y2="260" stroke={amber} strokeWidth="3" opacity="0.5" />
+          <g transform={`translate(200, ${bodyY})`}>
+            <ellipse cx="0" cy="35" rx="35" ry="30" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="0" cy="-5" r="28" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="-10" cy="-10" r="5" fill={cream} />
+            <circle cx="10" cy="-10" r="5" fill={cream} />
+            <line x1="-18" y1="62" x2={-28 - crouch * 0.4} y2="115" stroke={amber} strokeWidth="6" strokeLinecap="round" />
+            <line x1="18" y1="62" x2={28 + crouch * 0.4} y2="115" stroke={amber} strokeWidth="6" strokeLinecap="round" />
           </g>
-
-          {/* Anticipation arrow and label */}
-          {phase === "anticipate" && crouch > 10 && (
-            <g opacity={crouch / 30}>
-              <path
-                d="M230 130 L230 160 M225 155 L230 160 L235 155"
-                fill="none"
-                stroke={gold}
-                strokeWidth="3"
-              />
-              <text x="230" y="180" fontSize="13" fill={gold} textAnchor="middle" fontWeight="500">
-                WIND-UP
-              </text>
-              <text x="230" y="195" fontSize="10" fill={`${cream}70`} textAnchor="middle">
-                prepares the jump
-              </text>
+          {phase === "wind-up" && crouch > 15 && (
+            <g opacity={crouch / 40}>
+              <path d="M300 180 L300 220 M290 210 L300 220 L310 210" fill="none" stroke={amber} strokeWidth="4" />
+              <text x="320" y="205" fontSize="20" fill={cream} fontWeight="600">WIND-UP</text>
             </g>
           )}
-
-          {/* Action label */}
-          {phase === "jump" && bodyY < 80 && (
+          {phase === "jump" && bodyY < 100 && (
             <g>
-              <text x="230" y="60" fontSize="13" fill={cream} textAnchor="middle" fontWeight="500">
-                ACTION
-              </text>
-              <path
-                d="M230 70 L230 40 M225 45 L230 40 L235 45"
-                fill="none"
-                stroke={cream}
-                strokeWidth="2"
-              />
+              <path d="M300 80 L300 40 M290 50 L300 40 L310 50" fill="none" stroke={cream} strokeWidth="4" />
+              <text x="320" y="65" fontSize="20" fill={cream} fontWeight="600">ACTION!</text>
             </g>
           )}
         </svg>
       );
     })(),
 
-    // 3. Staging - spotlight directing attention
+    // 3. Staging
     3: (() => {
-      const spotlightX = 160 + Math.sin(frame * 0.025) * 60;
-      const characterInSpot = Math.abs(spotlightX - 160) < 40;
+      const spotX = 200 + Math.sin(frame * 0.03) * 80;
+      const inSpot = Math.abs(spotX - 200) < 50;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Stage frame */}
-          <rect x="40" y="30" width="240" height="160" fill="none" stroke={gold} strokeWidth="1" opacity="0.3" />
-
-          {/* Spotlight cone */}
+          <rect x="40" y="40" width="320" height="210" fill="none" stroke={amber} strokeWidth="2" opacity="0.3" />
           <defs>
-            <linearGradient id="spotlight" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={gold} stopOpacity="0.3" />
-              <stop offset="100%" stopColor={gold} stopOpacity="0.05" />
+            <linearGradient id="spot3" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={amber} stopOpacity="0.4" />
+              <stop offset="100%" stopColor={amber} stopOpacity="0.05" />
             </linearGradient>
           </defs>
-          <path
-            d={`M${spotlightX} 0 L${spotlightX - 50} 200 L${spotlightX + 50} 200 Z`}
-            fill="url(#spotlight)"
-          />
-
-          {/* Main character (center) */}
-          <g opacity={characterInSpot ? 1 : 0.3}>
-            <ellipse cx="160" cy="145" rx="22" ry="18" fill={burgundy} stroke={gold} strokeWidth="2" />
-            <circle cx="160" cy="115" r="16" fill={burgundy} stroke={gold} strokeWidth="2" />
-            <circle cx="155" cy="112" r="3" fill={cream} />
-            <circle cx="165" cy="112" r="3" fill={cream} />
+          <path d={`M${spotX} 0 L${spotX - 60} 280 L${spotX + 60} 280 Z`} fill="url(#spot3)" />
+          <g opacity={inSpot ? 1 : 0.25}>
+            <ellipse cx="200" cy="195" rx="35" ry="28" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="200" cy="150" r="28" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="192" cy="145" r="5" fill={cream} />
+            <circle cx="208" cy="145" r="5" fill={cream} />
           </g>
-
-          {/* Background characters (dimmed) */}
           <g opacity="0.2">
-            <ellipse cx="80" cy="155" rx="14" ry="12" fill={cream} />
-            <circle cx="80" cy="135" r="10" fill={cream} />
-            <ellipse cx="240" cy="155" rx="14" ry="12" fill={cream} />
-            <circle cx="240" cy="135" r="10" fill={cream} />
+            <ellipse cx="90" cy="205" rx="20" ry="16" fill={cream} />
+            <circle cx="90" cy="175" r="14" fill={cream} />
+            <ellipse cx="310" cy="205" rx="20" ry="16" fill={cream} />
+            <circle cx="310" cy="175" r="14" fill={cream} />
           </g>
-
-          {/* Label */}
-          <text x="160" y="210" fontSize="12" fill={characterInSpot ? gold : `${cream}50`} textAnchor="middle" fontWeight="500">
-            {characterInSpot ? "CLEAR FOCUS" : "attention wanders..."}
-          </text>
-          <text x="160" y="228" fontSize="10" fill={`${cream}50`} textAnchor="middle">
-            Direct the viewer's eye
+          <text x="200" y="270" fontSize="20" fill={inSpot ? amber : `${cream}66`} textAnchor="middle" fontWeight="600">
+            {inSpot ? "CLEAR FOCUS" : "Focus lost..."}
           </text>
         </svg>
       );
@@ -243,824 +162,412 @@ const PrincipleDemo: React.FC<{
 
     // 4. Straight Ahead vs Pose to Pose
     4: (() => {
-      const t = (frame % 150) / 150;
+      const t = (frame % 120) / 120;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Straight Ahead section */}
-          <text x="160" y="30" fontSize="13" fill={gold} textAnchor="middle" fontWeight="500">
-            STRAIGHT AHEAD
-          </text>
-          <text x="160" y="45" fontSize="10" fill={`${cream}60`} textAnchor="middle">
-            Frame by frame, spontaneous
-          </text>
-
-          {/* Continuous wavy path */}
+          <text x="200" y="35" fontSize="18" fill={amber} textAnchor="middle" fontWeight="600">STRAIGHT AHEAD</text>
+          <text x="200" y="55" fontSize="14" fill={`${cream}88`} textAnchor="middle">Frame by frame, spontaneous</text>
           <path
-            d={`M50 80 ${[...Array(Math.floor(t * 12))].map((_, i) => {
-              const x = 50 + i * 20;
-              const y = 80 + Math.sin(i * 0.7 + frame * 0.05) * 15;
+            d={`M50 100 ${[...Array(Math.floor(t * 14))].map((_, i) => {
+              const x = 50 + i * 22;
+              const y = 100 + Math.sin(i * 0.6 + frame * 0.04) * 20;
               return `L${x} ${y}`;
             }).join(" ")}`}
             fill="none"
             stroke={cream}
-            strokeWidth="3"
+            strokeWidth="4"
             strokeLinecap="round"
           />
-          <circle
-            cx={50 + t * 220}
-            cy={80 + Math.sin(t * 8 + frame * 0.05) * 15}
-            r="10"
-            fill={burgundy}
-            stroke={gold}
-            strokeWidth="2"
-          />
+          <circle cx={50 + t * 300} cy={100 + Math.sin(t * 8 + frame * 0.04) * 20} r="14" fill={brown} stroke={amber} strokeWidth="3" />
 
-          {/* Divider */}
-          <line x1="80" y1="120" x2="240" y2="120" stroke={gold} strokeWidth="1" opacity="0.3" />
+          <line x1="50" y1="150" x2="350" y2="150" stroke={amber} strokeWidth="1" opacity="0.3" />
 
-          {/* Pose to Pose section */}
-          <text x="160" y="145" fontSize="13" fill={gold} textAnchor="middle" fontWeight="500">
-            POSE TO POSE
-          </text>
-          <text x="160" y="160" fontSize="10" fill={`${cream}60`} textAnchor="middle">
-            Key poses first, then in-betweens
-          </text>
-
-          {/* Key pose markers */}
+          <text x="200" y="185" fontSize="18" fill={amber} textAnchor="middle" fontWeight="600">POSE TO POSE</text>
+          <text x="200" y="205" fontSize="14" fill={`${cream}88`} textAnchor="middle">Key poses first, then fill in</text>
           {[0, 0.33, 0.66, 1].map((pos, i) => (
             <g key={i}>
               <circle
-                cx={50 + pos * 220}
-                cy="185"
-                r="12"
-                fill={t > pos ? burgundy : "transparent"}
-                stroke={gold}
-                strokeWidth="2"
-                strokeDasharray={t > pos ? "0" : "4 4"}
+                cx={50 + pos * 300}
+                cy="245"
+                r="16"
+                fill={t > pos ? brown : "transparent"}
+                stroke={amber}
+                strokeWidth="3"
+                strokeDasharray={t > pos ? "0" : "6 6"}
               />
-              <text
-                x={50 + pos * 220}
-                y="215"
-                fontSize="10"
-                fill={t > pos ? cream : `${cream}40`}
-                textAnchor="middle"
-              >
-                {["KEY A", "KEY B", "KEY C", "KEY D"][i]}
+              <text x={50 + pos * 300} y="280" fontSize="14" fill={t > pos ? cream : `${cream}55`} textAnchor="middle">
+                {["A", "B", "C", "D"][i]}
               </text>
             </g>
           ))}
-
-          {/* In-between line */}
-          <line
-            x1="50"
-            y1="185"
-            x2={50 + Math.min(t, 1) * 220}
-            y2="185"
-            stroke={`${cream}40`}
-            strokeWidth="1"
-            strokeDasharray="4 4"
-          />
+          <line x1="50" y1="245" x2={50 + Math.min(t, 1) * 300} y2="245" stroke={`${cream}44`} strokeWidth="2" strokeDasharray="6 6" />
         </svg>
       );
     })(),
 
-    // 5. Follow Through & Overlapping - pendulum/tail motion
+    // 5. Follow Through
     5: (() => {
-      const swing = Math.sin(frame * 0.06);
-      const delay1 = Math.sin(frame * 0.06 - 0.4);
-      const delay2 = Math.sin(frame * 0.06 - 0.8);
-      const delay3 = Math.sin(frame * 0.06 - 1.2);
+      const swing = Math.sin(frame * 0.05);
+      const d1 = Math.sin(frame * 0.05 - 0.5);
+      const d2 = Math.sin(frame * 0.05 - 1.0);
+      const d3 = Math.sin(frame * 0.05 - 1.5);
 
-      const baseX = 160;
+      const baseX = 200;
       const baseY = 50;
-
-      // Calculate pendulum positions
-      const seg1X = baseX + swing * 40;
-      const seg1Y = baseY + 50;
-      const seg2X = seg1X + delay1 * 30;
-      const seg2Y = seg1Y + 40;
-      const seg3X = seg2X + delay2 * 25;
-      const seg3Y = seg2Y + 35;
-      const seg4X = seg3X + delay3 * 20;
-      const seg4Y = seg3Y + 30;
+      const s1X = baseX + swing * 60, s1Y = baseY + 70;
+      const s2X = s1X + d1 * 45, s2Y = s1Y + 55;
+      const s3X = s2X + d2 * 35, s3Y = s2Y + 45;
+      const s4X = s3X + d3 * 25, s4Y = s3Y + 35;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Pivot point */}
-          <circle cx={baseX} cy={baseY} r="8" fill={gold} />
+          <circle cx={baseX} cy={baseY} r="12" fill={amber} />
+          <line x1={baseX} y1={baseY} x2={s1X} y2={s1Y} stroke={amber} strokeWidth="8" strokeLinecap="round" />
+          <circle cx={s1X} cy={s1Y} r="20" fill={brown} stroke={amber} strokeWidth="3" />
+          <line x1={s1X} y1={s1Y} x2={s2X} y2={s2Y} stroke={amber} strokeWidth="6" strokeLinecap="round" />
+          <circle cx={s2X} cy={s2Y} r="16" fill={brown} stroke={amber} strokeWidth="3" opacity="0.85" />
+          <line x1={s2X} y1={s2Y} x2={s3X} y2={s3Y} stroke={amber} strokeWidth="5" strokeLinecap="round" />
+          <circle cx={s3X} cy={s3Y} r="12" fill={brown} stroke={amber} strokeWidth="2" opacity="0.7" />
+          <line x1={s3X} y1={s3Y} x2={s4X} y2={s4Y} stroke={amber} strokeWidth="4" strokeLinecap="round" />
+          <circle cx={s4X} cy={s4Y} r="8" fill={brown} stroke={amber} strokeWidth="2" opacity="0.55" />
 
-          {/* Segments with decreasing delay */}
-          <line x1={baseX} y1={baseY} x2={seg1X} y2={seg1Y} stroke={gold} strokeWidth="6" strokeLinecap="round" />
-          <circle cx={seg1X} cy={seg1Y} r="12" fill={burgundy} stroke={gold} strokeWidth="2" />
-
-          <line x1={seg1X} y1={seg1Y} x2={seg2X} y2={seg2Y} stroke={gold} strokeWidth="5" strokeLinecap="round" />
-          <circle cx={seg2X} cy={seg2Y} r="10" fill={burgundy} stroke={gold} strokeWidth="2" opacity="0.85" />
-
-          <line x1={seg2X} y1={seg2Y} x2={seg3X} y2={seg3Y} stroke={gold} strokeWidth="4" strokeLinecap="round" />
-          <circle cx={seg3X} cy={seg3Y} r="8" fill={burgundy} stroke={gold} strokeWidth="2" opacity="0.7" />
-
-          <line x1={seg3X} y1={seg3Y} x2={seg4X} y2={seg4Y} stroke={gold} strokeWidth="3" strokeLinecap="round" />
-          <circle cx={seg4X} cy={seg4Y} r="6" fill={burgundy} stroke={gold} strokeWidth="2" opacity="0.55" />
-
-          {/* Labels */}
-          <text x="60" y="100" fontSize="11" fill={cream} opacity="0.8">Main mass</text>
-          <text x="60" y="115" fontSize="11" fill={cream} opacity="0.8">leads</text>
-
-          <text x="240" y="180" fontSize="11" fill={gold}>Tail drags</text>
-          <text x="240" y="195" fontSize="11" fill={gold}>behind</text>
-
-          <text x="160" y="230" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Each part follows at its own rate
-          </text>
+          <text x="60" y="100" fontSize="16" fill={cream}>Main mass</text>
+          <text x="60" y="120" fontSize="16" fill={cream}>leads</text>
+          <text x="300" y="230" fontSize="16" fill={amber}>Tail drags</text>
+          <text x="300" y="250" fontSize="16" fill={amber}>behind</text>
         </svg>
       );
     })(),
 
-    // 6. Slow In & Slow Out - easing comparison
+    // 6. Slow In & Slow Out
     6: (() => {
-      const cycle = (frame % 120) / 120;
-      const linearPos = cycle;
-      // Ease in-out cubic
-      const easedPos = cycle < 0.5
-        ? 4 * cycle * cycle * cycle
-        : 1 - Math.pow(-2 * cycle + 2, 3) / 2;
+      const cycle = (frame % 100) / 100;
+      const linear = cycle;
+      const eased = cycle < 0.5 ? 4 * cycle * cycle * cycle : 1 - Math.pow(-2 * cycle + 2, 3) / 2;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Linear motion */}
-          <text x="45" y="45" fontSize="12" fill={gold} fontWeight="500">LINEAR</text>
-          <text x="45" y="60" fontSize="10" fill={`${cream}50`}>Constant speed</text>
-
-          <line x1="45" y1="80" x2="275" y2="80" stroke={gold} strokeWidth="1" opacity="0.3" />
-
-          {/* Evenly spaced tick marks for linear */}
-          {[0, 0.2, 0.4, 0.6, 0.8, 1].map((pos, i) => (
-            <line key={i} x1={45 + pos * 230} y1="75" x2={45 + pos * 230} y2="85" stroke={gold} strokeWidth="1" opacity="0.5" />
+          <text x="50" y="45" fontSize="18" fill={amber} fontWeight="600">LINEAR</text>
+          <text x="50" y="65" fontSize="14" fill={`${cream}77`}>Constant speed (mechanical)</text>
+          <line x1="50" y1="95" x2="350" y2="95" stroke={amber} strokeWidth="2" opacity="0.4" />
+          {[0, 0.2, 0.4, 0.6, 0.8, 1].map((p, i) => (
+            <circle key={i} cx={50 + p * 300} cy="95" r="4" fill={amber} opacity="0.5" />
           ))}
+          <circle cx={50 + linear * 300} cy="95" r="18" fill={cream} stroke={amber} strokeWidth="2" opacity="0.7" />
 
-          <circle cx={45 + linearPos * 230} cy="80" r="14" fill={cream} stroke={gold} strokeWidth="2" opacity="0.6" />
-
-          {/* Eased motion */}
-          <text x="45" y="130" fontSize="12" fill={gold} fontWeight="500">EASED</text>
-          <text x="45" y="145" fontSize="10" fill={`${cream}50`}>Slow in, slow out</text>
-
-          <line x1="45" y1="165" x2="275" y2="165" stroke={gold} strokeWidth="1" opacity="0.3" />
-
-          {/* Clustered tick marks for eased */}
-          {[0, 0.02, 0.06, 0.15, 0.5, 0.85, 0.94, 0.98, 1].map((pos, i) => (
-            <line key={i} x1={45 + pos * 230} y1="160" x2={45 + pos * 230} y2="170" stroke={gold} strokeWidth="1" opacity="0.5" />
+          <text x="50" y="160" fontSize="18" fill={amber} fontWeight="600">EASED</text>
+          <text x="50" y="180" fontSize="14" fill={`${cream}77`}>Slow in, slow out (natural)</text>
+          <line x1="50" y1="210" x2="350" y2="210" stroke={amber} strokeWidth="2" opacity="0.4" />
+          {[0, 0.03, 0.08, 0.18, 0.5, 0.82, 0.92, 0.97, 1].map((p, i) => (
+            <circle key={i} cx={50 + p * 300} cy="210" r="4" fill={amber} opacity="0.5" />
           ))}
+          <circle cx={50 + eased * 300} cy="210" r="18" fill={brown} stroke={amber} strokeWidth="3" />
 
-          <circle cx={45 + easedPos * 230} cy="165" r="14" fill={burgundy} stroke={gold} strokeWidth="2" />
-
-          {/* Labels at ends */}
-          <text x="45" y="200" fontSize="10" fill={cream} opacity="0.7">Slow out</text>
-          <text x="255" y="200" fontSize="10" fill={cream} opacity="0.7">Slow in</text>
-
-          <text x="160" y="228" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            More drawings at start and end
-          </text>
+          <text x="50" y="260" fontSize="14" fill={cream} opacity="0.7">Slow out →</text>
+          <text x="280" y="260" fontSize="14" fill={cream} opacity="0.7">← Slow in</text>
         </svg>
       );
     })(),
 
-    // 7. Arcs - curved vs straight path
+    // 7. Arcs
     7: (() => {
-      const t = (frame % 100) / 100;
-      const arcAngle = t * Math.PI;
-      const arcX = 160 + Math.cos(arcAngle - Math.PI / 2) * 80;
-      const arcY = 140 - Math.sin(arcAngle) * 90;
+      const t = (frame % 90) / 90;
+      const angle = t * Math.PI;
+      const arcX = 200 + Math.cos(angle - Math.PI / 2) * 120;
+      const arcY = 180 - Math.sin(angle) * 130;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Straight path (wrong) */}
-          <line
-            x1="80"
-            y1="140"
-            x2="240"
-            y2="140"
-            stroke={`${cream}20`}
-            strokeWidth="2"
-            strokeDasharray="8 8"
-          />
-          <text x="160" y="160" fontSize="10" fill={`${cream}30`} textAnchor="middle">
-            Mechanical (wrong)
-          </text>
-
-          {/* Arc path (correct) */}
-          <path
-            d="M80 140 Q160 30 240 140"
-            fill="none"
-            stroke={gold}
-            strokeWidth="2"
-            strokeDasharray="6 4"
-          />
-
-          {/* Position markers along arc */}
+          <text x="200" y="35" fontSize="20" fill={amber} textAnchor="middle" fontWeight="600">NATURAL ARC</text>
+          <line x1="80" y1="180" x2="320" y2="180" stroke={`${cream}30`} strokeWidth="2" strokeDasharray="10 10" />
+          <text x="200" y="205" fontSize="13" fill={`${cream}44`} textAnchor="middle">Straight = mechanical</text>
+          <path d="M80 180 Q200 30 320 180" fill="none" stroke={amber} strokeWidth="3" strokeDasharray="8 6" />
           {[0.15, 0.35, 0.5, 0.65, 0.85].map((pos, i) => {
             const a = pos * Math.PI;
-            const px = 160 + Math.cos(a - Math.PI / 2) * 80;
-            const py = 140 - Math.sin(a) * 90;
-            return <circle key={i} cx={px} cy={py} r="4" fill={gold} opacity="0.4" />;
+            return <circle key={i} cx={200 + Math.cos(a - Math.PI / 2) * 120} cy={180 - Math.sin(a) * 130} r="6" fill={amber} opacity="0.5" />;
           })}
-
-          {/* Moving ball */}
-          <circle
-            cx={arcX}
-            cy={arcY}
-            r="16"
-            fill={burgundy}
-            stroke={gold}
-            strokeWidth="3"
-          />
-
-          {/* Labels */}
-          <text x="160" y="25" fontSize="13" fill={gold} textAnchor="middle" fontWeight="500">
-            NATURAL ARC
-          </text>
-
-          {/* Endpoints */}
-          <circle cx="80" cy="140" r="6" fill={gold} opacity="0.5" />
-          <circle cx="240" cy="140" r="6" fill={gold} opacity="0.5" />
-
-          <text x="160" y="220" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Living things move in curves
-          </text>
+          <circle cx={arcX} cy={arcY} r="22" fill={brown} stroke={amber} strokeWidth="4" />
+          <circle cx="80" cy="180" r="10" fill={amber} opacity="0.6" />
+          <circle cx="320" cy="180" r="10" fill={amber} opacity="0.6" />
+          <text x="200" y="260" fontSize="16" fill={cream}>Living things move in curves</text>
         </svg>
       );
     })(),
 
-    // 8. Secondary Action - walking with arm swing
+    // 8. Secondary Action
     8: (() => {
-      const walkCycle = (frame % 60) / 60;
-      const bodyBob = Math.sin(walkCycle * Math.PI * 2) * 5;
-      const legSwing = Math.sin(walkCycle * Math.PI * 2) * 20;
-      const armSwing = Math.sin(walkCycle * Math.PI * 2 - 0.8) * 35;
+      const walk = (frame % 50) / 50;
+      const bob = Math.sin(walk * Math.PI * 2) * 8;
+      const leg = Math.sin(walk * Math.PI * 2) * 25;
+      const arm = Math.sin(walk * Math.PI * 2 - 1) * 40;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Ground */}
-          <line x1="40" y1="200" x2="280" y2="200" stroke={gold} strokeWidth="2" opacity="0.5" />
-
-          {/* Character */}
-          <g transform={`translate(160, ${100 + bodyBob})`}>
-            {/* Body */}
-            <ellipse cx="0" cy="30" rx="28" ry="25" fill={burgundy} stroke={gold} strokeWidth="2" />
-
-            {/* Head */}
-            <circle cx="0" cy="-5" r="20" fill={burgundy} stroke={gold} strokeWidth="2" />
-            <circle cx="-7" cy="-8" r="4" fill={cream} />
-            <circle cx="7" cy="-8" r="4" fill={cream} />
-            <path d="M-8 5 Q0 12 8 5" fill="none" stroke={cream} strokeWidth="2" />
-
-            {/* Arm (secondary action) */}
-            <line
-              x1="0"
-              y1="20"
-              x2={Math.sin(armSwing * Math.PI / 180) * 35}
-              y2={55 + Math.cos(armSwing * Math.PI / 180) * 25}
-              stroke={gold}
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-
-            {/* Legs (main action) */}
-            <line
-              x1="-12"
-              y1="52"
-              x2={-20 + legSwing}
-              y2="95"
-              stroke={gold}
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-            <line
-              x1="12"
-              y1="52"
-              x2={20 - legSwing}
-              y2="95"
-              stroke={gold}
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
+          <line x1="50" y1="260" x2="350" y2="260" stroke={amber} strokeWidth="3" opacity="0.5" />
+          <g transform={`translate(200, ${130 + bob})`}>
+            <ellipse cx="0" cy="40" rx="40" ry="35" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="0" cy="-10" r="30" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="-10" cy="-15" r="6" fill={cream} />
+            <circle cx="10" cy="-15" r="6" fill={cream} />
+            <path d="M-12 5 Q0 15 12 5" fill="none" stroke={cream} strokeWidth="3" />
+            <line x1="0" y1="25" x2={Math.sin(arm * Math.PI / 180) * 45} y2={75 + Math.cos(arm * Math.PI / 180) * 30} stroke={amber} strokeWidth="7" strokeLinecap="round" />
+            <line x1="-18" y1="72" x2={-25 + leg} y2="125" stroke={amber} strokeWidth="7" strokeLinecap="round" />
+            <line x1="18" y1="72" x2={25 - leg} y2="125" stroke={amber} strokeWidth="7" strokeLinecap="round" />
           </g>
-
-          {/* Labels */}
-          <text x="60" y="80" fontSize="11" fill={cream}>MAIN ACTION:</text>
-          <text x="60" y="95" fontSize="12" fill={gold} fontWeight="500">Walking</text>
-
-          <text x="230" y="140" fontSize="11" fill={cream}>SECONDARY:</text>
-          <text x="230" y="155" fontSize="12" fill={gold} fontWeight="500">Arm swing</text>
-
-          <text x="160" y="230" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Supporting details add personality
-          </text>
+          <text x="60" y="80" fontSize="16" fill={cream}>PRIMARY:</text>
+          <text x="60" y="100" fontSize="18" fill={amber} fontWeight="600">Walking</text>
+          <text x="280" y="180" fontSize="16" fill={cream}>SECONDARY:</text>
+          <text x="280" y="200" fontSize="18" fill={amber} fontWeight="600">Arm swing</text>
         </svg>
       );
     })(),
 
-    // 9. Timing - weight through speed
+    // 9. Timing
     9: (() => {
-      const fastCycle = ((frame * 3) % 120) / 120;
-      const slowCycle = (frame % 120) / 120;
+      const fast = ((frame * 3) % 100) / 100;
+      const slow = (frame % 100) / 100;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Fast/Light */}
-          <text x="45" y="40" fontSize="12" fill={gold} fontWeight="500">FAST = LIGHT</text>
-          <text x="200" y="40" fontSize="10" fill={`${cream}50`}>few frames</text>
+          <text x="50" y="40" fontSize="18" fill={amber} fontWeight="600">FAST = LIGHT</text>
+          <text x="280" y="40" fontSize="14" fill={`${cream}77`}>Few frames</text>
+          <line x1="50" y1="80" x2="350" y2="80" stroke={amber} strokeWidth="2" opacity="0.4" />
+          <circle cx={50 + fast * 300} cy="80" r="16" fill={cream} stroke={amber} strokeWidth="2" />
+          <ellipse cx={50 + fast * 300 - 20} cy="80" rx="30" ry="10" fill={cream} opacity="0.15" />
 
-          <line x1="45" y1="70" x2="275" y2="70" stroke={gold} strokeWidth="1" opacity="0.3" />
+          <text x="50" y="160" fontSize="18" fill={amber} fontWeight="600">SLOW = HEAVY</text>
+          <text x="280" y="160" fontSize="14" fill={`${cream}77`}>Many frames</text>
+          <line x1="50" y1="200" x2="350" y2="200" stroke={amber} strokeWidth="2" opacity="0.4" />
+          <circle cx={50 + slow * 300} cy="200" r="28" fill={brown} stroke={amber} strokeWidth="4" />
 
-          {/* Small light ball moving fast */}
-          <circle
-            cx={45 + fastCycle * 230}
-            cy="70"
-            r="12"
-            fill={cream}
-            stroke={gold}
-            strokeWidth="1.5"
-            opacity="0.9"
-          />
-          {/* Motion blur effect */}
-          <ellipse
-            cx={45 + fastCycle * 230 - 15}
-            cy="70"
-            rx="20"
-            ry="8"
-            fill={cream}
-            opacity="0.15"
-          />
-
-          {/* Slow/Heavy */}
-          <text x="45" y="130" fontSize="12" fill={gold} fontWeight="500">SLOW = HEAVY</text>
-          <text x="200" y="130" fontSize="10" fill={`${cream}50`}>many frames</text>
-
-          <line x1="45" y1="165" x2="275" y2="165" stroke={gold} strokeWidth="1" opacity="0.3" />
-
-          {/* Large heavy ball moving slow */}
-          <circle
-            cx={45 + slowCycle * 230}
-            cy="165"
-            r="22"
-            fill={burgundy}
-            stroke={gold}
-            strokeWidth="3"
-          />
-
-          {/* Frame count indicators */}
-          <text x="160" y="100" fontSize="10" fill={`${cream}40`} textAnchor="middle">↑ 4 frames to cross</text>
-          <text x="160" y="200" fontSize="10" fill={`${cream}40`} textAnchor="middle">↑ 12 frames to cross</text>
-
-          <text x="160" y="230" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Same distance, different weight
-          </text>
+          <text x="200" y="270" fontSize="16" fill={cream} textAnchor="middle">Same distance, different weight</text>
         </svg>
       );
     })(),
 
-    // 10. Exaggeration - normal vs pushed
+    // 10. Exaggeration
     10: (() => {
-      const pulse = (frame % 90) / 90;
-      const showPushed = pulse > 0.5;
-      const breathe = showPushed ? Math.sin(pulse * Math.PI * 4) * 0.08 + 1 : 1;
+      const cycle = (frame % 100) / 100;
+      const showPushed = cycle > 0.5;
+      const pulse = showPushed ? 1 + Math.sin(cycle * Math.PI * 6) * 0.08 : 1;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          {/* Normal version */}
-          <text x="90" y="30" fontSize="12" fill={showPushed ? `${gold}60` : gold} textAnchor="middle" fontWeight="500">
-            NORMAL
-          </text>
-
+          <text x="110" y="35" fontSize="18" fill={showPushed ? `${amber}77` : amber} textAnchor="middle" fontWeight="600">NORMAL</text>
           <g opacity={showPushed ? 0.4 : 1}>
-            <circle cx="90" cy="100" r="40" fill={burgundy} stroke={gold} strokeWidth="2" />
-            <circle cx="80" cy="90" r="6" fill={cream} />
-            <circle cx="100" cy="90" r="6" fill={cream} />
-            <circle cx="80" cy="92" r="2" fill="#0a1019" />
-            <circle cx="100" cy="92" r="2" fill="#0a1019" />
-            <path d="M75 115 Q90 125 105 115" fill="none" stroke={cream} strokeWidth="3" />
+            <circle cx="110" cy="130" r="55" fill={brown} stroke={amber} strokeWidth="3" />
+            <circle cx="95" cy="115" r="10" fill={cream} />
+            <circle cx="125" cy="115" r="10" fill={cream} />
+            <circle cx="95" cy="118" r="4" fill={`#1a1510`} />
+            <circle cx="125" cy="118" r="4" fill={`#1a1510`} />
+            <path d="M90 150 Q110 165 130 150" fill="none" stroke={cream} strokeWidth="4" />
           </g>
 
-          {/* Arrow */}
-          <path d="M145 100 L175 100 M168 93 L175 100 L168 107" fill="none" stroke={gold} strokeWidth="2" opacity={showPushed ? 1 : 0.4} />
-          <text x="160" y="130" fontSize="10" fill={gold} textAnchor="middle">PUSH IT</text>
+          <path d="M175 130 L225 130 M215 120 L225 130 L215 140" fill="none" stroke={amber} strokeWidth="3" opacity="0.7" />
+          <text x="200" y="170" fontSize="14" fill={amber} textAnchor="middle">PUSH IT</text>
 
-          {/* Exaggerated version */}
-          <text x="230" y="30" fontSize="12" fill={showPushed ? gold : `${gold}60`} textAnchor="middle" fontWeight="500">
-            EXAGGERATED
-          </text>
-
-          <g opacity={showPushed ? 1 : 0.4} transform={`translate(230, 100) scale(${breathe})`}>
-            <ellipse cx="0" cy="0" rx="50" ry="42" fill={burgundy} stroke={gold} strokeWidth="3" />
-            <ellipse cx="-15" cy="-12" rx="12" ry="15" fill={cream} />
-            <ellipse cx="15" cy="-12" rx="12" ry="15" fill={cream} />
-            <circle cx="-12" cy="-8" r="5" fill="#0a1019" />
-            <circle cx="18" cy="-8" r="5" fill="#0a1019" />
-            {/* Sparkle in eyes */}
-            <circle cx="-8" cy="-12" r="3" fill={cream} />
-            <circle cx="22" cy="-12" r="3" fill={cream} />
-            <path d="M-22 22 Q0 42 22 22" fill="none" stroke={cream} strokeWidth="5" />
+          <text x="290" y="35" fontSize="18" fill={showPushed ? amber : `${amber}77`} textAnchor="middle" fontWeight="600">EXAGGERATED</text>
+          <g opacity={showPushed ? 1 : 0.4} transform={`translate(290, 130) scale(${pulse})`}>
+            <ellipse cx="0" cy="0" rx="65" ry="55" fill={brown} stroke={amber} strokeWidth="4" />
+            <ellipse cx="-20" cy="-18" rx="16" ry="20" fill={cream} />
+            <ellipse cx="20" cy="-18" rx="16" ry="20" fill={cream} />
+            <circle cx="-16" cy="-12" r="7" fill={`#1a1510`} />
+            <circle cx="24" cy="-12" r="7" fill={`#1a1510`} />
+            <circle cx="-10" cy="-22" r="5" fill={cream} />
+            <circle cx="30" cy="-22" r="5" fill={cream} />
+            <path d="M-30 30 Q0 55 30 30" fill="none" stroke={cream} strokeWidth="6" />
           </g>
 
-          <text x="160" y="200" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Amplify the essence to make it read
-          </text>
+          <text x="200" y="250" fontSize="16" fill={cream} textAnchor="middle">Find the truth, then push it</text>
         </svg>
       );
     })(),
 
-    // 11. Solid Drawing - 3D form demonstration
+    // 11. Solid Drawing
     11: (() => {
-      const rotation = frame * 1.5;
-      const rotRad = (rotation * Math.PI) / 180;
+      const rot = (frame * 1.2 * Math.PI) / 180;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          <text x="160" y="30" fontSize="13" fill={gold} textAnchor="middle" fontWeight="500">
-            UNDERSTAND 3D FORM
-          </text>
-
-          {/* Construction lines */}
+          <text x="200" y="35" fontSize="20" fill={amber} textAnchor="middle" fontWeight="600">3D FORM & VOLUME</text>
           <g opacity="0.25">
-            <ellipse cx="160" cy="115" rx="70" ry="25" fill="none" stroke={gold} strokeDasharray="4 4" />
-            <line x1="160" y1="45" x2="160" y2="185" stroke={gold} strokeDasharray="4 4" />
-            <line x1="90" y1="115" x2="230" y2="115" stroke={gold} strokeDasharray="4 4" />
+            <ellipse cx="200" cy="150" rx="100" ry="35" fill="none" stroke={amber} strokeDasharray="6 6" />
+            <line x1="200" y1="50" x2="200" y2="250" stroke={amber} strokeDasharray="6 6" />
+            <line x1="100" y1="150" x2="300" y2="150" stroke={amber} strokeDasharray="6 6" />
           </g>
-
-          {/* 3D sphere */}
-          <circle cx="160" cy="115" r="60" fill={burgundy} stroke={gold} strokeWidth="3" />
-
-          {/* Rotating latitude line */}
-          <ellipse
-            cx="160"
-            cy="115"
-            rx={60 * Math.abs(Math.cos(rotRad))}
-            ry="60"
-            fill="none"
-            stroke={cream}
-            strokeWidth="2"
-            opacity="0.5"
-            transform="rotate(90 160 115)"
-          />
-
-          {/* Equator */}
-          <ellipse
-            cx="160"
-            cy="115"
-            rx="60"
-            ry={20 * Math.cos(rotRad * 0.5)}
-            fill="none"
-            stroke={cream}
-            strokeWidth="1.5"
-            opacity="0.4"
-          />
-
-          {/* Highlight for volume */}
-          <ellipse cx="135" cy="90" rx="18" ry="14" fill={cream} opacity="0.2" />
-
-          {/* Labels */}
-          <text x="70" y="80" fontSize="10" fill={cream} opacity="0.7">Form</text>
-          <text x="230" y="100" fontSize="10" fill={cream} opacity="0.7">Volume</text>
-          <text x="160" y="200" fontSize="10" fill={cream} opacity="0.7" textAnchor="middle">Weight</text>
-
-          <text x="160" y="225" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Characters exist in 3D space
-          </text>
+          <circle cx="200" cy="150" r="85" fill={brown} stroke={amber} strokeWidth="4" />
+          <ellipse cx="200" cy="150" rx={85 * Math.abs(Math.cos(rot))} ry="85" fill="none" stroke={cream} strokeWidth="2" opacity="0.5" transform="rotate(90 200 150)" />
+          <ellipse cx="200" cy="150" rx="85" ry={30 * Math.cos(rot * 0.5)} fill="none" stroke={cream} strokeWidth="2" opacity="0.4" />
+          <ellipse cx="170" cy="115" rx="25" ry="18" fill={cream} opacity="0.2" />
+          <text x="70" y="100" fontSize="16" fill={cream}>Form</text>
+          <text x="300" y="130" fontSize="16" fill={cream}>Volume</text>
+          <text x="200" y="270" fontSize="16" fill={cream} textAnchor="middle">Weight</text>
         </svg>
       );
     })(),
 
-    // 12. Appeal - appealing character design
+    // 12. Appeal
     12: (() => {
-      const blink = frame % 120 < 6;
-      const breathe = Math.sin(frame * 0.08) * 3;
+      const blink = frame % 100 < 5;
+      const breathe = Math.sin(frame * 0.07) * 4;
 
       return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-          <text x="160" y="25" fontSize="13" fill={gold} textAnchor="middle" fontWeight="500">
-            APPEALING DESIGN
-          </text>
-
-          {/* Character with appeal */}
-          <g transform={`translate(160, ${105 + breathe})`}>
-            {/* Big head (appealing proportion) */}
-            <ellipse cx="0" cy="0" rx="55" ry="48" fill={burgundy} stroke={gold} strokeWidth="3" />
-
-            {/* Big expressive eyes */}
+          <text x="200" y="30" fontSize="20" fill={amber} textAnchor="middle" fontWeight="600">APPEALING DESIGN</text>
+          <g transform={`translate(200, ${135 + breathe})`}>
+            <ellipse cx="0" cy="0" rx="70" ry="60" fill={brown} stroke={amber} strokeWidth="4" />
             {!blink ? (
               <>
-                <ellipse cx="-18" cy="-8" rx="16" ry="20" fill={cream} />
-                <ellipse cx="18" cy="-8" rx="16" ry="20" fill={cream} />
-                <circle cx="-14" cy="-4" r="8" fill="#0a1019" />
-                <circle cx="22" cy="-4" r="8" fill="#0a1019" />
-                {/* Sparkle */}
-                <circle cx="-10" cy="-10" r="4" fill={cream} />
-                <circle cx="26" cy="-10" r="4" fill={cream} />
+                <ellipse cx="-22" cy="-10" rx="20" ry="26" fill={cream} />
+                <ellipse cx="22" cy="-10" rx="20" ry="26" fill={cream} />
+                <circle cx="-18" cy="-4" r="10" fill={`#1a1510`} />
+                <circle cx="26" cy="-4" r="10" fill={`#1a1510`} />
+                <circle cx="-12" cy="-14" r="6" fill={cream} />
+                <circle cx="32" cy="-14" r="6" fill={cream} />
               </>
             ) : (
               <>
-                <path d="M-34 -8 Q-18 2 -2 -8" fill="none" stroke={cream} strokeWidth="3" />
-                <path d="M2 -8 Q18 2 34 -8" fill="none" stroke={cream} strokeWidth="3" />
+                <path d="M-42 -10 Q-22 5 -2 -10" fill="none" stroke={cream} strokeWidth="4" />
+                <path d="M2 -10 Q22 5 42 -10" fill="none" stroke={cream} strokeWidth="4" />
               </>
             )}
-
-            {/* Small cute nose */}
-            <ellipse cx="0" cy="15" rx="5" ry="3" fill={gold} opacity="0.6" />
-
-            {/* Friendly smile */}
-            <path d="M-20 28 Q0 45 20 28" fill="none" stroke={cream} strokeWidth="4" strokeLinecap="round" />
-
-            {/* Small body */}
-            <ellipse cx="0" cy="75" rx="30" ry="22" fill={burgundy} stroke={gold} strokeWidth="2" />
+            <ellipse cx="0" cy="20" rx="8" ry="5" fill={amber} opacity="0.6" />
+            <path d="M-28 40 Q0 65 28 40" fill="none" stroke={cream} strokeWidth="5" strokeLinecap="round" />
+            <ellipse cx="0" cy="100" rx="40" ry="28" fill={brown} stroke={amber} strokeWidth="3" />
           </g>
-
-          {/* Design principle labels */}
-          <text x="45" y="70" fontSize="10" fill={gold}>Big eyes</text>
-          <text x="45" y="85" fontSize="9" fill={`${cream}60`}>expressive</text>
-
-          <text x="250" y="70" fontSize="10" fill={gold}>Round shapes</text>
-          <text x="250" y="85" fontSize="9" fill={`${cream}60`}>friendly</text>
-
-          <text x="45" y="170" fontSize="10" fill={gold}>Big head</text>
-          <text x="45" y="185" fontSize="9" fill={`${cream}60`}>appealing ratio</text>
-
-          <text x="250" y="170" fontSize="10" fill={gold}>Personality</text>
-          <text x="250" y="185" fontSize="9" fill={`${cream}60`}>charisma</text>
-
-          <text x="160" y="230" fontSize="11" fill={`${cream}60`} textAnchor="middle">
-            Characters people want to watch
-          </text>
+          <text x="55" y="90" fontSize="14" fill={amber}>Big eyes</text>
+          <text x="55" y="108" fontSize="12" fill={`${cream}88`}>expressive</text>
+          <text x="310" y="90" fontSize="14" fill={amber}>Round shapes</text>
+          <text x="310" y="108" fontSize="12" fill={`${cream}88`}>friendly</text>
+          <text x="55" y="220" fontSize="14" fill={amber}>Big head ratio</text>
+          <text x="310" y="220" fontSize="14" fill={amber}>Personality</text>
         </svg>
       );
     })(),
   };
 
-  return (
-    <div
-      style={{
-        width: W,
-        height: H,
-        background: `linear-gradient(180deg, ${burgundy}15, ${burgundy}08)`,
-        borderRadius: 12,
-        border: `1px solid ${gold}25`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {demos[principleNumber]}
-    </div>
-  );
+  return demos[num] || null;
 };
 
 export const JazzPrincipleCard: React.FC<JazzPrincipleCardProps> = ({
   principle,
-  gold,
+  index,
+  total,
+  amber,
   cream,
-  burgundy,
-  totalPrinciples,
+  brown,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Timing for 10 seconds (300 frames):
-  // 0-30: Number and name fade in
-  // 30-60: Demo appears
-  // 60-100: First explanation line
-  // 100-140: Second line
-  // 140-180: Third line
-  // 180-220: Tip appears
-  // 220-270: Let it breathe
-  // 270-300: Fade out
-
-  const numberOpacity = interpolate(frame, [0, 25], [0, 1], {
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-
-  const titleSpring = spring({
-    fps,
-    frame: frame - 5,
-    config: { damping: 20, mass: 0.9 },
-  });
-
-  const demoOpacity = interpolate(frame, [25, 50], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const demoScale = interpolate(frame, [25, 55], [0.95, 1], {
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.cubic),
-  });
-
-  const line1Opacity = interpolate(frame, [55, 80], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const line2Opacity = interpolate(frame, [90, 115], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const line3Opacity = interpolate(frame, [125, 150], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const tipOpacity = interpolate(frame, [165, 195], [0, 1], {
-    extrapolateRight: "clamp",
-  });
-
-  const exitOpacity = interpolate(frame, [270, 300], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // Animation timing for 10.5 seconds (315 frames)
+  const numberSpring = spring({ fps, frame, config: { damping: 18, mass: 0.9 } });
+  const titleOpacity = interpolate(frame, [15, 40], [0, 1], { extrapolateRight: "clamp" });
+  const demoOpacity = interpolate(frame, [30, 60], [0, 1], { extrapolateRight: "clamp" });
+  const demoScale = interpolate(frame, [30, 65], [0.95, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const textOpacity = interpolate(frame, [70, 110], [0, 1], { extrapolateRight: "clamp" });
+  const keyOpacity = interpolate(frame, [140, 180], [0, 1], { extrapolateRight: "clamp" });
+  const exitOpacity = interpolate(frame, [280, 315], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill
-      style={{
-        padding: "45px 55px",
-        opacity: exitOpacity,
-      }}
-    >
-      {/* Top section: Number and Title */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          gap: 25,
-          marginBottom: 25,
-        }}
-      >
-        {/* Large principle number */}
+    <AbsoluteFill style={{ padding: "40px 50px", opacity: exitOpacity }}>
+      {/* Header: Number and Title */}
+      <div style={{ display: "flex", alignItems: "center", gap: 25, marginBottom: 20 }}>
         <div
           style={{
-            fontSize: 72,
-            fontWeight: 200,
-            color: gold,
+            fontSize: 80,
+            fontWeight: 300,
+            color: amber,
             lineHeight: 1,
-            opacity: numberOpacity,
+            transform: `scale(${numberSpring})`,
             minWidth: 100,
           }}
         >
           {String(principle.number).padStart(2, "0")}
         </div>
-
-        {/* Title block */}
-        <div
-          style={{
-            transform: `translateY(${(1 - titleSpring) * 15}px)`,
-            opacity: titleSpring,
-          }}
-        >
-          <div
+        <div style={{ opacity: titleOpacity }}>
+          <h2
             style={{
-              fontSize: 36,
-              fontWeight: 400,
+              fontSize: 42,
+              fontWeight: 500,
               color: cream,
-              letterSpacing: 1,
+              margin: 0,
               lineHeight: 1.1,
             }}
           >
             {principle.name}
-          </div>
-          <div
-            style={{
-              fontSize: 15,
-              color: gold,
-              fontStyle: "italic",
-              marginTop: 6,
-              letterSpacing: 2,
-            }}
-          >
-            {principle.subtitle}
+          </h2>
+          <div style={{ fontSize: 14, color: `${cream}77`, marginTop: 6 }}>
+            Principle {principle.number} of {total}
           </div>
         </div>
       </div>
 
-      {/* Main content: Demo (hero) + Text */}
-      <div
-        style={{
-          display: "flex",
-          gap: 45,
-          flex: 1,
-          alignItems: "center",
-        }}
-      >
-        {/* Demo - THE HERO */}
+      {/* Main content: Demo + Text */}
+      <div style={{ display: "flex", gap: 40, flex: 1, alignItems: "center" }}>
+        {/* Large Demo */}
         <div
           style={{
             opacity: demoOpacity,
             transform: `scale(${demoScale})`,
+            background: `linear-gradient(135deg, ${brown}40, ${brown}20)`,
+            borderRadius: 16,
+            border: `2px solid ${amber}30`,
+            padding: 15,
             flexShrink: 0,
           }}
         >
-          <PrincipleDemo
-            principleNumber={principle.number}
-            frame={frame}
-            gold={gold}
-            cream={cream}
-            burgundy={burgundy}
-          />
+          <PrincipleDemo num={principle.number} frame={frame} amber={amber} cream={cream} brown={brown} />
         </div>
 
-        {/* Explanation text - appears line by line */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 18,
-            flex: 1,
-          }}
-        >
-          {principle.lines.map((line, i) => (
-            <div
-              key={i}
-              style={{
-                fontSize: 19,
-                color: `${cream}dd`,
-                lineHeight: 1.5,
-                opacity: [line1Opacity, line2Opacity, line3Opacity][i],
-                transform: `translateX(${(1 - [line1Opacity, line2Opacity, line3Opacity][i]) * 20}px)`,
-              }}
-            >
-              {line}
-            </div>
-          ))}
-
-          {/* Tip */}
-          <div
+        {/* Text content */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 25 }}>
+          <p
             style={{
-              marginTop: 20,
-              padding: "16px 20px",
-              background: `${gold}12`,
-              borderLeft: `3px solid ${gold}`,
-              borderRadius: "0 8px 8px 0",
-              opacity: tipOpacity,
-              transform: `translateX(${(1 - tipOpacity) * 15}px)`,
+              fontSize: 22,
+              color: cream,
+              lineHeight: 1.6,
+              margin: 0,
+              opacity: textOpacity,
             }}
           >
-            <div
-              style={{
-                fontSize: 11,
-                letterSpacing: 3,
-                color: gold,
-                textTransform: "uppercase",
-                marginBottom: 8,
-              }}
-            >
-              Animator's Tip
+            {principle.explanation}
+          </p>
+
+          <div
+            style={{
+              opacity: keyOpacity,
+              background: `${amber}18`,
+              borderLeft: `4px solid ${amber}`,
+              padding: "16px 20px",
+              borderRadius: "0 10px 10px 0",
+            }}
+          >
+            <div style={{ fontSize: 12, letterSpacing: 2, color: amber, textTransform: "uppercase", marginBottom: 8 }}>
+              Key Insight
             </div>
-            <div
-              style={{
-                fontSize: 15,
-                color: `${cream}bb`,
-                lineHeight: 1.5,
-                fontStyle: "italic",
-              }}
-            >
-              {principle.tip}
-            </div>
+            <p style={{ fontSize: 18, color: cream, margin: 0, fontStyle: "italic" }}>
+              {principle.keyPoint}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 35,
-          left: 55,
-          right: 55,
-          display: "flex",
-          alignItems: "center",
-          gap: 15,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            color: `${cream}50`,
-            minWidth: 50,
-          }}
-        >
-          {principle.number} / {totalPrinciples}
-        </div>
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            gap: 6,
-          }}
-        >
-          {[...Array(totalPrinciples)].map((_, i) => (
+      <div style={{ position: "absolute", bottom: 35, left: 50, right: 50, display: "flex", alignItems: "center", gap: 15 }}>
+        <span style={{ fontSize: 14, color: `${cream}66`, minWidth: 60 }}>
+          {principle.number} of {total}
+        </span>
+        <div style={{ flex: 1, display: "flex", gap: 6 }}>
+          {[...Array(total)].map((_, i) => (
             <div
               key={i}
               style={{
                 flex: 1,
-                height: 3,
+                height: 4,
                 borderRadius: 2,
-                background: i < principle.number ? gold : `${cream}15`,
-                opacity: i === principle.number - 1 ? 1 : 0.7,
+                background: i < principle.number ? amber : `${cream}22`,
               }}
             />
           ))}

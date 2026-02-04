@@ -64,15 +64,16 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="AnimationPrinciplesJazz"
           component={AnimationPrinciplesJazz}
-          durationInFrames={140 * 30}
+          durationInFrames={150 * 30}
           fps={30}
           width={1280}
           height={720}
           defaultProps={
             {
-              gold: "#d4a574",
-              cream: "#f5f0e6",
-              burgundy: "#722f37",
+              amber: "#d4920a",
+              cream: "#faf6e9",
+              brown: "#3d2314",
+              warmBlack: "#1a1510",
             } satisfies AnimationPrinciplesJazzProps
           }
         />

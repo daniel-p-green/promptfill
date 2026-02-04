@@ -9,12 +9,17 @@ import {
 } from "remotion";
 
 type JazzClosingCardProps = {
-  gold: string;
+  amber: string;
   cream: string;
-  burgundy: string;
+  brown: string;
+  warmBlack: string;
 };
 
-export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({ gold, cream, burgundy }) => {
+export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({
+  amber,
+  cream,
+  brown,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -24,25 +29,34 @@ export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({ gold, cream, b
     config: { damping: 22, mass: 1 },
   });
 
-  const quoteOpacity = interpolate(frame, [50, 90], [0, 1], {
+  const quoteOpacity = interpolate(frame, [60, 100], [0, 1], {
     extrapolateRight: "clamp",
   });
 
-  const bookOpacity = interpolate(frame, [110, 150], [0, 1], {
+  const bookOpacity = interpolate(frame, [130, 170], [0, 1], {
     extrapolateRight: "clamp",
   });
 
-  const ctaOpacity = interpolate(frame, [170, 210], [0, 1], {
+  const ctaOpacity = interpolate(frame, [200, 250], [0, 1], {
     extrapolateRight: "clamp",
   });
 
-  const fadeOut = interpolate(frame, [270, 300], [1, 0], {
+  const fadeOut = interpolate(frame, [320, 360], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
+  // Musical notes animation
+  const notes = ["♩", "♪", "♫", "♬", "♪"];
+
   return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fadeOut }}>
+    <AbsoluteFill
+      style={{
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: fadeOut,
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -53,23 +67,54 @@ export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({ gold, cream, b
           opacity: mainSpring,
         }}
       >
-        {/* Large 12 */}
-        <div
-          style={{
-            fontSize: 130,
-            fontWeight: 200,
-            color: gold,
-            lineHeight: 1,
-            textShadow: `0 0 100px ${gold}35`,
-          }}
-        >
-          12
+        {/* Large 12 with musical notes */}
+        <div style={{ position: "relative" }}>
+          <div
+            style={{
+              fontSize: 140,
+              fontWeight: 200,
+              color: amber,
+              lineHeight: 1,
+            }}
+          >
+            12
+          </div>
+          {/* Floating notes around the number */}
+          {notes.map((note, i) => {
+            const delay = 30 + i * 20;
+            const noteOpacity = interpolate(frame, [delay, delay + 30], [0, 0.6], {
+              extrapolateRight: "clamp",
+            });
+            const noteY = Math.sin((frame - delay) * 0.04 + i) * 10;
+            const positions = [
+              { x: -80, y: -20 },
+              { x: 80, y: -30 },
+              { x: -60, y: 60 },
+              { x: 70, y: 50 },
+              { x: 0, y: -50 },
+            ];
+            return (
+              <span
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: `calc(50% + ${positions[i].x}px)`,
+                  top: `calc(50% + ${positions[i].y + noteY}px)`,
+                  fontSize: 24,
+                  color: i % 2 === 0 ? amber : cream,
+                  opacity: noteOpacity,
+                }}
+              >
+                {note}
+              </span>
+            );
+          })}
         </div>
 
         <div
           style={{
-            fontSize: 34,
-            letterSpacing: 10,
+            fontSize: 36,
+            letterSpacing: 8,
             color: cream,
             textTransform: "uppercase",
             marginTop: -5,
@@ -81,31 +126,42 @@ export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({ gold, cream, b
         {/* Divider */}
         <div
           style={{
-            width: 250,
-            height: 1,
-            background: `linear-gradient(90deg, transparent, ${gold}, transparent)`,
+            width: interpolate(frame, [40, 80], [0, 280], {
+              extrapolateRight: "clamp",
+              easing: Easing.out(Easing.cubic),
+            }),
+            height: 2,
+            background: `linear-gradient(90deg, transparent, ${amber}, transparent)`,
             margin: "35px 0",
           }}
         />
 
         {/* Quote */}
-        <div style={{ opacity: quoteOpacity, maxWidth: 550, marginBottom: 40 }}>
-          <div style={{ fontSize: 19, color: `${cream}bb`, fontStyle: "italic", lineHeight: 1.7 }}>
+        <div style={{ opacity: quoteOpacity, maxWidth: 600, marginBottom: 40 }}>
+          <p
+            style={{
+              fontSize: 22,
+              color: cream,
+              fontStyle: "italic",
+              lineHeight: 1.7,
+              margin: 0,
+            }}
+          >
             "You're not supposed to animate drawings.
             <br />
             You're supposed to animate feelings."
-          </div>
-          <div
+          </p>
+          <p
             style={{
-              marginTop: 18,
-              fontSize: 12,
-              color: gold,
-              letterSpacing: 4,
+              marginTop: 20,
+              fontSize: 14,
+              color: amber,
+              letterSpacing: 3,
               textTransform: "uppercase",
             }}
           >
             — Ollie Johnston
-          </div>
+          </p>
         </div>
 
         {/* Book reference */}
@@ -119,37 +175,72 @@ export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({ gold, cream, b
             marginBottom: 35,
           }}
         >
-          <div style={{ fontSize: 11, letterSpacing: 5, color: `${cream}50`, textTransform: "uppercase" }}>
-            From the Masterwork
-          </div>
-          <div style={{ fontSize: 26, color: cream, fontStyle: "italic" }}>
+          <p
+            style={{
+              fontSize: 12,
+              letterSpacing: 4,
+              color: `${cream}77`,
+              textTransform: "uppercase",
+              margin: 0,
+            }}
+          >
+            From the masterwork
+          </p>
+          <p
+            style={{
+              fontSize: 28,
+              color: cream,
+              fontStyle: "italic",
+              margin: 0,
+            }}
+          >
             "The Illusion of Life"
-          </div>
-          <div style={{ fontSize: 14, color: `${cream}70` }}>
+          </p>
+          <p
+            style={{
+              fontSize: 16,
+              color: `${cream}99`,
+              margin: 0,
+            }}
+          >
             Frank Thomas & Ollie Johnston · 1981
-          </div>
+          </p>
         </div>
 
         {/* CTA */}
-        <div style={{ opacity: ctaOpacity, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+        <div
+          style={{
+            opacity: ctaOpacity,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 18,
+          }}
+        >
           <div
             style={{
-              background: `linear-gradient(135deg, ${gold}, ${burgundy})`,
-              color: cream,
-              padding: "16px 40px",
-              borderRadius: 4,
-              fontSize: 14,
-              letterSpacing: 5,
+              background: amber,
+              color: brown,
+              padding: "18px 45px",
+              borderRadius: 8,
+              fontSize: 16,
+              letterSpacing: 4,
               textTransform: "uppercase",
-              fontWeight: 500,
-              boxShadow: `0 12px 50px ${gold}25`,
+              fontWeight: 600,
             }}
           >
             Now Bring Life to Your Work
           </div>
-          <div style={{ fontSize: 13, color: `${cream}50`, fontStyle: "italic" }}>
+          <p
+            style={{
+              fontSize: 14,
+              color: `${cream}77`,
+              fontStyle: "italic",
+              margin: 0,
+            }}
+          >
             Practice each principle. Master the fundamentals.
-          </div>
+          </p>
         </div>
       </div>
 
@@ -157,18 +248,37 @@ export const JazzClosingCard: React.FC<JazzClosingCardProps> = ({ gold, cream, b
       <div
         style={{
           position: "absolute",
-          bottom: 45,
+          bottom: 50,
           display: "flex",
           alignItems: "center",
           gap: 25,
           opacity: ctaOpacity,
         }}
       >
-        <div style={{ width: 50, height: 1, background: `linear-gradient(90deg, transparent, ${gold})` }} />
-        <div style={{ fontSize: 12, letterSpacing: 8, color: `${cream}40`, textTransform: "uppercase" }}>
+        <div
+          style={{
+            width: 60,
+            height: 1,
+            background: `linear-gradient(90deg, transparent, ${amber})`,
+          }}
+        />
+        <span
+          style={{
+            fontSize: 14,
+            letterSpacing: 6,
+            color: `${cream}55`,
+            textTransform: "uppercase",
+          }}
+        >
           Fin
-        </div>
-        <div style={{ width: 50, height: 1, background: `linear-gradient(90deg, ${gold}, transparent)` }} />
+        </span>
+        <div
+          style={{
+            width: 60,
+            height: 1,
+            background: `linear-gradient(90deg, ${amber}, transparent)`,
+          }}
+        />
       </div>
     </AbsoluteFill>
   );
