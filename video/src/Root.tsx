@@ -5,6 +5,10 @@ import {
   AnimationPrinciples,
   AnimationPrinciplesProps,
 } from "./AnimationPrinciples";
+import {
+  AnimationPrinciplesClassic,
+  AnimationPrinciplesClassicProps,
+} from "./AnimationPrinciplesClassic";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -37,6 +41,20 @@ export const RemotionRoot: React.FC = () => {
             {
               accent: "#f59e0b",
             } satisfies AnimationPrinciplesProps
+          }
+        />
+        <Composition
+          id="AnimationPrinciplesClassic"
+          component={AnimationPrinciplesClassic}
+          durationInFrames={60 * 30}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accentWarm: "#b45309",
+              accentCool: "#1e6091",
+            } satisfies AnimationPrinciplesClassicProps
           }
         />
       </Folder>
