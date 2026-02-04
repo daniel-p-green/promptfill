@@ -407,59 +407,6 @@ const Modal = ({
   );
 };
 
-const Drawer = ({
-  open,
-  title,
-  description,
-  actions,
-  children,
-  footer,
-  onClose,
-}: {
-  open: boolean;
-  title: string;
-  description?: string;
-  actions?: React.ReactNode;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-  onClose: () => void;
-}) => {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50">
-      <button
-        className="absolute inset-0 bg-black/30"
-        aria-label="Close drawer"
-        onClick={onClose}
-      />
-      <div className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col border-l border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] shadow-[var(--pf-shadow-elevated)]">
-        <div className="border-b border-[color:var(--pf-border)] px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="truncate text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
-              {description ? (
-                <div className="mt-1 text-sm text-[color:var(--pf-text-tertiary)]">{description}</div>
-              ) : null}
-            </div>
-            <div className="flex flex-none items-center gap-2">
-              {actions}
-              <Button type="button" size="sm" variant="secondary" onClick={onClose}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-auto px-6 py-5">{children}</div>
-        {footer ? (
-          <div className="border-t border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-6 py-4">
-            {footer}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-};
-
 export default function Home() {
   const [prompts, setPrompts] = useState<PromptItem[]>(defaultPrompts);
   const [selectedId, setSelectedId] = useState<string>(defaultPrompts()[0].id);
@@ -469,7 +416,7 @@ export default function Home() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVariableModalOpen, setIsVariableModalOpen] = useState(false);
-  const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
+  const [isVariablesOpen, setIsVariablesOpen] = useState(false);
   const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
   const [variableDraft, setVariableDraft] = useState<VariableDraft>(emptyDraft);
   const [variableNameDrafts, setVariableNameDrafts] = useState<Record<string, string>>({});
@@ -594,6 +541,10 @@ export default function Home() {
     });
   }, [selectedPrompt]);
 
+  const missingRequiredNames = useMemo(() => {
+    return new Set(missingRequired.map((variable) => variable.name));
+  }, [missingRequired]);
+
   const sortedFillVariables = useMemo(() => {
     if (!selectedPrompt) return [];
     return [...selectedPrompt.variables].sort((a, b) => {
@@ -606,6 +557,11 @@ export default function Home() {
     if (!selectedPrompt) return "";
     return JSON.stringify({ prompts: [selectedPrompt] }, null, 2);
   }, [selectedPrompt]);
+
+  useEffect(() => {
+    if (!selectedPrompt) return;
+    if (missingRequired.length > 0) setIsVariablesOpen(true);
+  }, [activePromptId, missingRequired.length, selectedPrompt]);
 
   const shareLink = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -1169,7 +1125,12 @@ export default function Home() {
                         </div>
                       </div>
                       <div data-pf-video="copy-actions" className="flex items-center gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => setIsFillDrawerOpen(true)}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          aria-expanded={isVariablesOpen}
+                          onClick={() => setIsVariablesOpen((open) => !open)}
+                        >
                           Variables ({selectedPrompt.variables.length})
                           {missingRequired.length ? (
                             <span className="ml-2 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-600">
@@ -1197,16 +1158,191 @@ export default function Home() {
 	                        </Button>
 	                      </div>
 	                    </div>
+                    {isVariablesOpen ? (
+                      <div
+                        data-pf-video="variables-fields"
+                        className="mt-3 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-xs font-semibold text-[color:var(--pf-text)]">
+                            Variables
+                          </div>
+                          <Button type="button" size="sm" variant="secondary" onClick={handleResetValues}>
+                            Reset
+                          </Button>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {sortedFillVariables.map((variable) => {
+                            const value = selectedPrompt.values[variable.name];
+                            const isMissing = missingRequiredNames.has(variable.name);
+                            const label = (
+                              <span className="flex items-baseline justify-between gap-2">
+                                <span className="truncate">
+                                  {humanizeVariableName(variable.name)}
+                                  {variable.required ? (
+                                    <span className="ml-1 text-red-600">*</span>
+                                  ) : null}
+                                </span>
+                                <span className="truncate font-mono text-[10px] font-normal text-[color:var(--pf-text-tertiary)]">
+                                  {"{{"}
+                                  {variable.name}
+                                  {"}}"}
+                                </span>
+                              </span>
+                            );
+
+                            const fieldClass = cx(
+                              "mt-1 w-full rounded-[12px] border px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none",
+                              isMissing ? "border-red-500/40 bg-red-500/5" : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]"
+                            );
+
+                            if (variable.type === "boolean") {
+                              const checked =
+                                value === undefined ? variable.defaultValue === "true" : Boolean(value);
+                              return (
+                                <div
+                                  key={variable.name}
+                                  className={cx(
+                                    "flex items-center justify-between gap-3 rounded-[12px] border px-3 py-2 sm:col-span-2",
+                                    isMissing ? "border-red-500/40 bg-red-500/5" : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]"
+                                  )}
+                                >
+                                  <div className="min-w-0 text-xs font-semibold text-[color:var(--pf-text)]">
+                                    {label}
+                                  </div>
+                                  <Toggle
+                                    checked={checked}
+                                    aria-label={variable.name}
+                                    onCheckedChange={(nextChecked) =>
+                                      updatePrompt((prompt) => ({
+                                        ...prompt,
+                                        values: { ...prompt.values, [variable.name]: nextChecked },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              );
+                            }
+
+                            if (variable.type === "text") {
+                              const resolved =
+                                value === undefined || value === "" ? variable.defaultValue : String(value);
+                              return (
+                                <label key={variable.name} className="block sm:col-span-2">
+                                  <span className="text-xs font-semibold text-[color:var(--pf-text)]">
+                                    {label}
+                                  </span>
+                                  <textarea
+                                    className={cx(fieldClass, "min-h-24 resize-y")}
+                                    value={resolved}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => ({
+                                        ...prompt,
+                                        values: { ...prompt.values, [variable.name]: event.target.value },
+                                      }))
+                                    }
+                                    placeholder="Type here…"
+                                  />
+                                </label>
+                              );
+                            }
+
+                            if (variable.type === "enum") {
+                              const options = variable.options || optionSets[0].options;
+                              const resolved =
+                                value === undefined || value === "" ? variable.defaultValue : String(value);
+                              const selectedValue = resolved || options[0] || "";
+                              return (
+                                <label key={variable.name} className="block">
+                                  <span className="text-xs font-semibold text-[color:var(--pf-text)]">
+                                    {label}
+                                  </span>
+                                  <select
+                                    className={fieldClass}
+                                    value={selectedValue}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => ({
+                                        ...prompt,
+                                        values: { ...prompt.values, [variable.name]: event.target.value },
+                                      }))
+                                    }
+                                  >
+                                    {options.map((option) => (
+                                      <option key={option} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              );
+                            }
+
+                            if (variable.type === "number") {
+                              const resolved =
+                                value === undefined || value === "" ? variable.defaultValue : value;
+                              return (
+                                <label key={variable.name} className="block">
+                                  <span className="text-xs font-semibold text-[color:var(--pf-text)]">
+                                    {label}
+                                  </span>
+                                  <input
+                                    className={fieldClass}
+                                    type="number"
+                                    value={String(resolved ?? "")}
+                                    onChange={(event) =>
+                                      updatePrompt((prompt) => ({
+                                        ...prompt,
+                                        values: {
+                                          ...prompt.values,
+                                          [variable.name]:
+                                            event.target.value === "" ? "" : Number(event.target.value),
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </label>
+                              );
+                            }
+
+                            const resolved =
+                              value === undefined || value === "" ? variable.defaultValue : String(value);
+                            return (
+                              <label key={variable.name} className="block">
+                                <span className="text-xs font-semibold text-[color:var(--pf-text)]">
+                                  {label}
+                                </span>
+                                <input
+                                  className={fieldClass}
+                                  type="text"
+                                  value={resolved}
+                                  onChange={(event) =>
+                                    updatePrompt((prompt) => ({
+                                      ...prompt,
+                                      values: { ...prompt.values, [variable.name]: event.target.value },
+                                    }))
+                                  }
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
                     {missingRequired.length > 0 ? (
                       <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-600">
                         Missing required fields:{" "}
                         <span className="font-semibold">
-                          {missingRequired.map((item) => item.name).join(", ")}
+                          {missingRequired.map((item) => humanizeVariableName(item.name)).join(", ")}
                         </span>
                         .{" "}
                         <button
                           className="underline underline-offset-2"
-                          onClick={() => setIsFillDrawerOpen(true)}
+                          onClick={() => {
+                            setIsVariablesOpen(true);
+                            document
+                              .querySelector('[data-pf-video="variables-fields"]')
+                              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
                         >
                           Fill them
                         </button>
