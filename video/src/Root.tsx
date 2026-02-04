@@ -9,6 +9,10 @@ import {
   AnimationPrinciplesClassic,
   AnimationPrinciplesClassicProps,
 } from "./AnimationPrinciplesClassic";
+import {
+  AnimationPrinciplesJazz,
+  AnimationPrinciplesJazzProps,
+} from "./AnimationPrinciplesJazz";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -55,6 +59,21 @@ export const RemotionRoot: React.FC = () => {
               accentWarm: "#b45309",
               accentCool: "#1e6091",
             } satisfies AnimationPrinciplesClassicProps
+          }
+        />
+        <Composition
+          id="AnimationPrinciplesJazz"
+          component={AnimationPrinciplesJazz}
+          durationInFrames={140 * 30}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              gold: "#d4a574",
+              cream: "#f5f0e6",
+              burgundy: "#722f37",
+            } satisfies AnimationPrinciplesJazzProps
           }
         />
       </Folder>
