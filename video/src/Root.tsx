@@ -70,10 +70,7 @@ export const RemotionRoot: React.FC = () => {
           height={720}
           defaultProps={
             {
-              amber: "#d4920a",
-              cream: "#faf6e9",
-              brown: "#3d2314",
-              warmBlack: "#1a1510",
+              accent: "#c9820a",
             } satisfies AnimationPrinciplesJazzProps
           }
         />
