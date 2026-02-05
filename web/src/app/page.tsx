@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { renderTemplate } from "@/lib/templateRender";
+import { createExtractionProposal, type ExtractionAssistResult } from "@/lib/extractionAssist";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Toggle } from "@/components/ui/Toggle";
@@ -31,14 +32,7 @@ type StarterPrompt = {
   values: Record<string, string | number | boolean>;
 };
 
-type ExtractionProposal = {
-  currentTemplate: string;
-  normalizedTemplate: string;
-  detectedNames: string[];
-  addedVariables: Variable[];
-  referencedVariables: Variable[];
-  unreferencedVariables: Variable[];
-};
+type ExtractionProposal = ExtractionAssistResult;
 
 type VariableType = "string" | "text" | "number" | "boolean" | "enum";
 
@@ -739,6 +733,7 @@ export default function Home() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVariableModalOpen, setIsVariableModalOpen] = useState(false);
   const [isExtractProposalOpen, setIsExtractProposalOpen] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
   const [isVariablesOpen, setIsVariablesOpen] = useState(false);
   const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
@@ -764,7 +759,6 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  /* eslint-disable react-hooks/set-state-in-effect -- One-time hydration from localStorage after mount is intentional for this MVP. */
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(storageKey) : null;
     if (!stored) return;
@@ -778,9 +772,7 @@ export default function Home() {
       // ignore storage errors
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
-  /* eslint-disable react-hooks/set-state-in-effect -- One-time UI state hydration from localStorage after mount is intentional. */
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(uiKey) : null;
     if (!stored) return;
@@ -791,9 +783,7 @@ export default function Home() {
       // ignore storage errors
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
-  /* eslint-disable react-hooks/set-state-in-effect -- One-time onboarding hydration from localStorage after mount is intentional. */
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(onboardingKey) : null;
     if (!stored) {
@@ -818,9 +808,7 @@ export default function Home() {
       setShowWelcome(true);
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
-  /* eslint-disable react-hooks/set-state-in-effect -- URL-based imports are intentionally handled on mount for this MVP. */
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -849,7 +837,6 @@ export default function Home() {
       setNotice("Invalid share link.");
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const selectedPrompt = useMemo(
     () => prompts.find((prompt) => prompt.id === selectedId) || prompts[0] || null,
@@ -1075,29 +1062,23 @@ export default function Home() {
     setNotice("Reset values to defaults.");
   };
 
-  const handleExtract = () => {
+  const handleExtract = async () => {
     if (!selectedPrompt) return;
-    const { names, normalized } = extractVariableNames(selectedPrompt.template);
-    const existing = new Map(selectedPrompt.variables.map((variable) => [variable.name, variable]));
-    const referencedVariables = names
-      .map((name) => existing.get(name))
-      .filter((variable): variable is Variable => Boolean(variable));
-    const addedVariables = names
-      .filter((name) => !existing.has(name))
-      .map((name) => inferVariable(name));
-    const unreferencedVariables = selectedPrompt.variables.filter((variable) => !names.includes(variable.name));
-
-    setExtractionProposal({
-      currentTemplate: selectedPrompt.template,
-      normalizedTemplate: normalized,
-      detectedNames: names,
-      addedVariables,
-      referencedVariables,
-      unreferencedVariables,
-    });
-    setKeepUnreferencedVariables(true);
-    setNormalizeExtractedSyntax(normalized !== selectedPrompt.template);
-    setIsExtractProposalOpen(true);
+    setIsExtracting(true);
+    try {
+      const proposal = await createExtractionProposal({
+        template: selectedPrompt.template,
+        existingVariables: selectedPrompt.variables,
+      });
+      setExtractionProposal(proposal);
+      setKeepUnreferencedVariables(true);
+      setNormalizeExtractedSyntax(proposal.normalizedTemplate !== selectedPrompt.template);
+      setIsExtractProposalOpen(true);
+    } catch {
+      setNotice("Extraction assist failed. Try again.");
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
   const handleApplyExtraction = () => {
@@ -1127,7 +1108,7 @@ export default function Home() {
     setIsExtractProposalOpen(false);
     setExtractionProposal(null);
     setNotice(
-      `Extraction ready: ${extractionProposal.addedVariables.length} added, ${extractionProposal.unreferencedVariables.length} unreferenced.`
+      `AI assist applied: ${extractionProposal.addedVariables.length} added, ${extractionProposal.unreferencedVariables.length} unreferenced.`
     );
   };
 
@@ -1732,8 +1713,14 @@ export default function Home() {
                 />
 
                 {activePanel === "build" ? (
-                  <Button type="button" size="sm" variant="primary" onClick={handleExtract}>
-                    Extract variables
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    onClick={handleExtract}
+                    disabled={isExtracting}
+                  >
+                    {isExtracting ? "Extracting..." : "Extract variables"}
                   </Button>
                 ) : null}
               </div>
@@ -2579,7 +2566,23 @@ export default function Home() {
                 {extractionProposal.unreferencedVariables.length}
               </span>{" "}
               existing variable{extractionProposal.unreferencedVariables.length === 1 ? "" : "s"} no longer referenced.
+              <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
+                Source: {extractionProposal.source}
+              </div>
             </div>
+
+            {extractionProposal.inferenceNotes.length ? (
+              <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                  AI assist notes
+                </div>
+                <ul className="mt-2 space-y-1 text-xs text-[color:var(--pf-text-secondary)]">
+                  {extractionProposal.inferenceNotes.map((note) => (
+                    <li key={note}>• {note}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">

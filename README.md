@@ -50,7 +50,7 @@ PromptFill makes prompts structured and reusable: **template + variables + sensi
 - Share a prompt as a link or payload; recipients can import it.
 - Export/import your library as a JSON file (merge-on-conflict).
 - Run a built-in onboarding tutorial with checklist progress and contextual guidance.
-- Review extraction proposals before applying to avoid silent schema loss.
+- Use the AI-assist extraction adapter (safe proposal modal) to improve variable suggestions without silent schema loss.
 
 ## How it works
 
