@@ -2,6 +2,11 @@ import "./index.css";
 import { Composition, Folder } from "remotion";
 import { PromptFillDemo, PromptFillDemoProps } from "./PromptFillDemo";
 import {
+  PROMPTFILL_FLAGSHIP_DURATION_IN_FRAMES,
+  PromptFillFlagshipPromo,
+  PromptFillFlagshipPromoProps,
+} from "./PromptFillFlagshipPromo";
+import {
   ANIMATION_PRINCIPLES_KC_JAZZ_DURATION_IN_FRAMES,
   AnimationPrinciplesKCJazz,
   AnimationPrinciplesKCJazzProps,
@@ -23,6 +28,20 @@ export const RemotionRoot: React.FC = () => {
               accent: "#10a37f",
               productName: "PromptFill",
             } satisfies PromptFillDemoProps
+          }
+        />
+        <Composition
+          id="PromptFillFlagshipPromo"
+          component={PromptFillFlagshipPromo}
+          durationInFrames={PROMPTFILL_FLAGSHIP_DURATION_IN_FRAMES}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accent: "#10a37f",
+              productName: "PromptFill",
+            } satisfies PromptFillFlagshipPromoProps
           }
         />
       </Folder>
