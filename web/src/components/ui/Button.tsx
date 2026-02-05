@@ -10,7 +10,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const base =
-  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap select-none rounded-full font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none";
+  "pf-focusable inline-flex items-center justify-center gap-1.5 whitespace-nowrap select-none rounded-full font-medium shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-[background-color,border-color,color,box-shadow,transform] duration-150 hover:-translate-y-[1px] active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none";
 
 const variants: Record<ButtonVariant, string> = {
   primary:

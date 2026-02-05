@@ -10,6 +10,35 @@ import { cx } from "@/components/ui/cx";
 const brand = "var(--pf-accent)";
 const storageKey = "promptfill:library:v1";
 const uiKey = "promptfill:ui:v1";
+const onboardingKey = "promptfill:onboarding:v1";
+
+type OnboardingStepId = "library" | "fill" | "build" | "share";
+
+type OnboardingStep = {
+  id: OnboardingStepId;
+  title: string;
+  description: string;
+  target: "library-pane" | "copy-actions" | "build-template" | "share-actions";
+  panel: "fill" | "build";
+};
+
+type StarterPrompt = {
+  name: string;
+  description: string;
+  tags: string[];
+  template: string;
+  variables: Variable[];
+  values: Record<string, string | number | boolean>;
+};
+
+type ExtractionProposal = {
+  currentTemplate: string;
+  normalizedTemplate: string;
+  detectedNames: string[];
+  addedVariables: Variable[];
+  referencedVariables: Variable[];
+  unreferencedVariables: Variable[];
+};
 
 type VariableType = "string" | "text" | "number" | "boolean" | "enum";
 
@@ -43,6 +72,37 @@ const optionSets = [
   { name: "Tone", options: ["concise", "friendly", "direct", "formal"] },
   { name: "Audience", options: ["execs", "engineering", "sales", "customers"] },
   { name: "Format", options: ["bullets", "paragraphs", "email", "slack_update"] },
+];
+
+const onboardingSteps: OnboardingStep[] = [
+  {
+    id: "library",
+    title: "Start in the library",
+    description: "Search your prompt library, duplicate winning prompts, and create a fresh draft in one click.",
+    target: "library-pane",
+    panel: "fill",
+  },
+  {
+    id: "fill",
+    title: "Fill variables and render",
+    description: "Complete required fields, preview the final prompt, and copy instantly in plain text or Markdown.",
+    target: "copy-actions",
+    panel: "fill",
+  },
+  {
+    id: "build",
+    title: "Shape the template",
+    description: "Refine your template and variable schema so teammates can safely reuse the prompt.",
+    target: "build-template",
+    panel: "build",
+  },
+  {
+    id: "share",
+    title: "Share with confidence",
+    description: "Distribute a single prompt via link or payload so everyone starts from the same source.",
+    target: "share-actions",
+    panel: "fill",
+  },
 ];
 
 const defaultTemplate = `Write an email to {{recipient_name}} about {{topic}}.
@@ -103,6 +163,83 @@ const defaultPrompts = (): PromptItem[] => [
       { name: "input_text", type: "text", required: true, defaultValue: "" },
     ],
     values: { tone: "friendly", input_text: "" },
+  },
+];
+
+const starterPrompts: StarterPrompt[] = [
+  {
+    name: "Email outreach",
+    description: "Reusable email with tone, relationship, and CTA controls.",
+    tags: ["email", "starter"],
+    template:
+      "Write an email to {{recipient_name}} about {{topic}}.\n\nRelationship: {{relationship}}\nTone: {{tone}}\nLength: {{length}}\n\nContext:\n{{context}}\n\nClose with a clear {{cta}}.",
+    variables: [
+      { name: "recipient_name", type: "string", required: true, defaultValue: "" },
+      { name: "relationship", type: "enum", required: false, defaultValue: "customer", options: ["customer", "investor", "coworker", "friend"] },
+      { name: "topic", type: "string", required: true, defaultValue: "" },
+      { name: "context", type: "text", required: false, defaultValue: "" },
+      { name: "tone", type: "enum", required: true, defaultValue: "concise", options: ["concise", "friendly", "direct", "formal"] },
+      { name: "length", type: "enum", required: false, defaultValue: "medium", options: ["short", "medium", "long"] },
+      { name: "cta", type: "string", required: false, defaultValue: "next step" },
+    ],
+    values: { relationship: "customer", tone: "concise", length: "medium", cta: "next step" },
+  },
+  {
+    name: "Rewrite with constraints",
+    description: "Reshape existing text while preserving voice and constraints.",
+    tags: ["rewrite", "starter"],
+    template:
+      "Rewrite the following text in a {{style}} style.\n\nPreserve voice: {{preserve_voice}}\nConstraints:\n{{constraints}}\n\nInput:\n{{input_text}}",
+    variables: [
+      { name: "input_text", type: "text", required: true, defaultValue: "" },
+      { name: "style", type: "enum", required: true, defaultValue: "friendly", options: ["friendly", "crisp", "executive", "casual"] },
+      { name: "constraints", type: "text", required: false, defaultValue: "" },
+      { name: "preserve_voice", type: "boolean", required: false, defaultValue: "true" },
+    ],
+    values: { style: "friendly", preserve_voice: true, constraints: "" },
+  },
+  {
+    name: "Audience summary",
+    description: "Turn notes into audience-aware summaries.",
+    tags: ["summary", "starter"],
+    template:
+      "Summarize the notes below for {{audience}}.\n\nTone: {{tone}}\nFormat: {{format}}\nMax bullets: {{max_bullets}}\n\nNotes:\n{{notes}}",
+    variables: [
+      { name: "notes", type: "text", required: true, defaultValue: "" },
+      { name: "audience", type: "enum", required: true, defaultValue: "execs", options: ["execs", "engineering", "sales", "customers"] },
+      { name: "tone", type: "enum", required: true, defaultValue: "concise", options: ["concise", "neutral", "persuasive"] },
+      { name: "format", type: "enum", required: true, defaultValue: "bullets", options: ["bullets", "paragraphs", "email", "slack_update"] },
+      { name: "max_bullets", type: "number", required: false, defaultValue: "5" },
+    ],
+    values: { audience: "execs", tone: "concise", format: "bullets", max_bullets: 5 },
+  },
+  {
+    name: "Support reply",
+    description: "Customer support response with policy and tone guardrails.",
+    tags: ["support", "starter"],
+    template:
+      "Draft a support response.\n\nTone: {{tone}}\n\nCustomer message:\n{{customer_message}}\n\nPolicy context:\n{{policy_context}}\n\nResolution options:\n{{resolution_options}}",
+    variables: [
+      { name: "customer_message", type: "text", required: true, defaultValue: "" },
+      { name: "policy_context", type: "text", required: false, defaultValue: "" },
+      { name: "tone", type: "enum", required: true, defaultValue: "empathetic", options: ["empathetic", "neutral", "firm"] },
+      { name: "resolution_options", type: "text", required: false, defaultValue: "" },
+    ],
+    values: { tone: "empathetic", policy_context: "", resolution_options: "" },
+  },
+  {
+    name: "Code review prompt",
+    description: "Review diffs with configurable risk and focus areas.",
+    tags: ["engineering", "starter"],
+    template:
+      "Review the following diff.\n\nRisk profile: {{risk_profile}}\nFocus areas: {{focus_areas}}\nOutput format: {{output_format}}\n\nDiff:\n{{diff}}",
+    variables: [
+      { name: "diff", type: "text", required: true, defaultValue: "" },
+      { name: "risk_profile", type: "enum", required: true, defaultValue: "balanced", options: ["strict", "balanced", "fast"] },
+      { name: "focus_areas", type: "text", required: false, defaultValue: "security, correctness, tests" },
+      { name: "output_format", type: "enum", required: true, defaultValue: "bullets", options: ["bullets", "annotated"] },
+    ],
+    values: { risk_profile: "balanced", focus_areas: "security, correctness, tests", output_format: "bullets" },
   },
 ];
 
@@ -281,6 +418,56 @@ const IconPlus = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const IconSpark = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M10 2.5l1.6 4.2 4.2 1.6-4.2 1.6L10 14.1l-1.6-4.2-4.2-1.6 4.2-1.6L10 2.5zM15.3 12.9l.8 2 .9.3-.9.3-.8 2-.8-2-.9-.3.9-.3.8-2z"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const IconCheck = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M4.8 10.6l3.2 3.2 7.2-7.2"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const IconClose = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 20 20"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M5.5 5.5l9 9m0-9l-9 9"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 const normalizeImportedType = (value: unknown): VariableType =>
   value === "string" || value === "text" || value === "number" || value === "boolean" || value === "enum"
     ? value
@@ -386,10 +573,23 @@ const Modal = ({
   children: React.ReactNode;
   onClose: () => void;
 }) => {
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="w-full max-w-xl rounded-[24px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-6 shadow-[var(--pf-shadow-elevated)]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-xl rounded-[24px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-6 shadow-[var(--pf-shadow-elevated)]"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
@@ -407,23 +607,156 @@ const Modal = ({
   );
 };
 
+const Drawer = ({
+  open,
+  title,
+  description,
+  actions,
+  children,
+  footer,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  onClose: () => void;
+}) => {
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[55]">
+      <button
+        type="button"
+        aria-label="Close drawer"
+        className="absolute inset-0 bg-black/35"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="absolute right-0 top-0 h-full w-full max-w-[620px] border-l border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] shadow-[var(--pf-shadow-elevated)]"
+      >
+        <div className="flex h-full flex-col">
+          <div className="border-b border-[color:var(--pf-border)] px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-lg font-semibold text-[color:var(--pf-text)]">{title}</div>
+                {description ? (
+                  <div className="mt-1 text-sm text-[color:var(--pf-text-tertiary)]">{description}</div>
+                ) : null}
+              </div>
+              <Button type="button" size="sm" variant="secondary" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+            {actions ? <div className="mt-3 flex items-center justify-end">{actions}</div> : null}
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto px-5 py-4">{children}</div>
+          {footer ? (
+            <div className="border-t border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-5 py-4">
+              {footer}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TourCoachmark = ({
+  open,
+  step,
+  index,
+  total,
+  onBack,
+  onNext,
+  onSkip,
+}: {
+  open: boolean;
+  step: OnboardingStep;
+  index: number;
+  total: number;
+  onBack: () => void;
+  onNext: () => void;
+  onSkip: () => void;
+}) => {
+  if (!open) return null;
+  const isLast = index === total - 1;
+  return (
+    <div className="pf-fade-lift fixed bottom-5 left-5 z-[56] w-[min(420px,calc(100vw-2.5rem))] rounded-[20px] border border-[color:var(--pf-border-strong)] pf-glass p-4 shadow-[var(--pf-shadow-elevated)]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2 rounded-full bg-[color:var(--pf-surface-muted)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+          <IconSpark className="h-3.5 w-3.5" />
+          Guided walkthrough
+        </div>
+        <div className="text-xs text-[color:var(--pf-text-tertiary)]">
+          Step {index + 1} / {total}
+        </div>
+      </div>
+      <div className="mt-3 text-base font-semibold text-[color:var(--pf-text)]">{step.title}</div>
+      <p className="mt-1 text-sm leading-6 text-[color:var(--pf-text-secondary)]">{step.description}</p>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={onSkip}
+          className="pf-focusable rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--pf-text-tertiary)]"
+        >
+          Skip tutorial
+        </button>
+        <div className="flex items-center gap-2">
+          <Button type="button" size="sm" variant="secondary" onClick={onBack} disabled={index === 0}>
+            Back
+          </Button>
+          <Button type="button" size="sm" variant="primary" onClick={onNext}>
+            {isLast ? "Finish" : "Next"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [prompts, setPrompts] = useState<PromptItem[]>(defaultPrompts);
   const [selectedId, setSelectedId] = useState<string>(defaultPrompts()[0].id);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isStarterOpen, setIsStarterOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVariableModalOpen, setIsVariableModalOpen] = useState(false);
+  const [isExtractProposalOpen, setIsExtractProposalOpen] = useState(false);
+  const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
   const [isVariablesOpen, setIsVariablesOpen] = useState(false);
   const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
   const [variableDraft, setVariableDraft] = useState<VariableDraft>(emptyDraft);
   const [variableNameDrafts, setVariableNameDrafts] = useState<Record<string, string>>({});
+  const [extractionProposal, setExtractionProposal] = useState<ExtractionProposal | null>(null);
+  const [keepUnreferencedVariables, setKeepUnreferencedVariables] = useState(true);
+  const [normalizeExtractedSyntax, setNormalizeExtractedSyntax] = useState(true);
   const [pendingImport, setPendingImport] = useState<PromptItem[] | null>(null);
   const [showTagInput, setShowTagInput] = useState(false);
   const [newTagValue, setNewTagValue] = useState("");
   const [activePanel, setActivePanel] = useState<"fill" | "build">("fill");
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [tourComplete, setTourComplete] = useState(false);
+  const [tourDismissed, setTourDismissed] = useState(false);
+  const [completedOnboardingSteps, setCompletedOnboardingSteps] = useState<OnboardingStepId[]>([]);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     if (!notice) return;
@@ -456,6 +789,33 @@ export default function Home() {
       if (typeof parsed.libraryCollapsed === "boolean") setIsLibraryCollapsed(parsed.libraryCollapsed);
     } catch {
       // ignore storage errors
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  /* eslint-disable react-hooks/set-state-in-effect -- One-time onboarding hydration from localStorage after mount is intentional. */
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(onboardingKey) : null;
+    if (!stored) {
+      setShowWelcome(true);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as {
+        complete?: unknown;
+        dismissed?: unknown;
+        completedSteps?: unknown;
+      };
+      if (typeof parsed.complete === "boolean") setTourComplete(parsed.complete);
+      if (typeof parsed.dismissed === "boolean") setTourDismissed(parsed.dismissed);
+      if (Array.isArray(parsed.completedSteps)) {
+        const steps = parsed.completedSteps.filter((step): step is OnboardingStepId =>
+          onboardingSteps.some((item) => item.id === step)
+        );
+        setCompletedOnboardingSteps(steps);
+      }
+    } catch {
+      setShowWelcome(true);
     }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -508,14 +868,35 @@ export default function Home() {
     window.localStorage.setItem(uiKey, JSON.stringify({ libraryCollapsed: isLibraryCollapsed }));
   }, [isLibraryCollapsed]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      onboardingKey,
+      JSON.stringify({
+        complete: tourComplete,
+        dismissed: tourDismissed,
+        completedSteps: completedOnboardingSteps,
+      })
+    );
+  }, [tourComplete, tourDismissed, completedOnboardingSteps]);
+
   const filteredPrompts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return prompts;
     return prompts.filter((prompt) => {
-      const haystack = [prompt.name, prompt.description, prompt.tags.join(" ")].join(" ").toLowerCase();
+      if (activeTagFilter && !prompt.tags.includes(activeTagFilter)) return false;
+      if (!query) return true;
+      const haystack = [
+        prompt.name,
+        prompt.description,
+        prompt.tags.join(" "),
+        prompt.template,
+        prompt.variables.map((item) => item.name).join(" "),
+      ]
+        .join(" ")
+        .toLowerCase();
       return haystack.includes(query);
     });
-  }, [prompts, searchQuery]);
+  }, [prompts, searchQuery, activeTagFilter]);
 
   const preview = useMemo(() => {
     if (!selectedPrompt) return "";
@@ -557,11 +938,72 @@ export default function Home() {
     if (!selectedPrompt) return "";
     return JSON.stringify({ prompts: [selectedPrompt] }, null, 2);
   }, [selectedPrompt]);
+  const templateVariableNames = useMemo(() => {
+    if (!selectedPrompt) return [];
+    return extractVariableNames(selectedPrompt.template).names;
+  }, [selectedPrompt]);
 
-  useEffect(() => {
-    if (!selectedPrompt) return;
-    if (missingRequired.length > 0) setIsVariablesOpen(true);
-  }, [activePromptId, missingRequired.length, selectedPrompt]);
+  const missingSchemaVariables = useMemo(() => {
+    if (!selectedPrompt) return [];
+    const schemaSet = new Set(selectedPrompt.variables.map((variable) => variable.name));
+    return templateVariableNames.filter((name) => !schemaSet.has(name));
+  }, [selectedPrompt, templateVariableNames]);
+
+  const unboundSchemaVariables = useMemo(() => {
+    if (!selectedPrompt) return [];
+    const templateSet = new Set(templateVariableNames);
+    return selectedPrompt.variables.filter((variable) => !templateSet.has(variable.name));
+  }, [selectedPrompt, templateVariableNames]);
+  const isVariablesExpanded = isVariablesOpen || missingRequired.length > 0;
+  const activeTourStep = isTourOpen ? onboardingSteps[tourStepIndex] : null;
+  const activeTourTarget = activeTourStep?.target;
+  const onboardingProgress = Math.round((completedOnboardingSteps.length / onboardingSteps.length) * 100);
+
+  const completeOnboardingStep = (stepId: OnboardingStepId) => {
+    setCompletedOnboardingSteps((steps) => (steps.includes(stepId) ? steps : [...steps, stepId]));
+  };
+
+  const applyTourStepContext = (step: OnboardingStep) => {
+    setIsLibraryCollapsed(false);
+    setActivePanel(step.panel);
+    if (step.target === "copy-actions") setIsVariablesOpen(true);
+  };
+
+  const openTourAtStep = (stepIndex: number) => {
+    const bounded = Math.max(0, Math.min(stepIndex, onboardingSteps.length - 1));
+    applyTourStepContext(onboardingSteps[bounded]);
+    setTourStepIndex(bounded);
+    setIsTourOpen(true);
+    setTourDismissed(false);
+  };
+
+  const handleStartTour = () => {
+    setShowWelcome(false);
+    openTourAtStep(0);
+  };
+
+  const handleTourNext = () => {
+    const step = onboardingSteps[tourStepIndex];
+    completeOnboardingStep(step.id);
+    if (tourStepIndex >= onboardingSteps.length - 1) {
+      setTourComplete(true);
+      setTourDismissed(false);
+      setIsTourOpen(false);
+      setNotice("Tutorial complete. You can replay it any time.");
+      return;
+    }
+    openTourAtStep(tourStepIndex + 1);
+  };
+
+  const handleTourBack = () => {
+    if (tourStepIndex === 0) return;
+    openTourAtStep(tourStepIndex - 1);
+  };
+
+  const handleTourSkip = () => {
+    setTourDismissed(true);
+    setIsTourOpen(false);
+  };
 
   const shareLink = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -582,6 +1024,7 @@ export default function Home() {
     try {
       const textToCopy = format === "markdown" ? toMarkdownCodeFence(preview) : preview;
       await navigator.clipboard.writeText(textToCopy);
+      completeOnboardingStep("fill");
       setNotice(format === "markdown" ? "Copied as Markdown." : "Copied.");
     } catch {
       setNotice("Copy failed. Your browser may be blocking clipboard access.");
@@ -623,6 +1066,7 @@ export default function Home() {
         return acc;
       }, {}),
     }));
+    completeOnboardingStep("build");
     setNotice(`Found ${names.length} variables. Review the list.`);
   };
 
@@ -714,6 +1158,7 @@ export default function Home() {
 
   const handleSharePrompt = async () => {
     if (!selectedPrompt) return;
+    completeOnboardingStep("share");
     setIsShareOpen(true);
   };
 
@@ -770,6 +1215,7 @@ export default function Home() {
     setPrompts((items) => [promptItem, ...items]);
     setSelectedId(promptItem.id);
     setActivePanel("build");
+    completeOnboardingStep("library");
   };
 
   const handleToggleLibrary = () => {
@@ -839,15 +1285,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--pf-bg)] text-[color:var(--pf-text)]">
-      <header className="border-b border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]">
+    <div className="pf-shell min-h-screen bg-[color:var(--pf-bg)] text-[color:var(--pf-text)]">
+      <header className="pf-glass sticky top-0 z-30 border-b border-[color:var(--pf-border)]">
         <div className="mx-auto flex w-full max-w-none items-center justify-between px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <div className="h-2.5 w-2.5 rounded-full" style={{ background: brand }} />
             <div>
-              <div className="text-sm font-semibold tracking-tight">PromptFill</div>
+              <div className="text-sm font-semibold tracking-tight">PromptFill Studio</div>
               <div className="text-xs text-[color:var(--pf-text-tertiary)]">
-                Shareable prompts, painless customization.
+                Local-first prompt ops. Fill, build, and ship reusable prompts.
               </div>
             </div>
           </div>
@@ -863,6 +1309,15 @@ export default function Home() {
             </label>
             <Button variant="secondary" onClick={handleExport}>
               Export
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowWelcome(false);
+                openTourAtStep(0);
+              }}
+            >
+              Tutorial
             </Button>
           </div>
         </div>
@@ -933,7 +1388,14 @@ export default function Home() {
             </div>
 
             {/* Full sidebar (always on mobile, optional on desktop). */}
-            <div data-pf-video="library-pane" className={cx(isLibraryCollapsed ? "lg:hidden" : "")}>
+            <div
+              data-pf-video="library-pane"
+              data-pf-onboarding-target="library-pane"
+              className={cx(
+                isLibraryCollapsed ? "lg:hidden" : "",
+                activeTourTarget === "library-pane" ? "pf-tour-focus rounded-[16px] p-2" : ""
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-[color:var(--pf-text)]">Library</div>
@@ -1075,7 +1537,13 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div
+                  data-pf-onboarding-target="share-actions"
+                  className={cx(
+                    "flex shrink-0 items-center gap-2",
+                    activeTourTarget === "share-actions" ? "pf-tour-focus rounded-full px-2 py-1" : ""
+                  )}
+                >
                   <Button type="button" size="sm" variant="secondary" onClick={handleSharePrompt}>
                     Share
                   </Button>
@@ -1110,6 +1578,78 @@ export default function Home() {
                   </Button>
                 ) : null}
               </div>
+
+              <div className="mt-4 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--pf-text)]">
+                      <IconSpark className="h-4 w-4" />
+                      Onboarding
+                    </div>
+                    <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
+                      {tourComplete
+                        ? "Tutorial complete. Replay it any time for a quick refresher."
+                        : "Follow this guided setup to get productive in under two minutes."}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                      Progress
+                    </div>
+                    <div className="mt-1 text-lg font-semibold text-[color:var(--pf-text)]">{onboardingProgress}%</div>
+                  </div>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[color:var(--pf-segmented-bg)]">
+                  <div
+                    className="h-full rounded-full bg-[color:var(--pf-accent)] transition-[width] duration-300"
+                    style={{ width: `${onboardingProgress}%` }}
+                  />
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {onboardingSteps.map((step) => {
+                    const complete = completedOnboardingSteps.includes(step.id);
+                    return (
+                      <div
+                        key={step.id}
+                        className={cx(
+                          "flex items-center gap-2 rounded-[10px] border px-3 py-2 text-xs",
+                          complete
+                            ? "border-[color:color-mix(in_srgb,var(--pf-accent)_36%,transparent)] bg-[color:color-mix(in_srgb,var(--pf-accent)_14%,transparent)] text-[color:var(--pf-text)]"
+                            : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] text-[color:var(--pf-text-secondary)]"
+                        )}
+                      >
+                        <span
+                          className={cx(
+                            "inline-flex h-4 w-4 items-center justify-center rounded-full border",
+                            complete
+                              ? "border-[color:var(--pf-accent)] bg-[color:var(--pf-accent)] text-white"
+                              : "border-[color:var(--pf-border)] bg-transparent text-transparent"
+                          )}
+                        >
+                          <IconCheck className="h-3 w-3" />
+                        </span>
+                        <span>{step.title}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2">
+                  <Button type="button" size="sm" variant="secondary" onClick={() => setTourDismissed(true)}>
+                    Dismiss
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    onClick={() => {
+                      setShowWelcome(false);
+                      openTourAtStep(0);
+                    }}
+                  >
+                    {tourComplete ? "Replay tutorial" : "Start tutorial"}
+                  </Button>
+                </div>
+              </div>
             </div>
             </div>
 
@@ -1124,11 +1664,18 @@ export default function Home() {
                           Fill variables once, then copy anywhere.
                         </div>
                       </div>
-                      <div data-pf-video="copy-actions" className="flex items-center gap-2">
+                      <div
+                        data-pf-video="copy-actions"
+                        data-pf-onboarding-target="copy-actions"
+                        className={cx(
+                          "flex flex-wrap items-center gap-2",
+                          activeTourTarget === "copy-actions" ? "pf-tour-focus rounded-[12px] p-2" : ""
+                        )}
+                      >
                         <Button
                           size="sm"
                           variant="secondary"
-                          aria-expanded={isVariablesOpen}
+                          aria-expanded={isVariablesExpanded}
                           onClick={() => setIsVariablesOpen((open) => !open)}
                         >
                           Variables ({selectedPrompt.variables.length})
@@ -1137,28 +1684,31 @@ export default function Home() {
                               {missingRequired.length} required
                             </span>
                           ) : null}
-	                        </Button>
-	                        <Button
-	                          type="button"
-	                          size="sm"
-	                          variant="primary"
-	                          onClick={() => handleCopy("plain")}
-	                          disabled={missingRequired.length > 0}
-	                        >
-	                          Copy
-	                        </Button>
-	                        <Button
-	                          type="button"
-	                          size="sm"
-	                          variant="secondary"
-	                          onClick={() => handleCopy("markdown")}
-	                          disabled={missingRequired.length > 0}
-	                        >
-	                          Copy Markdown
-	                        </Button>
-	                      </div>
-	                    </div>
-                    {isVariablesOpen ? (
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleCopy("plain")}
+                          disabled={missingRequired.length > 0}
+                        >
+                          Copy
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleCopy("markdown")}
+                          disabled={missingRequired.length > 0}
+                        >
+                          Copy Markdown
+                        </Button>
+                        <Button type="button" size="sm" variant="secondary" onClick={() => setIsFillDrawerOpen(true)}>
+                          Quick fill panel
+                        </Button>
+                      </div>
+                    </div>
+                    {isVariablesExpanded ? (
                       <div
                         data-pf-video="variables-fields"
                         className="mt-3 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3"
@@ -1356,7 +1906,13 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
+                  <div
+                    data-pf-onboarding-target="build-template"
+                    className={cx(
+                      "rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4",
+                      activeTourTarget === "build-template" ? "pf-tour-focus" : ""
+                    )}
+                  >
                     <div className="text-sm font-semibold text-[color:var(--pf-text)]">Template</div>
                     <textarea
                       className="mt-3 h-[240px] w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3 font-mono text-[13px] leading-6 text-[color:var(--pf-text)] focus:outline-none"
@@ -1711,11 +2267,53 @@ export default function Home() {
         </div>
       </main>
 
+      <TourCoachmark
+        open={isTourOpen}
+        step={activeTourStep ?? onboardingSteps[0]}
+        index={tourStepIndex}
+        total={onboardingSteps.length}
+        onBack={handleTourBack}
+        onNext={handleTourNext}
+        onSkip={handleTourSkip}
+      />
+
       {notice && (
         <div className="fixed bottom-6 right-6 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-4 py-3 text-sm text-[color:var(--pf-text)] shadow-[var(--pf-shadow-elevated)]">
           {notice}
         </div>
       )}
+
+      <Modal
+        open={showWelcome && !tourDismissed && !tourComplete}
+        title="Welcome to PromptFill Studio"
+        description="Want a 90-second guided walkthrough of the core workflow?"
+        onClose={() => {
+          setShowWelcome(false);
+          setTourDismissed(true);
+        }}
+      >
+        <div className="space-y-4">
+          <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3 text-sm text-[color:var(--pf-text-secondary)]">
+            You will learn how to manage your library, fill variables, refine templates, and share prompts without drift.
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setShowWelcome(false);
+                setTourDismissed(true);
+              }}
+            >
+              Not now
+            </Button>
+            <Button type="button" size="sm" variant="primary" onClick={handleStartTour}>
+              Start walkthrough
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={isShareOpen}

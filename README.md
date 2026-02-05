@@ -47,6 +47,7 @@ PromptFill makes prompts structured and reusable: **template + variables + sensi
 - Copy the rendered prompt (plain text or Markdown).
 - Share a prompt as a link or payload; recipients can import it.
 - Export/import your library as a JSON file (merge-on-conflict).
+- Run a built-in onboarding tutorial with checklist progress and contextual guidance.
 
 ## How it works
 

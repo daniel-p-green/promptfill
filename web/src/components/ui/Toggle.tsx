@@ -23,7 +23,7 @@ export function Toggle({
       aria-checked={checked}
       disabled={disabled}
       className={cx(
-        "relative h-5 w-8 rounded-full transition-colors focus:outline-none disabled:opacity-40",
+        "pf-focusable relative h-5 w-8 rounded-full transition-colors disabled:opacity-40",
         checked ? "bg-[color:var(--pf-toggle-bg-on)]" : "bg-[color:var(--pf-toggle-bg-off)]",
         className
       )}
@@ -39,4 +39,3 @@ export function Toggle({
     </button>
   );
 }
-

@@ -89,9 +89,9 @@ export default function InlineCard() {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--pf-bg)] p-6 text-[color:var(--pf-text)]">
+    <div className="pf-shell min-h-screen bg-[color:var(--pf-bg)] p-6 text-[color:var(--pf-text)]">
       <div className="mx-auto w-full max-w-[560px]">
-        <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-4">
+        <div className="pf-fade-lift rounded-[16px] border border-[color:var(--pf-border)] pf-glass p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -147,8 +147,7 @@ export default function InlineCard() {
           </div>
         </div>
         <div className="mt-3 text-[11px] text-[color:var(--pf-text-tertiary)]">
-          This page mimics the inline-card feel of a ChatGPT app (single-purpose, two actions).{" "}
-          Open the fullscreen builder to edit variables.
+          Lightweight inline mode for quick reuse. Open PromptFill Studio for onboarding, template design, and sharing.
         </div>
       </div>
     </div>
