@@ -178,3 +178,13 @@ textarea {
     0 0 0 3px color-mix(in srgb, var(--pf-ring) 40%, transparent),
     0 0 0 5px color-mix(in srgb, var(--pf-ring) 22%, transparent);
 }
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--pf-ring) 36%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--pf-ring) 18%, transparent);
+  border-color: color-mix(in srgb, var(--pf-accent) 40%, var(--pf-border));
+}

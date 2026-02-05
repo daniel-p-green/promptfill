@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { renderTemplate } from "@/lib/templateRender";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -959,9 +959,9 @@ export default function Home() {
   const activeTourTarget = activeTourStep?.target;
   const onboardingProgress = Math.round((completedOnboardingSteps.length / onboardingSteps.length) * 100);
 
-  const completeOnboardingStep = (stepId: OnboardingStepId) => {
+  const completeOnboardingStep = useCallback((stepId: OnboardingStepId) => {
     setCompletedOnboardingSteps((steps) => (steps.includes(stepId) ? steps : [...steps, stepId]));
-  };
+  }, []);
 
   const applyTourStepContext = (step: OnboardingStep) => {
     setIsLibraryCollapsed(false);
@@ -1019,7 +1019,7 @@ export default function Home() {
     );
   };
 
-  const handleCopy = async (format: "plain" | "markdown") => {
+  const handleCopy = useCallback(async (format: "plain" | "markdown") => {
     if (!selectedPrompt || missingRequired.length > 0) return;
     try {
       const textToCopy = format === "markdown" ? toMarkdownCodeFence(preview) : preview;
@@ -1029,7 +1029,30 @@ export default function Home() {
     } catch {
       setNotice("Copy failed. Your browser may be blocking clipboard access.");
     }
-  };
+  }, [completeOnboardingStep, missingRequired.length, preview, selectedPrompt]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
+      if (activePanel !== "fill") return;
+      if (isShareOpen || isImportOpen || isDeleteOpen || isVariableModalOpen || isStarterOpen || isExtractProposalOpen) return;
+      if (missingRequired.length > 0) return;
+      event.preventDefault();
+      void handleCopy("plain");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    activePanel,
+    handleCopy,
+    isShareOpen,
+    isImportOpen,
+    isDeleteOpen,
+    isVariableModalOpen,
+    isStarterOpen,
+    isExtractProposalOpen,
+    missingRequired.length,
+  ]);
 
   const handleResetValues = () => {
     if (!selectedPrompt) return;
@@ -1056,18 +1079,79 @@ export default function Home() {
     if (!selectedPrompt) return;
     const { names, normalized } = extractVariableNames(selectedPrompt.template);
     const existing = new Map(selectedPrompt.variables.map((variable) => [variable.name, variable]));
-    const nextVariables = names.map((name) => existing.get(name) || inferVariable(name));
+    const referencedVariables = names
+      .map((name) => existing.get(name))
+      .filter((variable): variable is Variable => Boolean(variable));
+    const addedVariables = names
+      .filter((name) => !existing.has(name))
+      .map((name) => inferVariable(name));
+    const unreferencedVariables = selectedPrompt.variables.filter((variable) => !names.includes(variable.name));
+
+    setExtractionProposal({
+      currentTemplate: selectedPrompt.template,
+      normalizedTemplate: normalized,
+      detectedNames: names,
+      addedVariables,
+      referencedVariables,
+      unreferencedVariables,
+    });
+    setKeepUnreferencedVariables(true);
+    setNormalizeExtractedSyntax(normalized !== selectedPrompt.template);
+    setIsExtractProposalOpen(true);
+  };
+
+  const handleApplyExtraction = () => {
+    if (!selectedPrompt || !extractionProposal) return;
+    const variables = keepUnreferencedVariables
+      ? [
+          ...extractionProposal.referencedVariables,
+          ...extractionProposal.addedVariables,
+          ...extractionProposal.unreferencedVariables,
+        ]
+      : [...extractionProposal.referencedVariables, ...extractionProposal.addedVariables];
+
+    const template = normalizeExtractedSyntax
+      ? extractionProposal.normalizedTemplate
+      : extractionProposal.currentTemplate;
+
     updatePrompt((prompt) => ({
       ...prompt,
-      template: normalized,
-      variables: nextVariables,
-      values: nextVariables.reduce<Record<string, string | number | boolean>>((acc, variable) => {
+      template,
+      variables,
+      values: variables.reduce<Record<string, string | number | boolean>>((acc, variable) => {
         acc[variable.name] = prompt.values[variable.name] ?? variable.defaultValue ?? "";
         return acc;
       }, {}),
     }));
     completeOnboardingStep("build");
-    setNotice(`Found ${names.length} variables. Review the list.`);
+    setIsExtractProposalOpen(false);
+    setExtractionProposal(null);
+    setNotice(
+      `Extraction ready: ${extractionProposal.addedVariables.length} added, ${extractionProposal.unreferencedVariables.length} unreferenced.`
+    );
+  };
+
+  const handleAddMissingTemplateVariables = () => {
+    if (!selectedPrompt || missingSchemaVariables.length === 0) return;
+    updatePrompt((prompt) => {
+      const existing = new Set(prompt.variables.map((variable) => variable.name));
+      const additions = missingSchemaVariables
+        .filter((name) => !existing.has(name))
+        .map((name) => inferVariable(name));
+      if (!additions.length) return prompt;
+      return {
+        ...prompt,
+        variables: [...prompt.variables, ...additions],
+        values: {
+          ...prompt.values,
+          ...additions.reduce<Record<string, string | number | boolean>>((acc, variable) => {
+            acc[variable.name] = variable.defaultValue || "";
+            return acc;
+          }, {}),
+        },
+      };
+    });
+    setNotice(`Added ${missingSchemaVariables.length} variable${missingSchemaVariables.length === 1 ? "" : "s"} from placeholders.`);
   };
 
   const handleAddVariable = () => {
@@ -1197,6 +1281,14 @@ export default function Home() {
     setShowTagInput(false);
   };
 
+  const handleRemoveTag = (tag: string) => {
+    updatePrompt((prompt) => ({
+      ...prompt,
+      tags: prompt.tags.filter((item) => item !== tag),
+    }));
+    if (activeTagFilter === tag) setActiveTagFilter(null);
+  };
+
   const handleDeletePrompt = () => {
     if (!selectedPrompt) return;
     const remaining = prompts.filter((item) => item.id !== selectedPrompt.id);
@@ -1216,6 +1308,27 @@ export default function Home() {
     setSelectedId(promptItem.id);
     setActivePanel("build");
     completeOnboardingStep("library");
+  };
+
+  const handleCreateStarterPrompt = (starter: StarterPrompt) => {
+    const promptItem: PromptItem = {
+      id: randomPromptId(),
+      name: starter.name,
+      description: starter.description,
+      tags: [...starter.tags],
+      template: starter.template,
+      variables: starter.variables.map((variable) => ({
+        ...variable,
+        options: variable.options ? [...variable.options] : undefined,
+      })),
+      values: { ...starter.values },
+    };
+    setPrompts((items) => [promptItem, ...items]);
+    setSelectedId(promptItem.id);
+    setActivePanel("fill");
+    setIsStarterOpen(false);
+    completeOnboardingStep("library");
+    setNotice(`Created starter: ${starter.name}.`);
   };
 
   const handleToggleLibrary = () => {
@@ -1424,6 +1537,18 @@ export default function Home() {
                   New prompt
                 </Button>
               </div>
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full justify-center gap-2"
+                  onClick={() => setIsStarterOpen(true)}
+                >
+                  <IconSpark className="h-4 w-4" />
+                  Use-case starters
+                </Button>
+              </div>
               <div className="mt-3">
                 <input
                   type="text"
@@ -1433,6 +1558,21 @@ export default function Home() {
                   onChange={(event) => setSearchQuery(event.target.value)}
                 />
               </div>
+              {activeTagFilter ? (
+                <div className="mt-2 flex items-center justify-between rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-2.5 py-1.5 text-xs">
+                  <span className="text-[color:var(--pf-text-secondary)]">
+                    Filter: <span className="font-semibold">{activeTagFilter}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="pf-focusable inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[color:var(--pf-text-tertiary)]"
+                    onClick={() => setActiveTagFilter(null)}
+                  >
+                    <IconClose className="h-3 w-3" />
+                    Clear
+                  </button>
+                </div>
+              ) : null}
               <div className="mt-4 space-y-2">
                 {filteredPrompts.map((item) => (
                   <button
@@ -1453,12 +1593,17 @@ export default function Home() {
                     {item.tags.length ? (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {item.tags.slice(0, 3).map((tag) => (
-                          <span
+                          <button
                             key={tag}
-                            className="rounded-full bg-[color:var(--pf-surface-muted)] px-2 py-[2px] text-[10px] text-[color:var(--pf-text-tertiary)]"
+                            type="button"
+                            className="pf-focusable rounded-full bg-[color:var(--pf-surface-muted)] px-2 py-[2px] text-[10px] text-[color:var(--pf-text-tertiary)]"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setActiveTagFilter(tag);
+                            }}
                           >
                             {tag}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     ) : null}
@@ -1466,7 +1611,7 @@ export default function Home() {
                 ))}
                 {filteredPrompts.length === 0 ? (
                   <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-3 text-xs text-[color:var(--pf-text-tertiary)]">
-                    No prompts match that search.
+                    No prompts match your filters.
                   </div>
                 ) : null}
               </div>
@@ -1494,12 +1639,26 @@ export default function Home() {
                   />
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                     {selectedPrompt.tags.map((tag) => (
-                      <span
+                      <div
                         key={tag}
-                        className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-[color:var(--pf-text-tertiary)]"
+                        className="inline-flex items-center gap-1 rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-2 py-1 text-[color:var(--pf-text-tertiary)]"
                       >
-                        {tag}
-                      </span>
+                        <button
+                          type="button"
+                          className="pf-focusable rounded-full px-1 py-0.5"
+                          onClick={() => setActiveTagFilter(tag)}
+                        >
+                          {tag}
+                        </button>
+                        <button
+                          type="button"
+                          className="pf-focusable inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-black/5"
+                          onClick={() => handleRemoveTag(tag)}
+                          aria-label={`Remove tag ${tag}`}
+                        >
+                          <IconClose className="h-3 w-3" />
+                        </button>
+                      </div>
                     ))}
                     {showTagInput ? (
                       <div className="flex items-center gap-2">
@@ -1707,6 +1866,9 @@ export default function Home() {
                           Quick fill panel
                         </Button>
                       </div>
+                    </div>
+                    <div className="mt-2 text-[11px] text-[color:var(--pf-text-tertiary)]">
+                      Shortcut: <span className="font-mono">Ctrl/Cmd + Enter</span> copies the rendered prompt.
                     </div>
                     {isVariablesExpanded ? (
                       <div
@@ -1924,6 +2086,47 @@ export default function Home() {
                     <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
                       Tip: Use placeholders like{" "}
                       <span className="font-mono">{"{{recipient_name}}"}</span>.
+                    </div>
+                    <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                          Detected placeholders ({templateVariableNames.length})
+                        </div>
+                        {missingSchemaVariables.length > 0 ? (
+                          <Button type="button" size="sm" variant="secondary" onClick={handleAddMissingTemplateVariables}>
+                            Add missing vars
+                          </Button>
+                        ) : null}
+                      </div>
+                      {templateVariableNames.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {templateVariableNames.map((name) => (
+                            <span
+                              key={name}
+                              className={cx(
+                                "rounded-full border px-2 py-[2px] font-mono text-[10px]",
+                                missingSchemaVariables.includes(name)
+                                  ? "border-amber-500/40 bg-amber-500/10 text-amber-700"
+                                  : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] text-[color:var(--pf-text-tertiary)]"
+                              )}
+                            >
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-[color:var(--pf-text-tertiary)]">
+                          No placeholders detected yet.
+                        </div>
+                      )}
+                      {unboundSchemaVariables.length > 0 ? (
+                        <div className="text-[11px] text-[color:var(--pf-text-tertiary)]">
+                          Unused schema variables:{" "}
+                          <span className="font-mono">
+                            {unboundSchemaVariables.map((item) => item.name).join(", ")}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
@@ -2313,6 +2516,150 @@ export default function Home() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={isStarterOpen}
+        title="Use-case starters"
+        description="Start from battle-tested templates aligned to the core PromptFill use cases."
+        onClose={() => setIsStarterOpen(false)}
+      >
+        <div className="space-y-3">
+          {starterPrompts.map((starter) => (
+            <div
+              key={starter.name}
+              className="rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-[color:var(--pf-text)]">{starter.name}</div>
+                  <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">{starter.description}</div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {starter.tags.map((tag) => (
+                      <span
+                        key={`${starter.name}-${tag}`}
+                        className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-2 py-[2px] text-[10px] text-[color:var(--pf-text-tertiary)]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <Button type="button" size="sm" variant="primary" onClick={() => handleCreateStarterPrompt(starter)}>
+                  Use
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      <Modal
+        open={isExtractProposalOpen}
+        title="Review extraction proposal"
+        description="Apply variable extraction safely. Nothing changes until you confirm."
+        onClose={() => {
+          setIsExtractProposalOpen(false);
+          setExtractionProposal(null);
+        }}
+      >
+        {extractionProposal ? (
+          <div className="space-y-4">
+            <div className="rounded-[14px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3 text-sm text-[color:var(--pf-text-secondary)]">
+              Found{" "}
+              <span className="font-semibold text-[color:var(--pf-text)]">
+                {extractionProposal.detectedNames.length}
+              </span>{" "}
+              placeholders, with{" "}
+              <span className="font-semibold text-[color:var(--pf-text)]">
+                {extractionProposal.addedVariables.length}
+              </span>{" "}
+              new variable{extractionProposal.addedVariables.length === 1 ? "" : "s"} and{" "}
+              <span className="font-semibold text-[color:var(--pf-text)]">
+                {extractionProposal.unreferencedVariables.length}
+              </span>{" "}
+              existing variable{extractionProposal.unreferencedVariables.length === 1 ? "" : "s"} no longer referenced.
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                  Added variables
+                </div>
+                {extractionProposal.addedVariables.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {extractionProposal.addedVariables.map((variable) => (
+                      <span
+                        key={variable.name}
+                        className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-[2px] font-mono text-[10px] text-emerald-700"
+                      >
+                        {variable.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">No new variables.</div>
+                )}
+              </div>
+
+              <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                  Unreferenced existing
+                </div>
+                {extractionProposal.unreferencedVariables.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {extractionProposal.unreferencedVariables.map((variable) => (
+                      <span
+                        key={variable.name}
+                        className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-[2px] font-mono text-[10px] text-amber-700"
+                      >
+                        {variable.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">All existing variables are referenced.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3">
+              <label className="flex items-center gap-2 text-sm text-[color:var(--pf-text-secondary)]">
+                <input
+                  type="checkbox"
+                  checked={keepUnreferencedVariables}
+                  onChange={(event) => setKeepUnreferencedVariables(event.target.checked)}
+                />
+                Keep unreferenced existing variables (recommended).
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[color:var(--pf-text-secondary)]">
+                <input
+                  type="checkbox"
+                  checked={normalizeExtractedSyntax}
+                  onChange={(event) => setNormalizeExtractedSyntax(event.target.checked)}
+                />
+                Normalize placeholder syntax to <span className="font-mono text-xs">{"{{snake_case}}"}</span>.
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setIsExtractProposalOpen(false);
+                  setExtractionProposal(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="button" size="sm" variant="primary" onClick={handleApplyExtraction}>
+                Apply extraction
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Modal>
 
       <Modal

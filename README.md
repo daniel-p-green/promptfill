@@ -43,11 +43,14 @@ PromptFill makes prompts structured and reusable: **template + variables + sensi
 
 - Build a local prompt library (search, tags, duplicates).
 - Turn prompts into templates with `{{variables}}` and typed fields.
+- Start from built-in use-case starter templates (email, rewrite, support, review, summaries).
 - Fill variables in a drawer (string/text/number/boolean/enum).
 - Copy the rendered prompt (plain text or Markdown).
+- Use a keyboard shortcut (`Cmd/Ctrl + Enter`) to copy instantly.
 - Share a prompt as a link or payload; recipients can import it.
 - Export/import your library as a JSON file (merge-on-conflict).
 - Run a built-in onboarding tutorial with checklist progress and contextual guidance.
+- Review extraction proposals before applying to avoid silent schema loss.
 
 ## How it works
 
