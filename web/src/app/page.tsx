@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { renderTemplate } from "@/lib/templateRender";
 import { createExtractionProposal, type ExtractionAssistResult } from "@/lib/extractionAssist";
+import { createCapturedPromptDraft } from "@/lib/capturePrompt";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Toggle } from "@/components/ui/Toggle";
@@ -78,15 +79,15 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     id: "fill",
-    title: "Fill variables and render",
-    description: "Complete required fields, preview the final prompt, and copy instantly in plain text or Markdown.",
+    title: "Fill details and copy",
+    description: "Fill in the changing parts, preview the result, and copy it in one click.",
     target: "copy-actions",
     panel: "fill",
   },
   {
     id: "build",
-    title: "Shape the template",
-    description: "Refine your template and variable schema so teammates can safely reuse the prompt.",
+    title: "Edit the prompt",
+    description: "Adjust your template and field suggestions so it is easy to reuse later.",
     target: "build-template",
     panel: "build",
   },
@@ -111,8 +112,8 @@ Close with a clear ask and include a short subject line.`;
 const defaultPrompts = (): PromptItem[] => [
   {
     id: "prompt-email",
-    name: "Write a client email",
-    description: "Reusable outbound email with tone + CTA options.",
+    name: "Client follow-up email",
+    description: "Turn a rough ask into a polished client email.",
     tags: ["email", "sales"],
     template: defaultTemplate,
     variables: [
@@ -133,8 +134,8 @@ const defaultPrompts = (): PromptItem[] => [
   },
   {
     id: "prompt-exec-summary",
-    name: "Summarize for executives",
-    description: "Turn notes into crisp exec brief.",
+    name: "Executive summary",
+    description: "Convert raw notes into a clear leadership update.",
     tags: ["summary", "exec"],
     template:
       "Summarize the following notes for {{audience}} in a {{tone}} tone. Limit to {{max_bullets}} bullets.\n\nNotes:\n{{notes}}",
@@ -148,8 +149,8 @@ const defaultPrompts = (): PromptItem[] => [
   },
   {
     id: "prompt-rewrite",
-    name: "Rewrite in friendly tone",
-    description: "Make any copy warmer without losing structure.",
+    name: "Rewrite for tone",
+    description: "Adjust voice and keep the meaning intact.",
     tags: ["rewrite", "tone"],
     template: "Rewrite the following text to be {{tone}} while preserving meaning.\n\n{{input_text}}",
     variables: [
@@ -303,11 +304,11 @@ const inferVariable = (name: string): Variable => {
 const createPrompt = (name: string): PromptItem => ({
   id: `prompt-${Math.random().toString(36).slice(2, 8)}`,
   name,
-  description: "New prompt",
+  description: "Saved prompt",
   tags: [],
-  template: "Write your prompt here and add {{variables}}.",
-  variables: [{ name: "variables", type: "string", required: true, defaultValue: "" }],
-  values: { variables: "" },
+  template: "Paste your prompt here.",
+  variables: [],
+  values: {},
 });
 
 const encodeBase64Url = (value: string) => {
@@ -725,8 +726,10 @@ export default function Home() {
   const [prompts, setPrompts] = useState<PromptItem[]>(defaultPrompts);
   const [selectedId, setSelectedId] = useState<string>(defaultPrompts()[0].id);
   const [searchQuery, setSearchQuery] = useState("");
+  const [quickCaptureText, setQuickCaptureText] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isStarterOpen, setIsStarterOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -737,6 +740,7 @@ export default function Home() {
   const [isFillDrawerOpen, setIsFillDrawerOpen] = useState(false);
   const [isVariablesOpen, setIsVariablesOpen] = useState(false);
   const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [variableDraft, setVariableDraft] = useState<VariableDraft>(emptyDraft);
   const [variableNameDrafts, setVariableNameDrafts] = useState<Record<string, string>>({});
   const [extractionProposal, setExtractionProposal] = useState<ExtractionProposal | null>(null);
@@ -777,8 +781,9 @@ export default function Home() {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(uiKey) : null;
     if (!stored) return;
     try {
-      const parsed = JSON.parse(stored) as { libraryCollapsed?: unknown };
+      const parsed = JSON.parse(stored) as { libraryCollapsed?: unknown; advancedMode?: unknown };
       if (typeof parsed.libraryCollapsed === "boolean") setIsLibraryCollapsed(parsed.libraryCollapsed);
+      if (typeof parsed.advancedMode === "boolean") setIsAdvancedMode(parsed.advancedMode);
     } catch {
       // ignore storage errors
     }
@@ -852,8 +857,18 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(uiKey, JSON.stringify({ libraryCollapsed: isLibraryCollapsed }));
-  }, [isLibraryCollapsed]);
+    window.localStorage.setItem(
+      uiKey,
+      JSON.stringify({ libraryCollapsed: isLibraryCollapsed, advancedMode: isAdvancedMode })
+    );
+  }, [isLibraryCollapsed, isAdvancedMode]);
+
+  useEffect(() => {
+    if (isAdvancedMode) return;
+    setActiveTagFilter(null);
+    setShowTagInput(false);
+    setNewTagValue("");
+  }, [isAdvancedMode]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -945,6 +960,7 @@ export default function Home() {
   const activeTourStep = isTourOpen ? onboardingSteps[tourStepIndex] : null;
   const activeTourTarget = activeTourStep?.target;
   const onboardingProgress = Math.round((completedOnboardingSteps.length / onboardingSteps.length) * 100);
+  const isReadyToCopy = missingRequired.length === 0 && preview.trim().length > 0;
 
   const completeOnboardingStep = useCallback((stepId: OnboardingStepId) => {
     setCompletedOnboardingSteps((steps) => (steps.includes(stepId) ? steps : [...steps, stepId]));
@@ -1108,7 +1124,7 @@ export default function Home() {
     setIsExtractProposalOpen(false);
     setExtractionProposal(null);
     setNotice(
-      `AI assist applied: ${extractionProposal.addedVariables.length} added, ${extractionProposal.unreferencedVariables.length} unreferenced.`
+      `Applied suggestions. Added ${extractionProposal.addedVariables.length} new field${extractionProposal.addedVariables.length === 1 ? "" : "s"}.`
     );
   };
 
@@ -1132,7 +1148,7 @@ export default function Home() {
         },
       };
     });
-    setNotice(`Added ${missingSchemaVariables.length} variable${missingSchemaVariables.length === 1 ? "" : "s"} from placeholders.`);
+    setNotice(`Added ${missingSchemaVariables.length} field${missingSchemaVariables.length === 1 ? "" : "s"} from placeholders.`);
   };
 
   const handleAddVariable = () => {
@@ -1143,12 +1159,12 @@ export default function Home() {
   const handleConfirmAddVariable = () => {
     const name = normalizeName(variableDraft.name);
     if (!name) {
-      setNotice("Variable name is required.");
+      setNotice("Field name is required.");
       return;
     }
     updatePrompt((prompt) => {
       if (prompt.variables.some((variable) => variable.name === name)) {
-        setNotice("Variable already exists.");
+        setNotice("Field already exists.");
         return prompt;
       }
       const options = variableDraft.options
@@ -1231,7 +1247,7 @@ export default function Home() {
     if (!sharePayload) return;
     try {
       await navigator.clipboard.writeText(sharePayload);
-      setNotice("Copied share payload. Send it to someone and they can Import it.");
+      setNotice("Copied share package.");
     } catch {
       setNotice("Share failed. Your browser may be blocking clipboard access.");
     }
@@ -1287,8 +1303,45 @@ export default function Home() {
     const promptItem = createPrompt("New prompt");
     setPrompts((items) => [promptItem, ...items]);
     setSelectedId(promptItem.id);
-    setActivePanel("build");
+    setActivePanel("fill");
     completeOnboardingStep("library");
+  };
+
+  const handleQuickCapture = async () => {
+    if (!quickCaptureText.trim()) {
+      setNotice("Paste a prompt to save it.");
+      return;
+    }
+    setIsCapturing(true);
+    try {
+      const draft = await createCapturedPromptDraft(quickCaptureText);
+      if (!draft) {
+        setNotice("Paste a prompt to save it.");
+        return;
+      }
+      const promptItem: PromptItem = {
+        id: randomPromptId(),
+        name: draft.name,
+        description: draft.description,
+        tags: draft.tags,
+        template: draft.template,
+        variables: draft.variables.map((variable) => ({
+          ...variable,
+          options: variable.options ? [...variable.options] : undefined,
+        })),
+        values: { ...draft.values },
+      };
+      setPrompts((items) => [promptItem, ...items]);
+      setSelectedId(promptItem.id);
+      setActivePanel("fill");
+      setQuickCaptureText("");
+      setNotice("Saved. Fill in the details, then copy.");
+      completeOnboardingStep("library");
+    } catch {
+      setNotice("Could not save that prompt. Try again.");
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const handleCreateStarterPrompt = (starter: StarterPrompt) => {
@@ -1380,18 +1433,28 @@ export default function Home() {
 
   return (
     <div className="pf-shell min-h-screen bg-[color:var(--pf-bg)] text-[color:var(--pf-text)]">
+      <a
+        href="#main-content"
+        className="sr-only z-[100] rounded-full bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] shadow-sm focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      >
+        Skip to main content
+      </a>
       <header className="pf-glass sticky top-0 z-30 border-b border-[color:var(--pf-border)]">
         <div className="mx-auto flex w-full max-w-none items-center justify-between px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <div className="h-2.5 w-2.5 rounded-full" style={{ background: brand }} />
             <div>
-              <div className="text-sm font-semibold tracking-tight">PromptFill Studio</div>
+              <div className="text-sm font-semibold tracking-tight">PromptFill</div>
               <div className="text-xs text-[color:var(--pf-text-tertiary)]">
-                Local-first prompt ops. Fill, build, and ship reusable prompts.
+                Save your best prompts, then adapt and copy in seconds.
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <label className="hidden items-center gap-2 rounded-full border border-[color:var(--pf-interactive-secondary-border)] bg-[color:var(--pf-interactive-secondary-bg)] px-3 py-1.5 text-xs text-[color:var(--pf-interactive-secondary-label)] md:inline-flex">
+              <span>Advanced</span>
+              <Toggle checked={isAdvancedMode} onCheckedChange={setIsAdvancedMode} aria-label="Toggle advanced controls" />
+            </label>
             <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-[color:var(--pf-interactive-secondary-border)] bg-[color:var(--pf-interactive-secondary-bg)] px-4 py-2 text-sm font-medium text-[color:var(--pf-interactive-secondary-label)] hover:border-[color:var(--pf-interactive-secondary-border-hover)] hover:bg-[color:var(--pf-interactive-secondary-bg-hover)] hover:text-[color:var(--pf-interactive-secondary-label-hover)] active:border-[color:var(--pf-interactive-secondary-border-press)] active:bg-[color:var(--pf-interactive-secondary-bg-press)] active:text-[color:var(--pf-interactive-secondary-label-press)]">
               Import
               <input
@@ -1411,13 +1474,13 @@ export default function Home() {
                 openTourAtStep(0);
               }}
             >
-              Tutorial
+              Quick tour
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-none">
+      <main id="main-content" className="mx-auto w-full max-w-none">
         <div
           className={cx(
             "grid min-h-[calc(100vh-56px)]",
@@ -1492,8 +1555,8 @@ export default function Home() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold text-[color:var(--pf-text)]">Library</div>
-                  <div className="text-xs text-[color:var(--pf-text-tertiary)]">{prompts.length} prompts</div>
+                  <div className="text-sm font-semibold text-[color:var(--pf-text)]">Saved prompts</div>
+                  <div className="text-xs text-[color:var(--pf-text-tertiary)]">{prompts.length} in your library</div>
                 </div>
                 <Button
                   type="button"
@@ -1515,7 +1578,7 @@ export default function Home() {
                   onClick={handleNewPrompt}
                 >
                   <IconPlus className="h-4 w-4" />
-                  New prompt
+                  New blank prompt
                 </Button>
               </div>
               <div className="mt-2">
@@ -1527,19 +1590,43 @@ export default function Home() {
                   onClick={() => setIsStarterOpen(true)}
                 >
                   <IconSpark className="h-4 w-4" />
-                  Use-case starters
+                  Starter examples
+                </Button>
+              </div>
+              <div className="mt-3 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
+                <div className="text-xs font-semibold text-[color:var(--pf-text)]">Paste from Notes</div>
+                <div className="mt-1 text-[11px] text-[color:var(--pf-text-tertiary)]">
+                  Drop in a raw prompt. We will save it and suggest fill-in fields.
+                </div>
+                <textarea
+                  className="mt-2 min-h-[92px] w-full resize-y rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-2.5 py-2 text-xs text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
+                  placeholder="Example: Write an email to Alex about Q2 pricing update."
+                  aria-label="Paste a prompt from notes"
+                  value={quickCaptureText}
+                  onChange={(event) => setQuickCaptureText(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="primary"
+                  className="mt-2 w-full justify-center"
+                  onClick={handleQuickCapture}
+                  disabled={isCapturing}
+                >
+                  {isCapturing ? "Saving..." : "Save prompt"}
                 </Button>
               </div>
               <div className="mt-3">
                 <input
                   type="text"
-                  placeholder="Search prompts"
+                  placeholder="Search saved prompts"
+                  aria-label="Search saved prompts"
                   className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                 />
               </div>
-              {activeTagFilter ? (
+              {isAdvancedMode && activeTagFilter ? (
                 <div className="mt-2 flex items-center justify-between rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-2.5 py-1.5 text-xs">
                   <span className="text-[color:var(--pf-text-secondary)]">
                     Filter: <span className="font-semibold">{activeTagFilter}</span>
@@ -1571,20 +1658,15 @@ export default function Home() {
                     <div className="mt-1 line-clamp-2 text-xs text-[color:var(--pf-text-tertiary)]">
                       {item.description}
                     </div>
-                    {item.tags.length ? (
+                    {isAdvancedMode && item.tags.length ? (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {item.tags.slice(0, 3).map((tag) => (
-                          <button
+                          <span
                             key={tag}
-                            type="button"
-                            className="pf-focusable rounded-full bg-[color:var(--pf-surface-muted)] px-2 py-[2px] text-[10px] text-[color:var(--pf-text-tertiary)]"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setActiveTagFilter(tag);
-                            }}
+                            className="rounded-full bg-[color:var(--pf-surface-muted)] px-2 py-[2px] text-[10px] text-[color:var(--pf-text-tertiary)]"
                           >
                             {tag}
-                          </button>
+                          </span>
                         ))}
                       </div>
                     ) : null}
@@ -1609,6 +1691,7 @@ export default function Home() {
                     onChange={(event) =>
                       updatePrompt((prompt) => ({ ...prompt, name: event.target.value }))
                     }
+                    aria-label="Prompt name"
                     className="w-full truncate text-lg font-semibold tracking-tight text-[color:var(--pf-text)] focus:outline-none"
                   />
                   <input
@@ -1616,66 +1699,69 @@ export default function Home() {
                     onChange={(event) =>
                       updatePrompt((prompt) => ({ ...prompt, description: event.target.value }))
                     }
+                    aria-label="Prompt description"
                     className="mt-1 w-full text-sm text-[color:var(--pf-text-tertiary)] focus:outline-none"
                   />
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    {selectedPrompt.tags.map((tag) => (
-                      <div
-                        key={tag}
-                        className="inline-flex items-center gap-1 rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-2 py-1 text-[color:var(--pf-text-tertiary)]"
-                      >
-                        <button
-                          type="button"
-                          className="pf-focusable rounded-full px-1 py-0.5"
-                          onClick={() => setActiveTagFilter(tag)}
+                  {isAdvancedMode ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      {selectedPrompt.tags.map((tag) => (
+                        <div
+                          key={tag}
+                          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-2 py-1 text-[color:var(--pf-text-tertiary)]"
                         >
-                          {tag}
-                        </button>
-                        <button
-                          type="button"
-                          className="pf-focusable inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-black/5"
-                          onClick={() => handleRemoveTag(tag)}
-                          aria-label={`Remove tag ${tag}`}
-                        >
-                          <IconClose className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                    {showTagInput ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          value={newTagValue}
-                          onChange={(event) => setNewTagValue(event.target.value)}
-                          placeholder="tag-name"
-                          className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-xs text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
-                        />
-                        <Button type="button" size="sm" variant="secondary" onClick={handleAddTag}>
-                          Add
-                        </Button>
+                          <button
+                            type="button"
+                            className="pf-focusable rounded-full px-1 py-0.5"
+                            onClick={() => setActiveTagFilter(tag)}
+                          >
+                            {tag}
+                          </button>
+                          <button
+                            type="button"
+                            className="pf-focusable inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-black/5"
+                            onClick={() => handleRemoveTag(tag)}
+                            aria-label={`Remove tag ${tag}`}
+                          >
+                            <IconClose className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                      {showTagInput ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={newTagValue}
+                            onChange={(event) => setNewTagValue(event.target.value)}
+                            placeholder="tag-name"
+                            className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-xs text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
+                          />
+                          <Button type="button" size="sm" variant="secondary" onClick={handleAddTag}>
+                            Add
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setNewTagValue("");
+                              setShowTagInput(false);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
                         <Button
                           type="button"
                           size="sm"
                           variant="secondary"
-                          onClick={() => {
-                            setNewTagValue("");
-                            setShowTagInput(false);
-                          }}
+                          className="border-dashed text-[color:var(--pf-text-tertiary)]"
+                          onClick={() => setShowTagInput(true)}
                         >
-                          Cancel
+                          + tag
                         </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="border-dashed text-[color:var(--pf-text-tertiary)]"
-                        onClick={() => setShowTagInput(true)}
-                      >
-                        + tag
-                      </Button>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
                 <div
                   data-pf-onboarding-target="share-actions"
@@ -1687,17 +1773,21 @@ export default function Home() {
                   <Button type="button" size="sm" variant="secondary" onClick={handleSharePrompt}>
                     Share
                   </Button>
-                  <Button type="button" size="sm" variant="secondary" onClick={handleDuplicate}>
-                    Duplicate
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="dangerSecondary"
-                    onClick={() => setIsDeleteOpen(true)}
-                  >
-                    Delete
-                  </Button>
+                  {isAdvancedMode ? (
+                    <>
+                      <Button type="button" size="sm" variant="secondary" onClick={handleDuplicate}>
+                        Duplicate
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="dangerSecondary"
+                        onClick={() => setIsDeleteOpen(true)}
+                      >
+                        Delete
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
@@ -1707,8 +1797,8 @@ export default function Home() {
                   value={activePanel}
                   onChange={setActivePanel}
                   options={[
-                    { label: "Fill", value: "fill" },
-                    { label: "Build", value: "build" },
+                    { label: "Use prompt", value: "fill" },
+                    { label: "Edit prompt", value: "build" },
                   ]}
                 />
 
@@ -1720,82 +1810,135 @@ export default function Home() {
                     onClick={handleExtract}
                     disabled={isExtracting}
                   >
-                    {isExtracting ? "Extracting..." : "Extract variables"}
+                    {isExtracting ? "Finding fields..." : "Suggest fields (AI)"}
                   </Button>
                 ) : null}
               </div>
 
-              <div className="mt-4 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--pf-text)]">
-                      <IconSpark className="h-4 w-4" />
-                      Onboarding
-                    </div>
-                    <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
-                      {tourComplete
-                        ? "Tutorial complete. Replay it any time for a quick refresher."
-                        : "Follow this guided setup to get productive in under two minutes."}
-                    </div>
-                  </div>
-                  <div className="text-right">
+              {!isAdvancedMode ? (
+                <div className="mt-4 grid gap-2 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3 sm:grid-cols-3">
+                  <div className="rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2">
                     <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
-                      Progress
+                      Step 1
                     </div>
-                    <div className="mt-1 text-lg font-semibold text-[color:var(--pf-text)]">{onboardingProgress}%</div>
+                    <div className="mt-0.5 text-sm font-semibold text-[color:var(--pf-text)]">Choose a prompt</div>
+                  </div>
+                  <div className="rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                      Step 2
+                    </div>
+                    <div className="mt-0.5 text-sm font-semibold text-[color:var(--pf-text)]">Fill in details</div>
+                    <div className="mt-0.5 text-xs text-[color:var(--pf-text-tertiary)]">
+                      {missingRequired.length > 0
+                        ? `${missingRequired.length} required field${missingRequired.length === 1 ? "" : "s"} left`
+                        : "All required fields are done"}
+                    </div>
+                  </div>
+                  <div className="rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                      Step 3
+                    </div>
+                    <div className="mt-0.5 text-sm font-semibold text-[color:var(--pf-text)]">Copy and paste</div>
+                    <div className="mt-0.5 text-xs text-[color:var(--pf-text-tertiary)]">
+                      {isReadyToCopy ? "Ready to copy" : "Complete Step 2 first"}
+                    </div>
                   </div>
                 </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[color:var(--pf-segmented-bg)]">
-                  <div
-                    className="h-full rounded-full bg-[color:var(--pf-accent)] transition-[width] duration-300"
-                    style={{ width: `${onboardingProgress}%` }}
-                  />
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {onboardingSteps.map((step) => {
-                    const complete = completedOnboardingSteps.includes(step.id);
-                    return (
-                      <div
-                        key={step.id}
-                        className={cx(
-                          "flex items-center gap-2 rounded-[10px] border px-3 py-2 text-xs",
-                          complete
-                            ? "border-[color:color-mix(in_srgb,var(--pf-accent)_36%,transparent)] bg-[color:color-mix(in_srgb,var(--pf-accent)_14%,transparent)] text-[color:var(--pf-text)]"
-                            : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] text-[color:var(--pf-text-secondary)]"
-                        )}
-                      >
-                        <span
+              ) : null}
+
+              {isAdvancedMode ? (
+                <div className="mt-4 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--pf-text)]">
+                        <IconSpark className="h-4 w-4" />
+                        Onboarding
+                      </div>
+                      <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
+                        {tourComplete
+                          ? "Tutorial complete. Replay it any time for a quick refresher."
+                          : "Follow this guided setup to get productive in under two minutes."}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                        Progress
+                      </div>
+                      <div className="mt-1 text-lg font-semibold text-[color:var(--pf-text)]">{onboardingProgress}%</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[color:var(--pf-segmented-bg)]">
+                    <div
+                      className="h-full rounded-full bg-[color:var(--pf-accent)] transition-[width] duration-300"
+                      style={{ width: `${onboardingProgress}%` }}
+                    />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {onboardingSteps.map((step) => {
+                      const complete = completedOnboardingSteps.includes(step.id);
+                      return (
+                        <div
+                          key={step.id}
                           className={cx(
-                            "inline-flex h-4 w-4 items-center justify-center rounded-full border",
+                            "flex items-center gap-2 rounded-[10px] border px-3 py-2 text-xs",
                             complete
-                              ? "border-[color:var(--pf-accent)] bg-[color:var(--pf-accent)] text-white"
-                              : "border-[color:var(--pf-border)] bg-transparent text-transparent"
+                              ? "border-[color:color-mix(in_srgb,var(--pf-accent)_36%,transparent)] bg-[color:color-mix(in_srgb,var(--pf-accent)_14%,transparent)] text-[color:var(--pf-text)]"
+                              : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] text-[color:var(--pf-text-secondary)]"
                           )}
                         >
-                          <IconCheck className="h-3 w-3" />
-                        </span>
-                        <span>{step.title}</span>
-                      </div>
-                    );
-                  })}
+                          <span
+                            className={cx(
+                              "inline-flex h-4 w-4 items-center justify-center rounded-full border",
+                              complete
+                                ? "border-[color:var(--pf-accent)] bg-[color:var(--pf-accent)] text-white"
+                                : "border-[color:var(--pf-border)] bg-transparent text-transparent"
+                            )}
+                          >
+                            <IconCheck className="h-3 w-3" />
+                          </span>
+                          <span>{step.title}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    <Button type="button" size="sm" variant="secondary" onClick={() => setTourDismissed(true)}>
+                      Dismiss
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        setShowWelcome(false);
+                        openTourAtStep(0);
+                      }}
+                    >
+                      {tourComplete ? "Replay tutorial" : "Start tutorial"}
+                    </Button>
+                  </div>
                 </div>
-                <div className="mt-3 flex items-center justify-end gap-2">
-                  <Button type="button" size="sm" variant="secondary" onClick={() => setTourDismissed(true)}>
-                    Dismiss
-                  </Button>
+              ) : (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-4 py-3">
+                  <div>
+                    <div className="text-sm font-semibold text-[color:var(--pf-text)]">Need a quick walkthrough?</div>
+                    <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
+                      Learn the core loop in under 90 seconds.
+                    </div>
+                  </div>
                   <Button
                     type="button"
                     size="sm"
-                    variant="primary"
+                    variant="secondary"
                     onClick={() => {
                       setShowWelcome(false);
                       openTourAtStep(0);
                     }}
                   >
-                    {tourComplete ? "Replay tutorial" : "Start tutorial"}
+                    Start tour
                   </Button>
                 </div>
-              </div>
+              )}
             </div>
             </div>
 
@@ -1805,9 +1948,9 @@ export default function Home() {
                   <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-sm font-semibold text-[color:var(--pf-text)]">Rendered prompt</div>
+                        <div className="text-sm font-semibold text-[color:var(--pf-text)]">Your final prompt</div>
                         <div className="mt-1 text-xs text-[color:var(--pf-text-tertiary)]">
-                          Fill variables once, then copy anywhere.
+                          Fill in the details once, then copy and paste anywhere.
                         </div>
                       </div>
                       <div
@@ -1817,14 +1960,14 @@ export default function Home() {
                           "flex flex-wrap items-center gap-2",
                           activeTourTarget === "copy-actions" ? "pf-tour-focus rounded-[12px] p-2" : ""
                         )}
-                      >
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          aria-expanded={isVariablesExpanded}
-                          onClick={() => setIsVariablesOpen((open) => !open)}
                         >
-                          Variables ({selectedPrompt.variables.length})
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            aria-expanded={isVariablesExpanded}
+                            onClick={() => setIsVariablesOpen((open) => !open)}
+                          >
+                          Fill fields ({selectedPrompt.variables.length})
                           {missingRequired.length ? (
                             <span className="ml-2 rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-600">
                               {missingRequired.length} required
@@ -1840,22 +1983,26 @@ export default function Home() {
                         >
                           Copy
                         </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleCopy("markdown")}
-                          disabled={missingRequired.length > 0}
-                        >
-                          Copy Markdown
-                        </Button>
-                        <Button type="button" size="sm" variant="secondary" onClick={() => setIsFillDrawerOpen(true)}>
-                          Quick fill panel
-                        </Button>
+                        {isAdvancedMode ? (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleCopy("markdown")}
+                              disabled={missingRequired.length > 0}
+                            >
+                              Copy Markdown
+                            </Button>
+                            <Button type="button" size="sm" variant="secondary" onClick={() => setIsFillDrawerOpen(true)}>
+                              Quick fill panel
+                            </Button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                     <div className="mt-2 text-[11px] text-[color:var(--pf-text-tertiary)]">
-                      Shortcut: <span className="font-mono">Ctrl/Cmd + Enter</span> copies the rendered prompt.
+                      Shortcut: <span className="font-mono">Ctrl/Cmd + Enter</span> copies your prompt.
                     </div>
                     {isVariablesExpanded ? (
                       <div
@@ -1864,10 +2011,10 @@ export default function Home() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-xs font-semibold text-[color:var(--pf-text)]">
-                            Variables
+                            Fill-in fields
                           </div>
                           <Button type="button" size="sm" variant="secondary" onClick={handleResetValues}>
-                            Reset
+                            Reset fields
                           </Button>
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -2028,8 +2175,12 @@ export default function Home() {
                       </div>
                     ) : null}
                     {missingRequired.length > 0 ? (
-                      <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-600">
-                        Missing required fields:{" "}
+                      <div
+                        role="status"
+                        aria-live="polite"
+                        className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-600"
+                      >
+                        Please fill these required fields:{" "}
                         <span className="font-semibold">
                           {missingRequired.map((item) => humanizeVariableName(item.name)).join(", ")}
                         </span>
@@ -2048,7 +2199,7 @@ export default function Home() {
                         .
                       </div>
                     ) : null}
-                    <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3 text-xs leading-5 text-[color:var(--pf-text)]">
+                    <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-4 text-sm leading-7 text-[color:var(--pf-text)]">
                       {preview}
                     </pre>
                   </div>
@@ -2074,56 +2225,65 @@ export default function Home() {
                       Tip: Use placeholders like{" "}
                       <span className="font-mono">{"{{recipient_name}}"}</span>.
                     </div>
-                    <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
-                          Detected placeholders ({templateVariableNames.length})
+                    {isAdvancedMode ? (
+                      <div className="mt-3 space-y-2 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
+                            Detected placeholders ({templateVariableNames.length})
+                          </div>
+                          {missingSchemaVariables.length > 0 ? (
+                            <Button type="button" size="sm" variant="secondary" onClick={handleAddMissingTemplateVariables}>
+                              Add missing vars
+                            </Button>
+                          ) : null}
                         </div>
-                        {missingSchemaVariables.length > 0 ? (
-                          <Button type="button" size="sm" variant="secondary" onClick={handleAddMissingTemplateVariables}>
-                            Add missing vars
-                          </Button>
+                        {templateVariableNames.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {templateVariableNames.map((name) => (
+                              <span
+                                key={name}
+                                className={cx(
+                                  "rounded-full border px-2 py-[2px] font-mono text-[10px]",
+                                  missingSchemaVariables.includes(name)
+                                    ? "border-amber-500/40 bg-amber-500/10 text-amber-700"
+                                    : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] text-[color:var(--pf-text-tertiary)]"
+                                )}
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-[color:var(--pf-text-tertiary)]">
+                            No placeholders detected yet.
+                          </div>
+                        )}
+                        {unboundSchemaVariables.length > 0 ? (
+                          <div className="text-[11px] text-[color:var(--pf-text-tertiary)]">
+                            Unused schema variables:{" "}
+                            <span className="font-mono">
+                              {unboundSchemaVariables.map((item) => item.name).join(", ")}
+                            </span>
+                          </div>
                         ) : null}
                       </div>
-                      {templateVariableNames.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {templateVariableNames.map((name) => (
-                            <span
-                              key={name}
-                              className={cx(
-                                "rounded-full border px-2 py-[2px] font-mono text-[10px]",
-                                missingSchemaVariables.includes(name)
-                                  ? "border-amber-500/40 bg-amber-500/10 text-amber-700"
-                                  : "border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] text-[color:var(--pf-text-tertiary)]"
-                              )}
-                            >
-                              {name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-[color:var(--pf-text-tertiary)]">
-                          No placeholders detected yet.
-                        </div>
-                      )}
-                      {unboundSchemaVariables.length > 0 ? (
-                        <div className="text-[11px] text-[color:var(--pf-text-tertiary)]">
-                          Unused schema variables:{" "}
-                          <span className="font-mono">
-                            {unboundSchemaVariables.map((item) => item.name).join(", ")}
-                          </span>
-                        </div>
-                      ) : null}
-                    </div>
+                    ) : (
+                      <div className="mt-3 rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-xs text-[color:var(--pf-text-tertiary)]">
+                        Tip: Keep it simple. Add placeholders only for parts you change often, like{" "}
+                        <span className="font-mono">{"{{recipient_name}}"}</span> or{" "}
+                        <span className="font-mono">{"{{topic}}"}</span>.
+                      </div>
+                    )}
                   </div>
 
-	                  <div className="overflow-hidden rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]">
-	                    <div className="flex items-center justify-between border-b border-[color:var(--pf-border)] px-4 py-3">
-	                      <div className="text-sm font-semibold text-[color:var(--pf-text)]">Variables</div>
-	                      <Button type="button" size="sm" variant="secondary" onClick={handleAddVariable}>
-	                        Add variable
-	                      </Button>
-	                    </div>
+                  {isAdvancedMode ? (
+                    <div className="overflow-hidden rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)]">
+                      <div className="flex items-center justify-between border-b border-[color:var(--pf-border)] px-4 py-3">
+                        <div className="text-sm font-semibold text-[color:var(--pf-text)]">Variables</div>
+                        <Button type="button" size="sm" variant="secondary" onClick={handleAddVariable}>
+                          Add field
+                        </Button>
+                      </div>
                     <div className="space-y-3 p-4">
                       {selectedPrompt.variables.length ? (
                         selectedPrompt.variables.map((variable) => {
@@ -2153,7 +2313,7 @@ export default function Home() {
                               return;
                             }
                             if (selectedPrompt.variables.some((item) => item.name === normalizedDraft)) {
-                              setNotice("Variable already exists.");
+                              setNotice("Field already exists.");
                               return;
                             }
                             handleRenameVariable(variable.name, normalizedDraft);
@@ -2445,11 +2605,18 @@ export default function Home() {
                         })
                       ) : (
                         <div className="rounded-[16px] border border-dashed border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-4 py-3 text-xs text-[color:var(--pf-text-tertiary)]">
-                          No variables yet. Use Extract variables or Add variable.
+                          No fields yet. Use Suggest fields (AI) or Add field.
                         </div>
                       )}
                     </div>
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-4 py-3 text-sm text-[color:var(--pf-text-secondary)]">
+                      PromptFill will suggest fields when you click{" "}
+                      <span className="font-medium text-[color:var(--pf-text)]">Suggest fields (AI)</span>. You can
+                      still type placeholders manually in the template.
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2468,15 +2635,19 @@ export default function Home() {
       />
 
       {notice && (
-        <div className="fixed bottom-6 right-6 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-4 py-3 text-sm text-[color:var(--pf-text)] shadow-[var(--pf-shadow-elevated)]">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-4 py-3 text-sm text-[color:var(--pf-text)] shadow-[var(--pf-shadow-elevated)]"
+        >
           {notice}
         </div>
       )}
 
       <Modal
         open={showWelcome && !tourDismissed && !tourComplete}
-        title="Welcome to PromptFill Studio"
-        description="Want a 90-second guided walkthrough of the core workflow?"
+        title="Welcome to PromptFill"
+        description="Want a quick 90-second tour?"
         onClose={() => {
           setShowWelcome(false);
           setTourDismissed(true);
@@ -2484,7 +2655,7 @@ export default function Home() {
       >
         <div className="space-y-4">
           <div className="rounded-[16px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3 text-sm text-[color:var(--pf-text-secondary)]">
-            You will learn how to manage your library, fill variables, refine templates, and share prompts without drift.
+            We will show you how to save prompts, fill in details, and copy polished outputs fast.
           </div>
           <div className="flex justify-end gap-2">
             <Button
@@ -2507,8 +2678,8 @@ export default function Home() {
 
       <Modal
         open={isStarterOpen}
-        title="Use-case starters"
-        description="Start from battle-tested templates aligned to the core PromptFill use cases."
+        title="Starter examples"
+        description="Pick a ready-to-use prompt and tailor it for your situation."
         onClose={() => setIsStarterOpen(false)}
       >
         <div className="space-y-3">
@@ -2543,8 +2714,8 @@ export default function Home() {
 
       <Modal
         open={isExtractProposalOpen}
-        title="Review extraction proposal"
-        description="Apply variable extraction safely. Nothing changes until you confirm."
+        title="Review suggested fields"
+        description="We found fill-in fields you may want to use. Nothing changes until you confirm."
         onClose={() => {
           setIsExtractProposalOpen(false);
           setExtractionProposal(null);
@@ -2557,24 +2728,26 @@ export default function Home() {
               <span className="font-semibold text-[color:var(--pf-text)]">
                 {extractionProposal.detectedNames.length}
               </span>{" "}
-              placeholders, with{" "}
+              fill-in field{extractionProposal.detectedNames.length === 1 ? "" : "s"}, including{" "}
               <span className="font-semibold text-[color:var(--pf-text)]">
                 {extractionProposal.addedVariables.length}
               </span>{" "}
-              new variable{extractionProposal.addedVariables.length === 1 ? "" : "s"} and{" "}
+              new field{extractionProposal.addedVariables.length === 1 ? "" : "s"} and{" "}
               <span className="font-semibold text-[color:var(--pf-text)]">
                 {extractionProposal.unreferencedVariables.length}
               </span>{" "}
-              existing variable{extractionProposal.unreferencedVariables.length === 1 ? "" : "s"} no longer referenced.
-              <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
-                Source: {extractionProposal.source}
-              </div>
+              existing field{extractionProposal.unreferencedVariables.length === 1 ? "" : "s"} not currently used in the prompt.
+              {isAdvancedMode ? (
+                <div className="mt-2 text-xs text-[color:var(--pf-text-tertiary)]">
+                  Generated by: {extractionProposal.source}
+                </div>
+              ) : null}
             </div>
 
             {extractionProposal.inferenceNotes.length ? (
               <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
-                  AI assist notes
+                  Suggestion notes
                 </div>
                 <ul className="mt-2 space-y-1 text-xs text-[color:var(--pf-text-secondary)]">
                   {extractionProposal.inferenceNotes.map((note) => (
@@ -2587,7 +2760,7 @@ export default function Home() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
-                  Added variables
+                  New fields
                 </div>
                 {extractionProposal.addedVariables.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -2607,7 +2780,7 @@ export default function Home() {
 
               <div className="rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] p-3">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--pf-text-tertiary)]">
-                  Unreferenced existing
+                  Not used in current prompt
                 </div>
                 {extractionProposal.unreferencedVariables.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -2633,7 +2806,7 @@ export default function Home() {
                   checked={keepUnreferencedVariables}
                   onChange={(event) => setKeepUnreferencedVariables(event.target.checked)}
                 />
-                Keep unreferenced existing variables (recommended).
+                Keep fields that are not currently used (recommended).
               </label>
               <label className="flex items-center gap-2 text-sm text-[color:var(--pf-text-secondary)]">
                 <input
@@ -2641,7 +2814,7 @@ export default function Home() {
                   checked={normalizeExtractedSyntax}
                   onChange={(event) => setNormalizeExtractedSyntax(event.target.checked)}
                 />
-                Normalize placeholder syntax to <span className="font-mono text-xs">{"{{snake_case}}"}</span>.
+                Format placeholders as <span className="font-mono text-xs">{"{{snake_case}}"}</span>.
               </label>
             </div>
 
@@ -2658,7 +2831,7 @@ export default function Home() {
                 Cancel
               </Button>
               <Button type="button" size="sm" variant="primary" onClick={handleApplyExtraction}>
-                Apply extraction
+                Apply suggestions
               </Button>
             </div>
           </div>
@@ -2763,8 +2936,8 @@ export default function Home() {
 
       <Modal
         open={isVariableModalOpen}
-        title="Add variable"
-        description="Define a new variable and how it should render in the variables drawer."
+        title="Add field"
+        description="Add a fill-in field and choose how it appears."
         onClose={() => setIsVariableModalOpen(false)}
       >
         <div className="space-y-3">
@@ -2847,7 +3020,7 @@ export default function Home() {
 	              Cancel
 	            </Button>
 	            <Button type="button" size="sm" variant="primary" onClick={handleConfirmAddVariable}>
-	              Add variable
+	              Add field
 	            </Button>
 	          </div>
 	        </div>

@@ -107,6 +107,7 @@ body {
     linear-gradient(180deg, var(--pf-bg-elevated) 0%, var(--pf-bg) 100%);
   color: var(--foreground);
   font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+  line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -144,12 +145,10 @@ textarea {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--pf-border) 32%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--pf-border) 22%, transparent) 1px, transparent 1px);
-  background-size: 38px 38px;
-  opacity: 0.18;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0) 74%);
+  background:
+    radial-gradient(600px 260px at 14% 0%, color-mix(in srgb, var(--pf-accent) 8%, transparent), transparent 72%),
+    radial-gradient(560px 240px at 90% 4%, rgba(244, 126, 77, 0.08), transparent 74%);
+  opacity: 0.52;
 }
 
 .pf-fade-lift {

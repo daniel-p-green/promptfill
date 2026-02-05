@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PromptFill Studio",
-  description: "Design, fill, and share reusable prompts with guided onboarding and polished UX.",
+  title: "PromptFill",
+  description: "Save your best prompts, fill in the details, and copy polished results fast.",
 };
 
 export default function RootLayout({
