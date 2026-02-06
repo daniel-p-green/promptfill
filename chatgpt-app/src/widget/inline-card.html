@@ -147,31 +147,25 @@
       <div class="header">
         <div>
           <h1 class="title">PromptFill</h1>
-          <p class="subtitle">Extract fields from a prompt, then render the final text.</p>
+          <p class="subtitle">Ask ChatGPT to "turn this prompt into a template" to begin.</p>
         </div>
-      </div>
-
-      <div class="section">
-        <label class="field-label" for="prompt-input">Prompt text</label>
-        <textarea id="prompt-input" placeholder="Paste a rough prompt here..."></textarea>
       </div>
 
       <div class="section fields" id="fields"></div>
 
       <div class="actions">
-        <button id="extract-button" class="primary" type="button">Extract fields</button>
-        <button id="render-button" type="button" disabled>Render prompt</button>
+        <button id="insert-button" type="button" disabled>Insert into chat</button>
+        <button id="render-button" class="primary" type="button" disabled>Render prompt</button>
       </div>
 
-      <div id="status" class="status">Ready.</div>
+      <div id="status" class="status">Waiting for extracted fields...</div>
       <pre id="rendered" class="rendered" hidden></pre>
       <div class="hint">This inline card keeps interactions lightweight and conversation-first.</div>
     </article>
 
     <script type="module">
-      const promptInput = document.getElementById("prompt-input");
       const fieldsContainer = document.getElementById("fields");
-      const extractButton = document.getElementById("extract-button");
+      const insertButton = document.getElementById("insert-button");
       const renderButton = document.getElementById("render-button");
       const statusEl = document.getElementById("status");
       const renderedEl = document.getElementById("rendered");
@@ -199,6 +193,7 @@
 
         if (!extraction || !Array.isArray(extraction.variables) || extraction.variables.length === 0) {
           renderButton.disabled = true;
+          insertButton.disabled = true;
           return;
         }
 
@@ -268,6 +263,7 @@
           renderFields();
           renderedEl.hidden = true;
           renderedEl.textContent = "";
+          insertButton.disabled = true;
           setStatus(`Extracted ${content.summary?.variable_count ?? content.variables?.length ?? 0} fields.`);
           return;
         }
@@ -275,6 +271,9 @@
         if (content.kind === "render") {
           renderedEl.hidden = false;
           renderedEl.textContent = content.rendered_prompt ?? "";
+          const hasMissingRequired =
+            Array.isArray(content.missing_required) && content.missing_required.length > 0;
+          insertButton.disabled = hasMissingRequired || !content.rendered_prompt;
 
           if (Array.isArray(content.missing_required) && content.missing_required.length > 0) {
             setStatus(`Missing required: ${content.missing_required.join(", ")}`);
@@ -354,29 +353,6 @@
         setStatus("Unable to initialize widget bridge.");
       });
 
-      extractButton.addEventListener("click", async () => {
-        const promptText = promptInput.value.trim();
-        if (!promptText) {
-          setStatus("Add prompt text first.");
-          return;
-        }
-
-        extractButton.disabled = true;
-        renderButton.disabled = true;
-        setStatus("Extracting fields...");
-
-        try {
-          await bridgeReady;
-          await callTool("extract_prompt_fields", { prompt_text: promptText });
-        } catch (error) {
-          console.error("extract_prompt_fields failed", error);
-          setStatus("Could not extract fields.");
-        } finally {
-          extractButton.disabled = false;
-          renderButton.disabled = !extraction;
-        }
-      });
-
       renderButton.addEventListener("click", async () => {
         if (!extraction) return;
 
@@ -395,6 +371,37 @@
           setStatus("Could not render prompt.");
         } finally {
           renderButton.disabled = false;
+        }
+      });
+
+      insertButton.addEventListener("click", async () => {
+        const renderedText = renderedEl.textContent?.trim();
+        if (!renderedText) {
+          setStatus("Render a prompt first.");
+          return;
+        }
+
+        insertButton.disabled = true;
+        setStatus("Inserting into chat...");
+
+        try {
+          await bridgeReady;
+          const result = await rpcRequest("ui/message", {
+            role: "user",
+            content: [{ type: "text", text: renderedText }],
+          });
+
+          if (result?.isError) {
+            setStatus("Could not insert into chat.");
+            return;
+          }
+
+          setStatus("Inserted into chat.");
+        } catch (error) {
+          console.error("ui/message failed", error);
+          setStatus("Could not insert into chat.");
+        } finally {
+          insertButton.disabled = false;
         }
       });
     </script>
