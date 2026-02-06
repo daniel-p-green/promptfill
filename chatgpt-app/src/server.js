@@ -298,6 +298,13 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
     name: "promptfill-mcp",
     version: "0.1.0",
   });
+  const templateVariableSchema = z.object({
+    name: z.string(),
+    type: z.enum(["string", "text", "number", "boolean", "enum"]).optional(),
+    required: z.boolean().optional(),
+    defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    options: z.array(z.string()).optional(),
+  });
   const widgetCsp = {
     connectDomains: [],
     resourceDomains: ["https://persistent.oaistatic.com"],
@@ -402,15 +409,7 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
       inputSchema: {
         template: z.string().min(1).describe("Prompt template containing {{variables}}."),
         variables: z
-          .array(
-            z.object({
-              name: z.string(),
-              type: z.enum(["string", "text", "number", "boolean", "enum"]).optional(),
-              required: z.boolean().optional(),
-              defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
-              options: z.array(z.string()).optional(),
-            })
-          )
+          .array(templateVariableSchema)
           .optional()
           .describe("Variable schema for validation and defaults."),
         values: z
@@ -470,15 +469,7 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
         name: z.string().min(1).describe("Template display name."),
         template: z.string().min(1).describe("Prompt template text."),
         variables: z
-          .array(
-            z.object({
-              name: z.string(),
-              type: z.enum(["string", "text", "number", "boolean", "enum"]).optional(),
-              required: z.boolean().optional(),
-              defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
-              options: z.array(z.string()).optional(),
-            })
-          )
+          .array(templateVariableSchema)
           .optional()
           .describe("Optional variable schema."),
       },
@@ -516,6 +507,108 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
           },
         },
         content: [{ type: "text", text: `Saved template "${record.name}".` }],
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
+    "get_template",
+    {
+      title: "Get saved template details",
+      description: "Use this when the user wants to open one saved PromptFill template by id.",
+      inputSchema: {
+        id: z.string().min(1).describe("Template id to load."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        ui: { resourceUri: INLINE_WIDGET_URI },
+        "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
+        "openai/toolInvocation/invoking": "Loading template...",
+        "openai/toolInvocation/invoked": "Template loaded",
+      },
+    },
+    async ({ id }) => {
+      const template = await templateStore.getTemplate(id);
+      return {
+        structuredContent: {
+          kind: "get",
+          template: template
+            ? {
+                id: template.id,
+                name: template.name,
+                template: template.template,
+                variables: template.variables ?? [],
+                created_at: template.createdAt,
+                updated_at: template.updatedAt ?? null,
+              }
+            : null,
+        },
+        content: [
+          {
+            type: "text",
+            text: template ? `Loaded template "${template.name}".` : `No template found for id "${id}".`,
+          },
+        ],
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
+    "search_templates",
+    {
+      title: "Search saved templates",
+      description: "Use this when the user wants to quickly find saved PromptFill templates.",
+      inputSchema: {
+        query: z.string().optional().describe("Search text to match template names and content."),
+        limit: z.number().int().min(1).max(50).optional().describe("Maximum number of matches."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        ui: { resourceUri: INLINE_WIDGET_URI },
+        "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
+        "openai/toolInvocation/invoking": "Searching templates...",
+        "openai/toolInvocation/invoked": "Search complete",
+      },
+    },
+    async ({ query = "", limit = 10 }) => {
+      const searched = await templateStore.searchTemplates(query, { limit });
+      const templates = searched.map((item) => ({
+        id: item.id,
+        name: item.name,
+        variable_count: Array.isArray(item.variables) ? item.variables.length : 0,
+        created_at: item.createdAt,
+      }));
+
+      return {
+        structuredContent: {
+          kind: "search",
+          query,
+          templates,
+        },
+        content: [
+          {
+            type: "text",
+            text: templates.length
+              ? `Found ${templates.length} template match${templates.length === 1 ? "" : "es"}.`
+              : "No matching templates found.",
+          },
+        ],
       };
     }
   );
@@ -562,6 +655,114 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
             text: templates.length
               ? `Found ${templates.length} saved template${templates.length === 1 ? "" : "s"}.`
               : "No saved templates yet.",
+          },
+        ],
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
+    "update_template",
+    {
+      title: "Update a saved template",
+      description: "Use this when the user wants to change an existing saved PromptFill template.",
+      inputSchema: {
+        id: z.string().min(1).describe("Template id to update."),
+        name: z.string().optional().describe("Updated display name."),
+        template: z.string().optional().describe("Updated template text."),
+        variables: z.array(templateVariableSchema).optional().describe("Updated variable schema."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        "openai/toolInvocation/invoking": "Updating template...",
+        "openai/toolInvocation/invoked": "Updated",
+      },
+    },
+    async ({ id, name, template, variables }) => {
+      const updates = {};
+      if (name !== undefined) updates.name = name;
+      if (template !== undefined) updates.template = template;
+      if (variables !== undefined) updates.variables = variables;
+
+      if (Object.keys(updates).length === 0) {
+        return {
+          structuredContent: {
+            kind: "update",
+            updated: false,
+            template: null,
+            reason: "missing_updates",
+          },
+          content: [{ type: "text", text: "No updates provided." }],
+        };
+      }
+
+      const updated = await templateStore.updateTemplate(id, updates);
+
+      return {
+        structuredContent: {
+          kind: "update",
+          updated: Boolean(updated),
+          template: updated
+            ? {
+                id: updated.id,
+                name: updated.name,
+                variable_count: Array.isArray(updated.variables) ? updated.variables.length : 0,
+                created_at: updated.createdAt,
+                updated_at: updated.updatedAt ?? null,
+              }
+            : null,
+        },
+        content: [
+          {
+            type: "text",
+            text: updated ? `Updated template "${updated.name}".` : `No template found for id "${id}".`,
+          },
+        ],
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
+    "delete_template",
+    {
+      title: "Delete a saved template",
+      description: "Use this when the user wants to remove a saved PromptFill template.",
+      inputSchema: {
+        id: z.string().min(1).describe("Template id to delete."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        "openai/toolInvocation/invoking": "Deleting template...",
+        "openai/toolInvocation/invoked": "Deleted",
+      },
+    },
+    async ({ id }) => {
+      const deleted = await templateStore.deleteTemplate(id);
+
+      return {
+        structuredContent: {
+          kind: "delete",
+          id,
+          deleted,
+        },
+        content: [
+          {
+            type: "text",
+            text: deleted ? `Deleted template "${id}".` : `No template found for id "${id}".`,
           },
         ],
       };

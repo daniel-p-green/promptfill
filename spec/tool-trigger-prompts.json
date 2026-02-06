@@ -11,6 +11,26 @@
     {
       "prompt": "Save this as a reusable PromptFill template named Weekly Update.",
       "expected_tool": "save_template"
+    },
+    {
+      "prompt": "List all saved PromptFill templates.",
+      "expected_tool": "list_templates"
+    },
+    {
+      "prompt": "Open the PromptFill template with id tpl_123.",
+      "expected_tool": "get_template"
+    },
+    {
+      "prompt": "Search PromptFill templates for onboarding messages.",
+      "expected_tool": "search_templates"
+    },
+    {
+      "prompt": "Update PromptFill template tpl_123 and rename it to Launch Brief.",
+      "expected_tool": "update_template"
+    },
+    {
+      "prompt": "Delete PromptFill template tpl_123.",
+      "expected_tool": "delete_template"
     }
   ],
   "indirect": [
@@ -25,6 +45,22 @@
     {
       "prompt": "What templates do I already have saved here?",
       "expected_tool": "list_templates"
+    },
+    {
+      "prompt": "Load the template I saved yesterday so I can edit it.",
+      "expected_tool": "get_template"
+    },
+    {
+      "prompt": "Find my saved prompts about support escalations.",
+      "expected_tool": "search_templates"
+    },
+    {
+      "prompt": "Change the name and fields for that saved template.",
+      "expected_tool": "update_template"
+    },
+    {
+      "prompt": "Remove the old template we no longer use.",
+      "expected_tool": "delete_template"
     }
   ],
   "negative": [

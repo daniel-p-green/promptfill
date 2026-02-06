@@ -11,7 +11,16 @@ test("tool descriptions start with Use this when the user wants to", async () =>
     const tools = Array.isArray(result?.tools) ? result.tools : [];
     const byName = new Map(tools.map((tool) => [tool.name, tool]));
 
-    for (const toolName of ["extract_prompt_fields", "render_prompt", "save_template", "list_templates"]) {
+    for (const toolName of [
+      "extract_prompt_fields",
+      "render_prompt",
+      "save_template",
+      "list_templates",
+      "get_template",
+      "search_templates",
+      "update_template",
+      "delete_template",
+    ]) {
       const tool = byName.get(toolName);
       assert.ok(tool, `expected tool metadata for ${toolName}`);
       assert.equal(

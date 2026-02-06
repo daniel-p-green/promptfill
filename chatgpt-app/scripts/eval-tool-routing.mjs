@@ -7,7 +7,16 @@ const ROUTING_EVAL_REQUIRED = /^(1|true|yes|on)$/i.test(
   process.env.ROUTING_EVAL_REQUIRED ?? ""
 );
 
-const toolNames = ["extract_prompt_fields", "render_prompt", "save_template", "list_templates"];
+const toolNames = [
+  "extract_prompt_fields",
+  "render_prompt",
+  "save_template",
+  "list_templates",
+  "get_template",
+  "search_templates",
+  "update_template",
+  "delete_template",
+];
 const allowedPredictions = new Set([...toolNames, "NONE"]);
 
 const fixturePath = new URL("../../spec/tool-trigger-prompts.json", import.meta.url);
@@ -16,7 +25,7 @@ const reportPath = new URL("../../output/tool-routing-eval.json", import.meta.ur
 const systemInstruction = [
   "You are evaluating whether a user message should route to a PromptFill tool.",
   "Return exactly one token and no explanation.",
-  "Allowed values: extract_prompt_fields, render_prompt, save_template, list_templates, NONE.",
+  "Allowed values: extract_prompt_fields, render_prompt, save_template, list_templates, get_template, search_templates, update_template, delete_template, NONE.",
   "Use NONE if no PromptFill tool should be selected.",
 ].join(" ");
 

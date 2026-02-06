@@ -51,6 +51,33 @@ test("runtime MCP flow invokes tools and keeps template state session-scoped", a
       },
     });
     assert.equal(saved?.structuredContent?.kind, "save");
+    const savedTemplateId = saved?.structuredContent?.template?.id;
+    assert.ok(savedTemplateId, "save_template should return template id");
+
+    const fetched = await firstClient.callTool({
+      name: "get_template",
+      arguments: { id: savedTemplateId },
+    });
+    assert.equal(fetched?.structuredContent?.kind, "get");
+    assert.equal(fetched?.structuredContent?.template?.id, savedTemplateId);
+
+    const searched = await firstClient.callTool({
+      name: "search_templates",
+      arguments: { query: "email" },
+    });
+    assert.equal(searched?.structuredContent?.kind, "search");
+    assert.equal(searched?.structuredContent?.templates?.length, 1);
+    assert.equal(searched?.structuredContent?.templates?.[0]?.id, savedTemplateId);
+
+    const updated = await firstClient.callTool({
+      name: "update_template",
+      arguments: {
+        id: savedTemplateId,
+        name: "Updated email template",
+      },
+    });
+    assert.equal(updated?.structuredContent?.kind, "update");
+    assert.equal(updated?.structuredContent?.template?.name, "Updated email template");
 
     const firstList = await firstClient.callTool({ name: "list_templates", arguments: {} });
     const secondList = await secondClient.callTool({ name: "list_templates", arguments: {} });
@@ -59,6 +86,19 @@ test("runtime MCP flow invokes tools and keeps template state session-scoped", a
     assert.equal(secondList?.structuredContent?.kind, "list");
     assert.equal(firstList?.structuredContent?.templates?.length, 1);
     assert.equal(secondList?.structuredContent?.templates?.length, 0);
+
+    const deleted = await firstClient.callTool({
+      name: "delete_template",
+      arguments: { id: savedTemplateId },
+    });
+    assert.equal(deleted?.structuredContent?.kind, "delete");
+    assert.equal(deleted?.structuredContent?.deleted, true);
+
+    const afterDelete = await firstClient.callTool({
+      name: "list_templates",
+      arguments: {},
+    });
+    assert.equal(afterDelete?.structuredContent?.templates?.length, 0);
   });
 });
 
