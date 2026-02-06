@@ -130,6 +130,8 @@ Tool contracts must be explicit, typed, and deterministic.
 
 - auth and account mapping
 - durable template persistence on Supabase
+- single-tenant user-scoped storage model first
+- org/team shared tenancy deferred until after P1 stabilization
 - search/update/delete template tools
 
 ### Phase P2
@@ -166,3 +168,5 @@ The release-candidate gate ran successfully with:
 ## Media Artifact Policy
 
 - Keep ultimate demo MP4 and GIF assets in-repo for long-term project packaging.
+- Track heavy render artifacts (for example MP4) with Git LFS.
+- Keep README embed GIFs low-resolution by default for load hygiene.

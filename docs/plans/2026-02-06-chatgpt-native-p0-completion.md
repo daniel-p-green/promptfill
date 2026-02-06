@@ -30,10 +30,14 @@
 
 1. Fullscreen advanced editing handoff ships in P0 (not behind a flag).
 2. P1 durable storage target is Supabase.
+   - Start with single-tenant user namespace model.
+   - Defer org/team shared tenancy until after P1 stability.
 3. Golden prompt ownership model:
    - Product owns prompt sets and pass/fail thresholds.
    - Engineering owns harness execution and regression reporting.
 4. Ultimate demo MP4 and GIF artifacts are versioned long-term in this repo.
+   - Heavy render artifacts use Git LFS.
+   - README embeds should use lower-resolution GIF variants for load hygiene.
 5. P0 persistence contract is strictly chat-scoped UX:
    - no cross-chat guarantee
    - process-memory reuse is implementation detail only
@@ -185,6 +189,7 @@ export function createTemplateStoreAdapter(kind = "memory") { /* ... */ }
 ```
 
 Add a Supabase adapter stub that implements the same interface and is not yet required for P0 runtime.
+Model this as single-tenant first (user-scoped templates), with schema notes for future team tenancy.
 
 **Step 4: Run tests to verify pass**
 
@@ -310,8 +315,8 @@ Run:
 
 ```bash
 mkdir -p ../docs/media
-ffmpeg -y -i ../renders/promptfill-ultimate-web.mp4 -vf "fps=12,scale=960:-1:flags=lanczos" ../docs/media/promptfill-web-demo.gif
-ffmpeg -y -i ../renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=12,scale=960:-1:flags=lanczos" ../docs/media/promptfill-chatgpt-demo.gif
+ffmpeg -y -i ../renders/promptfill-ultimate-web.mp4 -vf "fps=8,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" ../docs/media/promptfill-web-demo.gif
+ffmpeg -y -i ../renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=8,scale=640:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" ../docs/media/promptfill-chatgpt-demo.gif
 ```
 
 Expected: two lightweight GIF loops suitable for README display.
@@ -343,3 +348,4 @@ git commit -m "feat(video): add ultimate web/chatgpt demos and refresh readme me
 ```
 
 Artifact policy: keep MP4 and GIF deliverables versioned in git for long-term project storytelling.
+Use Git LFS for heavy media (MP4), and keep embed GIFs low-resolution by default.

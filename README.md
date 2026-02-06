@@ -152,6 +152,8 @@ See more in `docs/USE_CASES.md`.
 ### Install
 
 ```bash
+cd chatgpt-app && npm install
+cd ..
 cd web && npm install
 cd ../video && npm install
 cd ..
@@ -174,6 +176,7 @@ npm run dev:video
 ### Tests & lint
 
 ```bash
+npm run test:chatgpt-app
 npm run test:web
 npm run lint:web
 npm run lint:video
@@ -214,6 +217,7 @@ variables:
 ## Video asset pipeline
 
 The explainer is built around real UI captures so the visuals stay honest.
+Full MP4 artifacts in `renders/` are tracked with Git LFS, while README GIF embeds stay lower resolution.
 
 ```bash
 cd video
@@ -221,27 +225,19 @@ npm run capture:ui
 ```
 
 <details>
-  <summary>Regenerate the README demo GIF</summary>
+  <summary>Regenerate ultimate demos and low-res README embeds</summary>
 
-The README uses a tiny GIF slideshow assembled from Remotion still frames.
+Heavy demo videos are kept in `renders/` (Git LFS). README embeds are lower-resolution GIFs in `docs/media/`.
 
 ```bash
-mkdir -p video/out
 cd video
-npx remotion still src/index.ts PromptFillDemo out/PromptFillDemo-f30.png --frame=30 --quiet
-npx remotion still src/index.ts PromptFillDemo out/PromptFillDemo-f160.png --frame=160 --quiet
-npx remotion still src/index.ts PromptFillDemo out/PromptFillDemo-f450.png --frame=450 --quiet
-npx remotion still src/index.ts PromptFillDemo out/PromptFillDemo-f740.png --frame=740 --quiet
+npx remotion render src/index.ts PromptFillDemo ../renders/promptfill-ultimate-web.mp4
+npx remotion render src/index.ts PromptFillFlagshipPromo ../renders/promptfill-ultimate-chatgpt.mp4
 cd ..
 
 mkdir -p docs/media
-ffmpeg -y \
-  -loop 1 -t 1.3 -i video/out/PromptFillDemo-f30.png \
-  -loop 1 -t 1.3 -i video/out/PromptFillDemo-f160.png \
-  -loop 1 -t 1.3 -i video/out/PromptFillDemo-f450.png \
-  -loop 1 -t 1.3 -i video/out/PromptFillDemo-f740.png \
-  -filter_complex "[0:v][1:v][2:v][3:v]concat=n=4:v=1:a=0,fps=12,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=diff[p];[s1][p]paletteuse=dither=sierra2_4a" \
-  docs/media/promptfill-demo.gif
+ffmpeg -y -i renders/promptfill-ultimate-web.mp4 -vf "fps=6,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=96:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" docs/media/promptfill-web-demo.gif
+ffmpeg -y -i renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=4,scale=448:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=80:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" docs/media/promptfill-chatgpt-demo.gif
 ```
 </details>
 

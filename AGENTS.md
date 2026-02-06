@@ -14,6 +14,7 @@ Current direction is resolved:
 - PromptFill generates prompts; it does not execute prompts.
 - Fullscreen advanced editing handoff is part of P0 ship scope.
 - P1 durable storage target is Supabase.
+- P1 starts with single-tenant user namespace storage.
 
 Rule: never port the full web shell into ChatGPT inline cards.
 
@@ -43,6 +44,11 @@ Persistence rule for P0:
 
 - UX contract is chat-scoped state only.
 - Do not imply cross-chat durability until Supabase-backed P1 ships.
+
+Media hygiene rule:
+
+- Use Git LFS for heavy render artifacts (MP4).
+- Keep README embed GIFs low-resolution unless explicitly asked for high-res.
 
 ## Definition of Done
 

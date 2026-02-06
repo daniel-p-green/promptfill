@@ -32,6 +32,11 @@ npx remotion render src/index.ts PromptFillFlagshipPromo ../renders/promptfill-u
 
 ```bash
 mkdir -p ../docs/media
-ffmpeg -y -i ../renders/promptfill-ultimate-web.mp4 -vf "fps=12,scale=960:-1:flags=lanczos" ../docs/media/promptfill-web-demo.gif
-ffmpeg -y -i ../renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=12,scale=960:-1:flags=lanczos" ../docs/media/promptfill-chatgpt-demo.gif
+ffmpeg -y -i ../renders/promptfill-ultimate-web.mp4 -vf "fps=6,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=96:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" ../docs/media/promptfill-web-demo.gif
+ffmpeg -y -i ../renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=4,scale=448:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=80:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" ../docs/media/promptfill-chatgpt-demo.gif
 ```
+
+## Media storage policy
+
+- Full MP4 deliverables in `renders/` are long-term artifacts and should be tracked with Git LFS.
+- README embed GIFs in `docs/media/` should stay lower-resolution for documentation load hygiene.
