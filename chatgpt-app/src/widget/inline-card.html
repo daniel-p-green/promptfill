@@ -65,6 +65,12 @@
         padding: 8px 10px;
       }
 
+      input[type="checkbox"] {
+        width: auto;
+        min-height: 18px;
+        min-width: 18px;
+      }
+
       textarea {
         min-height: 92px;
         resize: vertical;
@@ -131,8 +137,6 @@
         white-space: pre-wrap;
         font-size: 12px;
         line-height: 1.5;
-        max-height: 220px;
-        overflow: auto;
       }
 
       .hint {
@@ -231,9 +235,37 @@
               fieldValues[variable.name] = event.currentTarget.value;
             });
             wrapper.appendChild(select);
+          } else if (variable.type === "boolean") {
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            const normalized =
+              current === true ||
+              current === "true" ||
+              current === 1 ||
+              current === "1";
+            input.checked = normalized;
+            fieldValues[variable.name] = normalized;
+            input.addEventListener("change", (event) => {
+              fieldValues[variable.name] = Boolean(event.currentTarget.checked);
+            });
+            wrapper.appendChild(input);
+          } else if (variable.type === "number") {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.value = current === "" || current === undefined || current === null ? "" : String(current);
+            input.addEventListener("input", (event) => {
+              const raw = event.currentTarget.value;
+              if (raw === "") {
+                fieldValues[variable.name] = "";
+                return;
+              }
+              const parsed = Number(raw);
+              fieldValues[variable.name] = Number.isFinite(parsed) ? parsed : "";
+            });
+            wrapper.appendChild(input);
           } else {
             const input = document.createElement("input");
-            input.type = variable.type === "number" ? "number" : "text";
+            input.type = "text";
             input.value = String(current);
             input.addEventListener("input", (event) => {
               fieldValues[variable.name] = event.currentTarget.value;

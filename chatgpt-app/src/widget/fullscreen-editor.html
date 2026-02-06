@@ -16,27 +16,28 @@
 
       body {
         margin: 0;
-        padding: 24px;
+        padding: 20px;
         background: transparent;
         color: canvastext;
       }
 
       .layout {
+        margin: 0 auto;
         display: grid;
-        gap: 16px;
-        max-width: 860px;
+        gap: 12px;
+        max-width: 1080px;
       }
 
       .surface {
         border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
         border-radius: 14px;
-        background: color-mix(in srgb, canvas 94%, transparent);
-        padding: 16px;
+        background: color-mix(in srgb, canvas 95%, transparent);
+        padding: 14px;
       }
 
       h1 {
         margin: 0;
-        font-size: 18px;
+        font-size: 20px;
       }
 
       p {
@@ -45,9 +46,31 @@
         line-height: 1.5;
       }
 
+      .grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      @media (min-width: 980px) {
+        .grid {
+          grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        }
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: color-mix(in srgb, canvastext 72%, transparent);
+      }
+
       textarea {
         width: 100%;
-        min-height: 220px;
+        min-height: 170px;
         border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
         border-radius: 10px;
         background: color-mix(in srgb, canvas 98%, transparent);
@@ -55,6 +78,52 @@
         font: inherit;
         padding: 10px 12px;
         resize: vertical;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      button {
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, canvastext 20%, transparent);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 7px 14px;
+        cursor: pointer;
+        background: color-mix(in srgb, canvas 94%, transparent);
+        color: inherit;
+      }
+
+      button.primary {
+        border-color: color-mix(in srgb, #10a37f 55%, transparent);
+        background: #10a37f;
+        color: #fff;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .status {
+        font-size: 12px;
+        color: color-mix(in srgb, canvastext 66%, transparent);
+      }
+
+      .rendered {
+        white-space: pre-wrap;
+        font-size: 12px;
+        line-height: 1.5;
+        border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
+        border-radius: 10px;
+        padding: 10px 12px;
+        min-height: 112px;
+        background: color-mix(in srgb, canvas 98%, transparent);
       }
 
       .hint {
@@ -69,20 +138,211 @@
       <section class="surface">
         <h1>PromptFill Advanced Editor</h1>
         <p>
-          Use this scoped fullscreen view for large prompt edits while keeping the inline card focused on
-          quick render and insert actions.
+          Use this scoped fullscreen view for larger template and schema edits. Render when ready, then
+          insert the final prompt back into conversation.
         </p>
       </section>
 
       <section class="surface">
-        <textarea readonly>
-Advanced editing handoff is available for:
-- refining long templates
-- adjusting complex variable structures
-- preparing reusable template drafts
-        </textarea>
-        <p class="hint">Return to chat when your draft is ready to continue the conversation-first flow.</p>
+        <div class="grid">
+          <label class="field">
+            <span class="field-label">Template</span>
+            <textarea id="template-input" spellcheck="false" placeholder="Draft template with {{variables}}..."></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Values JSON</span>
+            <textarea id="values-input" spellcheck="false" placeholder='{"recipient_name":"Alex","tone":"friendly"}'>{}</textarea>
+          </label>
+        </div>
+        <div class="field" style="margin-top: 10px">
+          <span class="field-label">Variables JSON</span>
+          <textarea id="variables-input" spellcheck="false" placeholder='[{"name":"recipient_name","type":"string","required":true}]'>[]</textarea>
+        </div>
+      </section>
+
+      <section class="surface">
+        <div class="actions">
+          <button id="insert-button" type="button" disabled>Insert into chat</button>
+          <button id="render-button" class="primary" type="button">Render prompt</button>
+        </div>
+        <p id="status" class="status" style="margin-top: 8px">Waiting for extracted fields...</p>
+        <pre id="rendered-output" class="rendered" hidden></pre>
+        <p class="hint">
+          Tip: start extraction inline, then continue editing here. Extraction results sync automatically
+          when this view receives tool-result updates.
+        </p>
       </section>
     </main>
+    <script type="module">
+      const templateInput = document.getElementById("template-input");
+      const variablesInput = document.getElementById("variables-input");
+      const valuesInput = document.getElementById("values-input");
+      const renderButton = document.getElementById("render-button");
+      const insertButton = document.getElementById("insert-button");
+      const statusEl = document.getElementById("status");
+      const renderedOutput = document.getElementById("rendered-output");
+
+      let rpcId = 0;
+      const pendingRequests = new Map();
+
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
+
+      function setRenderedPrompt(promptText, missingRequired = []) {
+        renderedOutput.hidden = false;
+        renderedOutput.textContent = promptText ?? "";
+        if (Array.isArray(missingRequired) && missingRequired.length > 0) {
+          insertButton.disabled = true;
+          setStatus(`Missing required: ${missingRequired.join(", ")}`);
+          return;
+        }
+        insertButton.disabled = !promptText;
+        setStatus(promptText ? "Rendered prompt ready." : "Render a prompt to continue.");
+      }
+
+      function parseJsonInput(label, raw, fallback) {
+        const trimmed = String(raw ?? "").trim();
+        if (!trimmed) return fallback;
+        try {
+          return JSON.parse(trimmed);
+        } catch {
+          throw new Error(`${label} must be valid JSON.`);
+        }
+      }
+
+      function applyToolResult(toolResult) {
+        const content = toolResult?.structuredContent;
+        if (!content || typeof content !== "object") return;
+
+        if (content.kind === "extraction") {
+          templateInput.value = String(content.template ?? "");
+          variablesInput.value = JSON.stringify(content.variables ?? [], null, 2);
+          valuesInput.value = "{}";
+          renderedOutput.hidden = true;
+          renderedOutput.textContent = "";
+          insertButton.disabled = true;
+          setStatus(`Loaded extraction with ${content.summary?.variable_count ?? 0} field(s).`);
+          return;
+        }
+
+        if (content.kind === "render") {
+          setRenderedPrompt(content.rendered_prompt ?? "", content.missing_required ?? []);
+        }
+      }
+
+      function rpcNotify(method, params) {
+        window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+      }
+
+      function rpcRequest(method, params) {
+        return new Promise((resolve, reject) => {
+          const id = ++rpcId;
+          pendingRequests.set(id, { resolve, reject });
+          window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+        });
+      }
+
+      async function callTool(name, args) {
+        const response = await rpcRequest("tools/call", {
+          name,
+          arguments: args,
+        });
+        applyToolResult(response);
+        return response;
+      }
+
+      window.addEventListener(
+        "message",
+        (event) => {
+          if (event.source !== window.parent) return;
+
+          const message = event.data;
+          if (!message || message.jsonrpc !== "2.0") return;
+
+          if (typeof message.id === "number") {
+            const request = pendingRequests.get(message.id);
+            if (!request) return;
+            pendingRequests.delete(message.id);
+
+            if (message.error) {
+              request.reject(message.error);
+              return;
+            }
+            request.resolve(message.result);
+            return;
+          }
+
+          if (message.method === "ui/notifications/tool-result") {
+            applyToolResult(message.params);
+          }
+        },
+        { passive: true }
+      );
+
+      async function initializeBridge() {
+        await rpcRequest("ui/initialize", {
+          appInfo: { name: "promptfill-fullscreen", version: "0.1.0" },
+          appCapabilities: {},
+          protocolVersion: "2026-01-26",
+        });
+        rpcNotify("ui/notifications/initialized", {});
+      }
+
+      const bridgeReady = initializeBridge().catch((error) => {
+        console.error("Bridge initialization failed:", error);
+        setStatus("Unable to initialize widget bridge.");
+      });
+
+      renderButton.addEventListener("click", async () => {
+        renderButton.disabled = true;
+        setStatus("Rendering prompt...");
+
+        try {
+          const variables = parseJsonInput("Variables JSON", variablesInput.value, []);
+          const values = parseJsonInput("Values JSON", valuesInput.value, {});
+          await bridgeReady;
+          await callTool("render_prompt", {
+            template: templateInput.value,
+            variables,
+            values,
+          });
+        } catch (error) {
+          console.error("render_prompt failed", error);
+          setStatus(error instanceof Error ? error.message : "Could not render. Check your inputs and try again.");
+        } finally {
+          renderButton.disabled = false;
+        }
+      });
+
+      insertButton.addEventListener("click", async () => {
+        const renderedText = renderedOutput.textContent?.trim();
+        if (!renderedText) {
+          setStatus("Render a prompt first.");
+          return;
+        }
+
+        insertButton.disabled = true;
+        setStatus("Inserting into chat...");
+
+        try {
+          await bridgeReady;
+          const result = await rpcRequest("ui/message", {
+            role: "user",
+            content: [{ type: "text", text: renderedText }],
+          });
+          if (result?.isError) {
+            setStatus("Could not insert into chat. Try again.");
+            return;
+          }
+          setStatus("Inserted into chat.");
+        } catch (error) {
+          console.error("ui/message failed", error);
+          setStatus("Could not insert into chat. Try again.");
+        } finally {
+          insertButton.disabled = false;
+        }
+      });
+    </script>
   </body>
 </html>

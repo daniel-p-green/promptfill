@@ -46,12 +46,13 @@ Primary artifacts:
 
 Additional ChatGPT app contracts now run under `chatgpt-app/test/`:
 
-- `tool-metadata.test.js`: enforces tool description trigger phrasing.
+- `mcp-runtime.test.js`: validates MCP initialization, tool metadata, auth mode, and session-scoped store isolation through a real streamable HTTP client.
+- `tool-metadata.test.js`: enforces tool description trigger phrasing from runtime-listed tool metadata.
 - `widget-contract.test.js`: keeps the inline card conversation-first with bounded actions.
 - `widget-state.test.js`: ensures recoverable error copy and retry state.
 - `fullscreen-contract.test.js`: validates fullscreen handoff resource/action registration.
 - `store-adapter.test.js`: validates memory + Supabase-stub adapter seam behavior.
-- `tool-trigger-eval.test.js`: validates golden prompt fixture schema and minimum bucket counts.
+- `tool-trigger-eval.test.js`: validates golden prompt fixture schema, expected tool mapping validity, and coverage across all P0 tools.
 
 ## Operating Procedure
 

@@ -10,4 +10,7 @@ test("inline widget is conversation-first and can insert rendered text", async (
   assert.ok((html.match(/<button\b/g) ?? []).length <= 2, "widget should keep at most two actions");
   assert.ok(html.includes('id="insert-button"'), "widget should include an insert button");
   assert.ok(html.includes("ui/message"), "widget should use ui/message to insert text into chat");
+  assert.ok(!html.includes("max-height: 220px"), "inline card should avoid nested scrolling constraints");
+  assert.ok(!html.includes("overflow: auto"), "inline card should avoid nested scroll containers");
+  assert.ok(html.includes('input.type = "checkbox";'), "boolean variables should render as checkboxes");
 });

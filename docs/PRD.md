@@ -83,6 +83,7 @@ Tool contracts must be explicit, typed, and deterministic.
 
 - P0 persistence contract is chat scoped
 - no guarantee of cross-chat or cross-session durability
+- server memory state must be isolated per MCP session id
 - process memory reuse is implementation detail, not product promise
 - P1 adds auth-backed persistent storage
 
@@ -109,6 +110,8 @@ Tool contracts must be explicit, typed, and deterministic.
 
 - do not surface sensitive data unnecessarily in widget cards
 - no silent schema-destructive updates during extraction
+- production deployments should enforce non-wildcard CORS allowlists
+- production deployments should run with authenticated MCP requests (for example bearer token now, full account auth in P1)
 
 ## Success Metrics
 
@@ -147,6 +150,7 @@ The release-candidate gate ran successfully with:
 - `npm run test:web`
 - `npm run lint:web`
 - `npm run lint:video`
+- includes runtime MCP contract coverage (`chatgpt-app/test/mcp-runtime.test.js`)
 
 ## Risks
 

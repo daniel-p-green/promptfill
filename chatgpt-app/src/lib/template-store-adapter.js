@@ -3,10 +3,10 @@ import { createSupabaseTemplateStore } from "./supabase-template-store.js";
 
 const ADAPTER_FACTORIES = {
   memory: () => createInMemoryTemplateStore(),
-  supabase: () => createSupabaseTemplateStore(),
+  supabase: (options) => createSupabaseTemplateStore(options),
 };
 
-export function createTemplateStoreAdapter(kind = "memory") {
+export function createTemplateStoreAdapter(kind = "memory", options = {}) {
   const normalizedKind = String(kind ?? "memory").trim().toLowerCase();
   const buildAdapter = ADAPTER_FACTORIES[normalizedKind];
 
@@ -14,7 +14,7 @@ export function createTemplateStoreAdapter(kind = "memory") {
     throw new Error(`Unknown template store adapter kind: ${normalizedKind}`);
   }
 
-  const adapter = buildAdapter();
+  const adapter = buildAdapter(options);
   if (!hasTemplateStoreInterface(adapter)) {
     throw new Error(`Template store adapter "${normalizedKind}" does not satisfy required interface`);
   }

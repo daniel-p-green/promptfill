@@ -224,6 +224,10 @@ cd video
 npm run capture:ui
 ```
 
+End-user series compositions (email, summary, support, PRD) live in:
+
+- `video/src/PromptFillUserStorySeries.tsx`
+
 <details>
   <summary>Regenerate ultimate demos and low-res README embeds</summary>
 
@@ -247,6 +251,7 @@ ffmpeg -y -i renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=4,scale=448:-1:fla
 - `docs/PRD.md` — product requirements
 - `docs/USE_CASES.md` — prompt patterns where structure wins
 - `docs/USER_STORIES.md` — MVP stories
+- `docs/VIDEO_QUALITY_STANDARD.md` — strict quality bar for Remotion storytelling
 - `docs/SPEC_TEST_CASES.md` — spec-driven test matrix and workflow
 - `docs/AI_EXTRACTION_SPEC.md` — AI-assisted variable extraction spec
 - `docs/CHATGPT_APP_RETHINK.md` — ChatGPT Apps SDK product strategy notes
