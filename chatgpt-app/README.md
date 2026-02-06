@@ -1,6 +1,6 @@
 # PromptFill ChatGPT App Scaffold
 
-This folder contains a minimal Apps SDK scaffold for PromptFill:
+This folder contains the ChatGPT-native PromptFill surface built with the Apps SDK:
 
 - MCP server over `Streamable HTTP` at `/mcp`
 - tool descriptors + resource registration
@@ -12,6 +12,12 @@ This folder contains a minimal Apps SDK scaffold for PromptFill:
 2. `render_prompt`
 3. `save_template`
 4. `list_templates`
+
+Current product direction:
+
+- P0 keeps persistence session/chat scoped.
+- P1 adds auth-backed durable storage.
+- Inline UX stays conversation-first; avoid recreating a full app shell.
 
 ## Local development
 
@@ -48,8 +54,12 @@ https://<your-ngrok-subdomain>.ngrok.app/mcp
 - Core extraction/render/storage logic lives in `src/lib/promptfill-core.js`.
 - Widget is intentionally lightweight and conversation-first.
 - Storage is in-memory for scaffold phase; replace with durable backend for production.
+- Product behavior is spec-driven:
+  - source cases: `../spec/product-tests.json`
+  - runner: `test/product-spec.test.js`
 
 Related product docs:
 
 - `docs/JOBS_TO_BE_DONE.md`
 - `docs/CHATGPT_APP_RETHINK.md`
+- `docs/SPEC_TEST_CASES.md`

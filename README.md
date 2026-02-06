@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <strong>Local-first prompt library</strong> where a prompt becomes a <strong>fillable form</strong>.
+  <strong>ChatGPT-native prompt templating app</strong> where a prompt becomes a <strong>fillable form</strong>.
   <br />
-  Typed variables · dropdown selectors · share/import/export · one-click copy
+  Extract fields · render reliably · insert back into chat · save for reuse
 </p>
 
 <p align="center">
@@ -35,34 +35,31 @@ Teams tend to store prompts as raw text in docs/snippets/DMs. Over time:
 - variable fields get missed
 - “choice axes” like tone/audience/format live in people’s heads
 
-PromptFill makes prompts structured and reusable: **template + variables + sensible UI controls**.
+PromptFill makes prompts structured and reusable in conversation: **template + variables + fill + render + insert**.
 
 > PromptFill generates prompts — it doesn’t run them against an LLM.
 
 ## What you can do today (MVP)
 
-- Build a local prompt library (search, tags, duplicates).
-- Turn prompts into templates with `{{variables}}` and typed fields.
-- Start from built-in use-case starter templates (email, rewrite, support, review, summaries).
-- Fill variables in a drawer (string/text/number/boolean/enum).
-- Copy the rendered prompt (plain text or Markdown).
-- Use a keyboard shortcut (`Cmd/Ctrl + Enter`) to copy instantly.
-- Share a prompt as a link or payload; recipients can import it.
-- Export/import your library as a JSON file (merge-on-conflict).
-- Run a built-in onboarding tutorial with checklist progress and contextual guidance.
-- Use the AI-assist extraction adapter (safe proposal modal) to improve variable suggestions without silent schema loss.
+- In `chatgpt-app/`:
+  - extract fields from rough prompt text (`extract_prompt_fields`)
+  - fill values and render deterministic prompt output (`render_prompt`)
+  - insert rendered prompt back into conversation (`ui/message`)
+  - save and list templates in P0 session scope (`save_template`, `list_templates`)
+- In `web/` (prototype lab):
+  - iterate on richer prompt-library UX
+  - test builder/fill flows before native Apps SDK rollout
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  A["Prompt template (`{{variables}}`)"] --> B["Variable schema (types + defaults)"]
-  B --> C["Fill drawer (UI controls)"]
-  C --> D["Rendered prompt preview"]
-  D --> E["Copy (plain/Markdown)"]
-  D --> F["Share link / payload"]
-  F --> G["Import into another library"]
-  E --> H["Paste into any LLM or doc"]
+  A["User asks in chat"] --> B["extract_prompt_fields"]
+  B --> C["Typed variable schema"]
+  C --> D["render_prompt with values"]
+  D --> E["Rendered prompt"]
+  E --> F["Insert into chat via ui/message"]
+  E --> G["save_template for reuse"]
 ```
 
 ## A prompt becomes a form
@@ -189,10 +186,10 @@ variables:
 
 ## Repo layout
 
-- `web/` — Next.js web MVP (library + builder + share/import/export)
-- `chatgpt-app/` — Apps SDK scaffold (MCP server + inline widget for ChatGPT dev mode)
+- `chatgpt-app/` — Apps SDK product surface (MCP server + inline widget)
+- `web/` — Next.js design/prototyping lab
 - `video/` — Remotion marketing/explainer scenes (uses real UI screenshots + highlight boxes)
-- `docs/` — PRD + use cases + user stories + AI extraction spec
+- `docs/` — JTBD + PRD + use cases + user stories + spec/test docs
 
 ## Video asset pipeline
 
@@ -234,5 +231,6 @@ ffmpeg -y \
 - `docs/PRD.md` — product requirements
 - `docs/USE_CASES.md` — prompt patterns where structure wins
 - `docs/USER_STORIES.md` — MVP stories
+- `docs/SPEC_TEST_CASES.md` — spec-driven test matrix and workflow
 - `docs/AI_EXTRACTION_SPEC.md` — AI-assisted variable extraction spec
 - `docs/CHATGPT_APP_RETHINK.md` — ChatGPT Apps SDK product strategy notes

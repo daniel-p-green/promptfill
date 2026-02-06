@@ -20,6 +20,10 @@ function getVariablesByName(variables) {
   return Object.fromEntries(safe.map((item) => [item.name, item]));
 }
 
+function sorted(values) {
+  return [...values].sort();
+}
+
 test("product spec: extraction cases", async () => {
   const spec = await loadSpec();
   const cases = Array.isArray(spec.extraction) ? spec.extraction : [];
@@ -30,6 +34,11 @@ test("product spec: extraction cases", async () => {
 
     const byName = getVariablesByName(result.variables);
     const expectedVars = testCase.expected_variables ?? {};
+    assert.deepEqual(
+      sorted(Object.keys(byName)),
+      sorted(Object.keys(expectedVars)),
+      `variable set mismatch for ${testCase.id}`
+    );
 
     for (const [name, expected] of Object.entries(expectedVars)) {
       assert.ok(byName[name], `missing variable "${name}" in ${testCase.id}`);
@@ -79,18 +88,20 @@ test("product spec: store cases", async () => {
     const templates = store.listTemplates();
     assert.equal(templates.length, testCase.expectedListCount, `list count mismatch for ${testCase.id}`);
 
-    if (templates.length > 0) {
-      assert.equal(
-        templates[0].id,
-        testCase.expectedFirstTemplateId,
-        `first template id mismatch for ${testCase.id}`
+    if (Array.isArray(testCase.expectedTemplateIdsInOrder)) {
+      assert.deepEqual(
+        templates.map((template) => template.id),
+        testCase.expectedTemplateIdsInOrder,
+        `template id order mismatch for ${testCase.id}`
       );
-      assert.equal(
-        templates[0].name,
-        testCase.expectedFirstTemplateName,
-        `first template name mismatch for ${testCase.id}`
+    }
+
+    if (Array.isArray(testCase.expectedTemplateNamesInOrder)) {
+      assert.deepEqual(
+        templates.map((template) => template.name),
+        testCase.expectedTemplateNamesInOrder,
+        `template name order mismatch for ${testCase.id}`
       );
     }
   }
 });
-

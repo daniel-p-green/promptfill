@@ -1,5 +1,5 @@
 {
-  "version": "2026-02-06",
+  "version": "2026-02-06.2",
   "extraction": [
     {
       "id": "email_basic",
@@ -51,6 +51,40 @@
           "options": ["short", "medium", "long"]
         }
       }
+    },
+    {
+      "id": "repeated_placeholder_name_dedup",
+      "raw_prompt": "Draft this for [Recipient Name]. Mention [Recipient Name] and [Recipient Name] again.",
+      "expected_template": "Draft this for {{recipient_name}}. Mention {{recipient_name}} and {{recipient_name}} again.",
+      "expected_variables": {
+        "recipient_name": { "type": "string", "required": true, "defaultValue": "" }
+      }
+    },
+    {
+      "id": "mixed_styles_and_normalization",
+      "raw_prompt": "Translate for {Target Language}. Include [Audience-Type] notes from <source text>.",
+      "expected_template": "Translate for {{target_language}}. Include {{audience_type}} notes from {{source_text}}.",
+      "expected_variables": {
+        "target_language": {
+          "type": "enum",
+          "required": true,
+          "defaultValue": "english",
+          "options": ["english", "spanish", "french", "german"]
+        },
+        "audience_type": {
+          "type": "enum",
+          "required": true,
+          "defaultValue": "execs",
+          "options": ["execs", "engineering", "sales", "customers"]
+        },
+        "source_text": { "type": "text", "required": true, "defaultValue": "" }
+      }
+    },
+    {
+      "id": "no_placeholders_no_variables",
+      "raw_prompt": "Write a concise summary of this release plan.",
+      "expected_template": "Write a concise summary of this release plan.",
+      "expected_variables": {}
     }
   ],
   "render": [
@@ -74,16 +108,41 @@
     {
       "id": "render_with_defaults",
       "template": "Tone: {{tone}}",
-      "variables": [{ "name": "tone", "type": "enum", "required": true, "defaultValue": "friendly", "options": ["friendly"] }],
+      "variables": [
+        { "name": "tone", "type": "enum", "required": true, "defaultValue": "friendly", "options": ["friendly"] }
+      ],
       "values": {},
       "expected": { "missingRequired": [], "rendered": "Tone: friendly" }
     },
     {
-      "id": "render_boolean",
+      "id": "render_boolean_default_false",
       "template": "Include citations: {{include_citations}}",
       "variables": [{ "name": "include_citations", "type": "boolean", "required": true, "defaultValue": false }],
       "values": {},
       "expected": { "missingRequired": [], "rendered": "Include citations: false" }
+    },
+    {
+      "id": "render_prefers_explicit_value",
+      "template": "Tone: {{tone}}",
+      "variables": [
+        { "name": "tone", "type": "enum", "required": true, "defaultValue": "concise", "options": ["concise", "friendly"] }
+      ],
+      "values": { "tone": "friendly" },
+      "expected": { "missingRequired": [], "rendered": "Tone: friendly" }
+    },
+    {
+      "id": "render_keeps_unknown_placeholder",
+      "template": "Send to {{recipient_name}} about {{unknown_field}}.",
+      "variables": [{ "name": "recipient_name", "type": "string", "required": true, "defaultValue": "" }],
+      "values": { "recipient_name": "Mina" },
+      "expected": { "missingRequired": [], "rendered": "Send to Mina about {{unknown_field}}." }
+    },
+    {
+      "id": "render_missing_required_without_default",
+      "template": "Audience: {{audience}}",
+      "variables": [{ "name": "audience", "type": "string", "required": true, "defaultValue": "" }],
+      "values": {},
+      "expected": { "missingRequired": ["audience"], "rendered": "Audience: {{audience}}" }
     }
   ],
   "store": [
@@ -99,8 +158,52 @@
         }
       ],
       "expectedListCount": 1,
-      "expectedFirstTemplateId": "t_1",
-      "expectedFirstTemplateName": "Email outreach"
+      "expectedTemplateIdsInOrder": ["t_1"],
+      "expectedTemplateNamesInOrder": ["Email outreach"]
+    },
+    {
+      "id": "save_two_templates_in_order",
+      "templatesToSave": [
+        {
+          "id": "t_1",
+          "name": "Email outreach",
+          "template": "Write to {{recipient_name}} about {{topic}}.",
+          "variables": [],
+          "createdAt": "2026-02-06T00:00:00.000Z"
+        },
+        {
+          "id": "t_2",
+          "name": "Meeting summary",
+          "template": "Summarize {{notes}} for {{audience}}.",
+          "variables": [],
+          "createdAt": "2026-02-06T00:01:00.000Z"
+        }
+      ],
+      "expectedListCount": 2,
+      "expectedTemplateIdsInOrder": ["t_1", "t_2"],
+      "expectedTemplateNamesInOrder": ["Email outreach", "Meeting summary"]
+    },
+    {
+      "id": "overwrite_template_same_id",
+      "templatesToSave": [
+        {
+          "id": "t_1",
+          "name": "Old name",
+          "template": "Old template {{field}}.",
+          "variables": [],
+          "createdAt": "2026-02-06T00:00:00.000Z"
+        },
+        {
+          "id": "t_1",
+          "name": "New name",
+          "template": "New template {{field}}.",
+          "variables": [],
+          "createdAt": "2026-02-06T00:02:00.000Z"
+        }
+      ],
+      "expectedListCount": 1,
+      "expectedTemplateIdsInOrder": ["t_1"],
+      "expectedTemplateNamesInOrder": ["New name"]
     }
   ]
 }

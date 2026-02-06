@@ -1,105 +1,96 @@
-# PromptFill -- User Stories (Web MVP)
+# PromptFill User Stories
 
-Stories are grouped by epics. Each story includes a minimal acceptance checklist.
+Date: 2026-02-06
+Owner: Product
+Status: Active (ChatGPT-native P0)
 
-## Epic A: Library
+Stories below represent what must work in production for the Apps SDK product direction.
 
-### A1. Create A Prompt
-As a user, I want to create a new prompt from scratch or by pasting text, so I can reuse it later.
-- Accept: I can create and it appears in the library immediately.
-- Accept: The prompt has a name and editable template text.
+## Epic A: Conversational Entry
 
-### A2. Search Prompts
-As a user, I want to search my prompt library, so I can find what I need in seconds.
-- Accept: Search matches name and tags (and optionally content).
-- Accept: Results update quickly as I type.
+### A1. Start from natural language
 
-### A3. Tag Prompts
-As a user, I want to tag prompts, so I can organize them loosely without folders.
-- Accept: I can add/remove tags.
-- Accept: I can filter by tag.
+As a user, I want to ask in plain language for prompt structuring so I can begin without learning tool syntax.
 
-### A4. Duplicate A Prompt
-As a user, I want to duplicate a prompt, so I can create variations without starting over.
-- Accept: Duplicate preserves template + variables + option bindings.
+- Accept: direct commands and fuzzy asks can both lead to extraction.
+- Accept: user does not need to fill a large custom input form inside the widget.
 
-## Epic B: Template Editing
+### A2. Start from rough prompt text
 
-### B1. Insert Variables Into Template
-As a user, I want to insert variables into the template, so I can mark the parts that change.
-- Accept: I can type placeholders and they are recognized/highlighted.
-- Accept: Variable names are normalized (snake_case) or validated.
+As a user, I want to paste rough prompt text and have fields extracted so I can reuse it quickly.
 
-### B2. Live Preview While Editing
-As a user, I want to preview the rendered prompt, so I can verify the template works.
-- Accept: Preview updates when I change the template or variable values.
+- Accept: placeholders normalize to canonical `{{snake_case}}`.
+- Accept: extracted field list is explicit and stable.
 
-## Epic C: Variables & Validation
+## Epic B: Structure Safely
 
-### C1. Add A Variable Manually
-As a user, I want to add a variable with a type, so I can structure a prompt even without AI.
-- Accept: Variable appears in sidebar with the correct input control.
+### B1. Infer useful variable types
 
-### C2. Set Required / Defaults
-As a user, I want to mark variables required and set defaults, so reuse is fast and consistent.
-- Accept: Required fields show an indicator and block "Copy" until filled.
-- Accept: Defaults prefill values.
+As a user, I want field types inferred so the default form is useful immediately.
 
-### C3. Dropdown Selector (Enum)
-As a user, I want dropdown selectors for common axes (tone/audience/format), so I can reuse consistent choices.
-- Accept: Enum variables render a select control.
-- Accept: Selected option renders correctly in the template.
+- Accept: enum fields infer sensible options for common axes.
+- Accept: text-heavy fields are inferred as multi-line text when appropriate.
 
-## Epic D: AI-Assisted Structuring
+### B2. Avoid silent schema loss
 
-### D1. Extract Variables From Raw Prompt (AI)
-As a user, I want AI to identify variables from raw prompt text, so I don't have to manually structure everything.
-- Accept: The system proposes a variable list and placeholder replacements.
-- Accept: I can accept/reject changes before applying.
+As a user, I want safe extraction behavior so my prior work is not silently destroyed.
 
-### D2. Suggest Types And Dropdown Options
-As a user, I want AI to suggest types and dropdown options, so the sidebar UI is immediately useful.
-- Accept: Suggestions include type and (for enums) options.
-- Accept: I can edit type/options after applying.
+- Accept: schema changes are proposal-first.
+- Accept: destructive changes require explicit confirmation.
 
-### D3. Don't Destroy My Work
-As a user, I want extraction to be safe, so it won't delete variables or values silently.
-- Accept: Existing variables are preserved unless I explicitly remove them.
-- Accept: Any renames are shown as a proposal.
+## Epic C: Fill and Render
 
-## Epic E: Fill + Copy
+### C1. Fill required values fast
 
-### E1. Fill Sidebar With Keyboard
-As a user, I want to fill variable values quickly, so reuse is fast.
-- Accept: Tab order is sensible; inputs focus correctly.
-- Accept: Enter/shortcut triggers copy.
+As a user, I want required fields and defaults handled clearly so I can render with confidence.
 
-### E2. Copy Rendered Prompt
-As a user, I want to copy the rendered prompt, so I can paste it into ChatGPT or other tools.
-- Accept: Copy writes exactly the rendered text to clipboard.
-- Accept: Success feedback is visible but subtle.
+- Accept: missing required fields are shown explicitly.
+- Accept: defaults are applied when value is omitted.
 
-## Epic F: Local-First Portability
+### C2. Render deterministic output
 
-### F1. Export Library
-As a user, I want to export my library, so I can back it up or move machines.
-- Accept: Export produces a single JSON file.
+As a user, I want the rendered prompt to be deterministic so repeated runs are reliable.
 
-### F2. Import Library
-As a user, I want to import a library JSON, so I can restore or merge prompts.
-- Accept: Import merges without data loss (conflicts produce duplicates).
+- Accept: explicit values override defaults.
+- Accept: unresolved placeholders remain visible when values are missing.
 
-## Epic G: Option Sets (Reusable Dropdowns)
+## Epic D: Continue In Chat
 
-### G1. Create Reusable Option Sets
-As a user, I want to define reusable option sets (Tone, Audience), so multiple prompts share the same dropdown.
-- Accept: Option set can be created/edited in Settings.
-- Accept: Prompt variables can bind to an option set.
+### D1. Insert output without context switching
 
-## Future (Roadmap) -- Chromium Extension
+As a user, I want to send the rendered prompt back into chat in one action so I stay in flow.
 
-### X1. Save Selection As Prompt
-As a user, I want to highlight text on any page and save it as a prompt, so capture is frictionless.
+- Accept: widget supports `ui/message` insertion action.
+- Accept: no duplicate composer controls inside the widget.
 
-### X2. Fill + Paste Into Active Field
-As a user, I want to render a prompt and paste it directly into the active textbox, so I never context-switch.
+## Epic E: Reuse Templates
+
+### E1. Save successful templates
+
+As a user, I want to save working prompt structures so future tasks are faster.
+
+- Accept: template name, template text, and schema are stored together.
+
+### E2. List saved templates
+
+As a user, I want to list prior templates so I can reuse proven prompt structures.
+
+- Accept: listing works within P0 state constraints (session/chat scoped).
+
+## Epic F: P1 Durability (Post-P0)
+
+### F1. Account-backed persistence
+
+As a user, I want my templates to persist across sessions and devices.
+
+- Accept: auth and account mapping are in place.
+- Accept: same template library is available in future chats.
+
+## Story to Spec Mapping
+
+These stories should map to spec coverage:
+
+- extraction and normalization stories -> `spec/product-tests.json` `extraction`
+- fill/render stories -> `spec/product-tests.json` `render`
+- save/list stories -> `spec/product-tests.json` `store`
+- insert-in-chat story -> `chatgpt-app/test/widget-contract.test.js`

@@ -1,103 +1,101 @@
-# PromptFill -- Use Cases
+# PromptFill Use Cases
 
-This list is intentionally biased toward prompts where **structure beats freeform**:
-repeated reuse, stable shape, changing inputs, and recurring choice axes (tone, audience, format).
+Date: 2026-02-06
+Owner: Product
+Status: Active (aligned to ChatGPT-native P0)
 
-## Use Case 1: Write An Email
-- Trigger: "Write an email to [person] about [topic] ..."
-- Variables:
-  - `recipient_name` (string, required)
-  - `relationship` (enum, optional): `customer`, `investor`, `coworker`, `friend`
-  - `topic` (string, required)
-  - `context` (text, optional)
-  - `tone` (enum, default): `concise`, `friendly`, `direct`, `formal`
-  - `length` (enum, default): `short`, `medium`, `long`
-  - `cta` (string, optional)
-- Output: a single email body (optionally with subject line).
+This set is prioritized for in-chat completion and model-friendly tool invocation.
 
-## Use Case 2: Rewrite With Constraints
-- Trigger: "Rewrite this to be more [style] while keeping [constraints]"
-- Variables:
-  - `input_text` (text, required)
-  - `style` (enum, default): `friendly`, `crisp`, `executive`, `casual`
-  - `constraints` (text, optional)
-  - `preserve_voice` (boolean, default true)
-- Output: rewritten text.
+## Prioritization Framework
 
-## Use Case 3: Summarize Notes For An Audience
-- Trigger: meeting notes -> "Summarize for [audience]"
-- Variables:
-  - `notes` (text, required)
-  - `audience` (enum, default): `execs`, `engineering`, `sales`, `customers`
-  - `tone` (enum, default): `concise`, `neutral`, `persuasive`
-  - `format` (enum, default): `bullets`, `paragraphs`, `email`, `slack_update`
-  - `max_bullets` (number, optional)
-- Output: structured summary.
+A use case is P0-ready when it has:
 
-## Use Case 4: Extract Action Items
-- Trigger: transcript or notes -> "Give me action items"
-- Variables:
-  - `source_text` (text, required)
-  - `owner_style` (enum, default): `name_if_known`, `role_if_unknown`
-  - `format` (enum, default): `table`, `bullets`
-- Output: action items with owners and due dates (if inferred).
+- stable structure across repeated requests
+- clear variable axes
+- compact enough output for inline workflow
+- obvious extract -> fill -> render -> insert value
 
-## Use Case 5: Create A PRD Or Brief
-- Trigger: "Turn this into a PRD/brief"
-- Variables:
-  - `context` (text, required)
-  - `audience` (enum, default): `engineering`, `leadership`, `stakeholders`
-  - `doc_type` (enum, default): `prd`, `brief`, `one_pager`
-  - `scope` (text, optional)
-  - `constraints` (text, optional)
-- Output: structured doc outline.
+## P0 Use Cases (Build Now)
 
-## Use Case 6: Generate Social / Launch Copy
-- Trigger: "Write launch copy in this voice"
-- Variables:
-  - `product_name` (string, required)
-  - `target_customer` (string, optional)
-  - `key_benefits` (text, required)
-  - `voice` (enum, default): `openai_adjacent`, `playful`, `bold`, `minimal`
-  - `channels` (multi_enum, optional): `twitter`, `linkedin`, `email`, `landing_page`
-- Output: copy variants per channel.
+### Use Case 1: Email drafts
 
-## Use Case 7: Customer Support Reply Template
-- Trigger: reuseable support response with context and policy
-- Variables:
-  - `customer_message` (text, required)
-  - `policy_context` (text, optional)
-  - `tone` (enum, default): `empathetic`, `neutral`, `firm`
-  - `resolution_options` (text, optional)
-- Output: reply draft.
+- Trigger examples:
+  - "Turn this outreach prompt into a reusable template."
+  - "Render this email prompt for Alex in a direct tone."
+- Common fields:
+  - `recipient_name`, `topic`, `tone`, `context`
+- Why P0:
+  - high repeat frequency and clear structure
 
-## Use Case 8: Engineering Code Review Prompt
-- Trigger: "Review this diff for issues"
-- Variables:
-  - `diff` (text, required)
-  - `risk_profile` (enum, default): `strict`, `balanced`, `fast`
-  - `focus_areas` (multi_enum, optional): `security`, `performance`, `correctness`, `style`, `tests`
-  - `output_format` (enum, default): `bullets`, `annotated`
-- Output: review checklist or comments.
+### Use Case 2: Summaries by audience
 
-## Use Case 9: SQL / Analytics Query Generator
-- Trigger: "Generate SQL given schema + question"
-- Variables:
-  - `schema` (text, required)
-  - `question` (text, required)
-  - `dialect` (enum, default): `postgres`, `bigquery`, `snowflake`
-  - `constraints` (text, optional)
-- Output: SQL + explanation.
+- Trigger examples:
+  - "Summarize these notes for execs in bullets."
+  - "Make this an engineering-ready summary template."
+- Common fields:
+  - `notes`, `audience`, `format`, `length`
+- Why P0:
+  - reliable enum inference and fast in-chat output
 
-## Use Case 10: "Rubber Duck" Problem Solving
-- Trigger: "Help me think through this"
-- Variables:
-  - `problem` (text, required)
-  - `context` (text, optional)
-  - `mode` (enum, default): `ask_questions`, `propose_options`, `recommend`
-- Output: structured thinking partner prompt.
+### Use Case 3: Rewrite with constraints
 
-## Extraction Notes (How the AI Should See These)
-- Treat bracketed tokens as placeholders and normalize them.
-- Suggest enums for repeated "axes" (tone/audience/format/length/dialect).
-- Prefer a small number of high-leverage variables rather than over-fragmenting.
+- Trigger examples:
+  - "Rewrite this but keep it concise and executive."
+  - "Make this friendlier without changing meaning."
+- Common fields:
+  - `input_text`, `style`, `constraints`, `preserve_voice`
+- Why P0:
+  - strong fit for extract and render loops
+
+### Use Case 4: Support response templates
+
+- Trigger examples:
+  - "Template this support reply with a firm but empathetic tone."
+  - "Render this for a billing issue response."
+- Common fields:
+  - `customer_message`, `policy_context`, `tone`, `resolution_options`
+- Why P0:
+  - repeatable and high-value consistency job
+
+### Use Case 5: PRD or brief scaffold prompts
+
+- Trigger examples:
+  - "Template this PRD prompt for stakeholder readouts."
+  - "Render this brief prompt for leadership."
+- Common fields:
+  - `context`, `audience`, `doc_type`, `scope`, `constraints`
+- Why P0:
+  - high leverage for product and strategy workflows
+
+## P1 Use Cases (After Auth + Durable Storage)
+
+### Use Case 6: Team-shared option sets
+
+- Job:
+  - standardize shared dropdowns across templates
+- Dependency:
+  - account-backed persistence and template ownership
+
+### Use Case 7: Cross-session prompt packs
+
+- Job:
+  - reliable save, retrieve, and reuse across multiple chats and devices
+- Dependency:
+  - synced backend and identity layer
+
+## Defer / Not P0
+
+- Very long-form multi-step flows that need app navigation
+- Anything requiring PromptFill to execute prompts against models
+- Heavy dashboard-style analytics inside inline cards
+
+## Tool Trigger Expectations
+
+Each P0 use case should map cleanly to existing tools:
+
+- `extract_prompt_fields`: convert rough prompt text into schema
+- `render_prompt`: produce deterministic prompt output with validation
+- `save_template`: persist working prompt shape for reuse
+- `list_templates`: recover prior templates for fast reruns
+
+When a use case cannot be served by this tool set, it is either P1 or out of scope.

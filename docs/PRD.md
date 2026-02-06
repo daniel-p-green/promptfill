@@ -1,179 +1,147 @@
-# PromptFill -- Product Requirements (Web MVP)
+# PromptFill Product Requirements
+
+Date: 2026-02-06
+Owner: Product
+Status: Active (v2, ChatGPT-native)
 
 ## Summary
-PromptFill is a local-first prompt library where prompts behave like reusable templates:
-- Paste or write a prompt
-- Auto-identify variables (AI-assisted) and sensible UI controls (text inputs, dropdowns, checkboxes)
-- Fill variables in a sidebar
-- Preview the rendered prompt and copy it in one click
 
-The wedge: **"a prompt becomes a form."**
+PromptFill turns rough prompt text into a reusable, fillable template directly in ChatGPT conversation flow.
+
+Core promise: a prompt becomes a form, then returns to chat in one move.
+
+## Product Direction (Resolved)
+
+- Primary product: ChatGPT app built with Apps SDK (`chatgpt-app/`).
+- Secondary surface: web app as design/prototyping lab (`web/`).
+- PromptFill generates prompts but does not execute prompts against LLMs.
 
 ## Problem
-People store prompts in docs, snippets, DMs, repos, and note apps. Reuse is painful:
-- The same prompt gets copied and edited repeatedly; quality drifts across versions.
-- Variable parts (names, product, audience, context) are manually updated and often missed.
-- Common "choice axes" (tone, audience, format, length) live in someone's head, not in the prompt.
-- Prompt libraries exist, but most treat prompts as static text, not structured templates.
 
-## Goals (MVP)
-- Make prompts easy to manage: searchable library with fast reuse.
-- Make prompts flexible: variables + dropdown selectors + defaults + required fields.
-- Make prompts shareable: export/import flows that preserve structure and customization.
-- Make it feel magical: AI proposes variables and selectors from raw prompt text.
-- Keep it safe and simple: local-first by default with export/import.
-- "OpenAI-adjacent" aesthetic: calm, minimal, editorial, confident.
+Prompt reuse currently breaks in three ways:
 
-## Non-Goals (MVP)
-- Running prompts against an LLM (PromptFill generates prompts; it doesn't execute them).
-- Chat history, threads, tool calling, retrieval, agents, or workflow automation.
-- Collaboration/multi-user sync.
-- Marketplace/community prompt sharing.
+- prompt variants drift across copies
+- variable edits are missed under time pressure
+- choice axes (tone, audience, format) are inconsistent
 
-## Target Users
-- Primary: people who reuse prompts weekly and care about consistency.
-  - Founders/PMs/marketers writing emails, launch copy, PRDs, briefs.
-  - Eng leads/support leads reusing response templates and analysis prompts.
-- Secondary: power users who already use text expanders/snippets and want structure.
+Traditional prompt libraries help with storage but not in-chat completion speed.
 
-## Core UX Loop (MVP)
-1. **Capture**: create a prompt (paste/write) or import.
-2. **Structure**: auto-extract variables (AI) + suggested types + suggested dropdowns.
-3. **Refine**: user edits schema (rename, required, defaults, options).
-4. **Fill**: sidebar renders controls for variables; user fills values quickly.
-5. **Preview**: rendered prompt updates live.
-6. **Copy**: one click copies the rendered prompt.
+## Users
 
-## Key Concepts
-- **Prompt**: reusable template + metadata (name, tags).
-- **Template**: prompt text with placeholders (e.g. `{{recipient_name}}`).
-- **Variable**: typed input required to render a template (`string`, `text`, `enum`, etc.).
-- **Option Set**: reusable dropdown options shared across prompts (e.g. "Tone").
-- **AI Structuring**: converting raw prompt text into (template + variables + option suggestions).
+- Primary: people who repeatedly author high-stakes prompts (PMs, founders, marketers, support leads, engineers).
+- Secondary: teams that need a shared structure for recurring prompt tasks.
 
-## Requirements
+## P0 Goal
 
-### Library
-- Create, rename, delete prompts.
-- Search by name/tags/content.
-- Tags (lightweight, optional).
-- Duplicate prompt.
+Enable in-chat completion of the loop:
 
-### Prompt Editor
-- Rich-ish plain text editing (monospace optional), with live highlighting for placeholders.
-- "Extract variables" button:
-  - Runs AI structuring and shows a diff-like proposal (added/removed/renamed vars).
-  - Never silently deletes user-defined fields.
-- Manual variable creation (fallback).
+1. extract fields from rough prompt text
+2. fill values quickly
+3. render final prompt
+4. insert rendered result back into conversation
 
-### Variable Types (MVP)
-- `string`: single-line text.
-- `text`: multi-line text.
-- `boolean`: checkbox.
-- `number`: numeric input.
-- `enum`: single select.
-- `multi_enum`: multi select (optional MVP; OK to defer).
-- `json`: JSON editor (optional MVP; OK to defer).
-- `secret`: masked input (optional MVP; OK to defer).
-- `date`: date input (optional MVP; OK to defer).
+## Non-Goals (P0)
 
-### Sidebar "Fill" Experience
-- Render input controls from variable schema.
-- Required field indicators and validation.
-- Defaults apply automatically.
-- One-click "Reset to defaults".
-- Keyboard-first: tab order, quick focus, copy shortcut.
+- account sync and identity
+- collaborative libraries
+- marketplace and discovery feed
+- full app-shell navigation inside inline cards
 
-### Preview + Copy
-- Live preview of rendered prompt.
-- Copy button copies rendered prompt to clipboard.
-- Optional: copy in different formats (raw / markdown) if prompt type supports it (defer).
+## Core Jobs To Support
 
-### Local-First Storage
-- Data stored locally (e.g. IndexedDB/localStorage).
-- Export library to JSON file.
-- Import JSON file (merge strategy: keep both versions on conflict).
+Canonical JTBD lives in `docs/JOBS_TO_BE_DONE.md`.
 
-## AI Variable Extraction (MVP Spec)
-Input: raw prompt text.
+P0 jobs:
 
-Output proposal:
-- Template with placeholders normalized to `{{snake_case}}`.
-- Variables map:
-  - `name` (snake_case)
-  - `label` (human label)
-  - `type` (best guess)
-  - `required` (best guess)
-  - `default` (optional)
-  - `selector` for enums (suggested options + maybe suggested option set name)
+- structure rough prompt text safely
+- fill and render predictably
+- insert rendered output into chat
+- save and list reusable templates
 
-Heuristics before AI (to keep it fast and reduce cost):
-- Recognize explicit placeholders: `[person]`, `{person}`, `{{person}}`, `<person>`.
-- Convert repeated placeholders consistently.
-- Infer type from keywords:
-  - "tone", "audience", "format", "length", "language" -> enum suggestions.
-  - "paste", "context", "notes", "transcript", "email thread" -> `text`.
-  - "true/false", "include/exclude" -> `boolean`.
+## Functional Requirements (P0)
 
-AI pass:
-- Suggest additional implicit variables not explicitly bracketed.
-- Suggest enum options (e.g. tone: concise/friendly/direct).
-- Suggest grouping into reusable option sets (Tone, Audience, Output format).
+### Tool layer
 
-User experience requirements:
-- Show the proposal with an explanation ("I found 6 variables; 2 look like dropdowns").
-- User can accept all, accept individually, or reject.
-- Never overwrite existing values without confirmation.
+Required tools:
 
-## Information Architecture (MVP)
-- `/` Library
-- `/prompt/:id` Prompt editor (template + variables)
-- `/prompt/:id/fill` Fill + Preview + Copy (can be same screen with split panes)
-- `/settings` Import/Export, Option Sets, AI settings
+1. `extract_prompt_fields`
+2. `render_prompt`
+3. `save_template`
+4. `list_templates`
 
-## Design Direction ("OpenAI Adjacent")
-- Visual tone: calm, high-contrast, neutral, lots of whitespace, subtle borders.
-- Type: modern grotesk + mono for code-like areas; avoid playful "app" vibes.
-- Color: near-white background, near-black text, a single green-ish accent.
-- Components: understated cards, soft shadows (rare), thin dividers, crisp focus states.
-- Motion: subtle (panel slide-in, hover affordances), never bouncy.
-- Accessibility: keyboard first, visible focus, WCAG contrast targets.
-- Implementation note: use the **ChatGPT Apps** Figma component library + Apps SDK UI guidelines as the design reference (even though the MVP ships as a web app).
+Tool contracts must be explicit, typed, and deterministic.
 
-## MVP Milestones
-1. Library CRUD + local storage + search.
-2. Prompt editor with placeholders + manual variables.
-3. Fill sidebar + live preview + copy.
-4. Option sets (reusable enums).
-5. AI extraction (heuristics + model call) + "apply proposal" UX.
-6. Export/import.
+### Widget layer
 
-## Success Metrics (MVP)
-- Activation: % of users who create a prompt and successfully copy a rendered prompt within 5 minutes.
-- Retention: weekly returning users; prompts reused per week.
-- Value: time-to-copy for a reused prompt < 10 seconds.
-- Quality: % of prompts with structured variables (not just static text).
+- inline card remains conversation-first (no duplicate long-form composer)
+- max two primary actions
+- one clear insert action to `ui/message`
+- no deep navigation or nested scrolling patterns
 
-## Risks / Unknowns
-- "Local-first" vs AI: users may paste sensitive text; need clear toggles and warnings.
-- Variable extraction quality: must be good enough that users feel helped, not slowed down.
-- Adoption: if creation is too heavy, users will fall back to plain text snippets.
+### State model
 
-## Roadmap (Post-MVP)
-- Chrome/Chromium extension:
-  - Save selected text as a prompt.
-  - Inject variable-fill sidebar on any page (or open a side panel).
-  - One-click paste rendered prompt into active input.
-- ChatGPT app companion (optional):
-  - Purpose: "Prompt as a form" inside ChatGPT for the last mile (extract -> fill -> render -> insert).
-  - Scope: keep it focused on structuring + rendering prompts (not a full library UI port).
-  - UI: inline "result" cards for quick actions; fullscreen for the multi-step builder.
-  - Storage: durable libraries likely require a backend (widget state is message-scoped), so start with per-chat or account-backed sync later.
-- Workspace sync + team sharing (optional).
-- Prompt execution integrations (optional, likely a separate product decision).
+- P0 persistence is session/chat scoped
+- no guarantee of cross-session durability
+- P1 adds auth-backed persistent storage
 
-## Open Questions
-- Should prompts support multiple templates (e.g. "short" vs "long") in MVP?
-- Do we want a "snippet-style quick insert" mode (like a text expander) in web MVP?
-- Where does AI run by default (remote model vs local model option)?
-- Do we want the ChatGPT app to be "ephemeral per chat" or "synced library" (requires auth + backend)?
+## Quality Requirements
+
+### Performance
+
+- first useful extraction result under 2 seconds for common prompts
+- render results should feel immediate
+
+### Reliability
+
+- product behavior codified in spec tests:
+  - `spec/product-tests.json`
+  - `chatgpt-app/test/product-spec.test.js`
+
+### Accessibility
+
+- keyboard navigable inline card controls
+- visible focus states
+- readable contrast and text resizing tolerance
+
+### Privacy and safety
+
+- do not surface sensitive data unnecessarily in widget cards
+- no silent schema-destructive updates during extraction
+
+## Success Metrics
+
+- in-chat completion rate for extract -> fill -> render -> insert
+- time to first correct render (median < 20 seconds)
+- save and reuse conversion from first successful render
+
+## Milestones
+
+### Phase P0 (current)
+
+- production-hardened tool contracts
+- conversation-first inline card
+- spec-driven behavior suite for extraction/render/store
+
+### Phase P1
+
+- auth and account mapping
+- durable template persistence
+- search/update/delete template tools
+
+### Phase P2
+
+- fullscreen advanced editing surface
+- starter template carousel
+- stronger metadata tuning and multi-tool composition
+
+## Risks
+
+- over-porting the web shell into ChatGPT reduces native fit
+- extraction quality regressions can break trust quickly
+- unclear state expectations can create user confusion
+
+## Decision Rules
+
+- if a feature improves web UX but weakens chat-native UX, defer it from P0
+- if behavior is important, encode it in spec tests before implementation
+- if a card needs app-like navigation, move the flow to fullscreen or future phase

@@ -1,87 +1,101 @@
 # PromptFill Jobs To Be Done (JTBD)
 
 Date: 2026-02-06
+Owner: Product
+Status: Canon
 
-This doc defines the stable "jobs" PromptFill should do for users, independent of surface area:
+This file is the product anchor. Other docs may evolve, but decisions in this doc drive scope and prioritization.
 
-- **Web MVP** (`/web`): local-first prompt library + builder.
-- **ChatGPT App** (`/chatgpt-app`): in-chat structuring + fill + render, optimized for conversation.
+## Product Decision (Resolved)
 
-Treat the rest of the docs as evolving implementation ideas; this is the anchor for product intent.
+We are building the real product as a ChatGPT app using the Apps SDK.
+
+- System of record product surface: `chatgpt-app/`
+- Fast prototype and UX lab: `web/`
+- Marketing and narrative artifact: `video/`
+
+Decision rule: if there is a conflict between "native Apps SDK fit" and "web shell parity", prioritize native fit.
 
 ## North Star Job
 
-When I'm about to ask an LLM to produce something that matters, I want to **turn messy prompt text into a reusable, fillable template** so I can get **consistent results quickly** without forgetting variables or retyping "choice axes" like tone/audience/format.
+When I am about to ask an LLM for a high-stakes output, help me turn rough prompt text into a reusable, fillable prompt so I can get reliable results quickly and stay in conversation flow.
 
-## Primary Jobs
+## Primary Jobs (P0)
 
-### JTBD 1: Structure A Prompt (Template + Fields)
+### JTBD 1: Extract structure from rough prompt text
 
-When I have a rough prompt (or one I keep copy/pasting), I want PromptFill to extract the variable parts and suggest sensible field types so I can reuse it reliably.
+When I paste rough prompt text, I want fields extracted and normalized so I can reuse it without hand-editing placeholders.
 
-- Triggers: "Turn this into a template", pasting a prompt with `[brackets]` / `{placeholders}` / `{{vars}}`, or asking for "a reusable version".
-- Desired outcomes:
-  - Variables normalized (e.g. `{{recipient_name}}`), stable names.
-  - Field types suggested for common axes (tone/audience/format/length).
-  - Safe-by-default changes: proposals should not silently delete user work.
-- Surface notes:
-  - ChatGPT App: conversation-first entry (the composer is the input).
-  - Web: paste/edit in the editor, then "Extract variables".
+- Functional outcome:
+  - placeholders normalize to stable variable names (for example `{{recipient_name}}`)
+  - inferred field types are useful by default (string, text, enum, boolean)
+  - proposal-first behavior prevents silent schema loss
+- Tooling outcome:
+  - powered by `extract_prompt_fields`
 
-### JTBD 2: Fill Fast, Render Correctly
+### JTBD 2: Fill and render correctly in one pass
 
-When I’m reusing a template, I want to fill only what’s needed (with defaults and validation) and get the final rendered prompt so I can paste it (or continue the chat) with confidence.
+When I provide values, I want required fields validated and the final prompt rendered deterministically so I can trust the output.
 
-- Desired outcomes:
-  - Required fields are obvious; missing fields are called out.
-  - Defaults reduce typing.
-  - Rendered output is predictable and "copy-ready".
-- Surface notes:
-  - ChatGPT App: "rendered prompt" should be easy to send back into the conversation.
-  - Web: one-click copy with subtle feedback.
+- Functional outcome:
+  - missing required values are explicit
+  - defaults apply when value is omitted
+  - rendered prompt preserves unresolved placeholders only when data is truly missing
+- Tooling outcome:
+  - powered by `render_prompt`
 
-### JTBD 3: Iterate With Conversation, Not Navigation
+### JTBD 3: Insert rendered prompt back into the chat
 
-When I’m unsure how to structure something, I want to refine the template and schema by talking ("make tone optional", "add an audience dropdown") so I can converge quickly without hunting through settings.
+When the rendered prompt looks right, I want one action to continue the conversation with that output without copying across apps.
 
-- Desired outcomes:
-  - Small, atomic edits that can be applied safely.
-  - Clear summaries of what changed.
-  - No deep navigation required for the common loop.
+- Functional outcome:
+  - no duplicate composer UI inside the card
+  - primary CTA inserts text via Apps SDK bridge (`ui/message`)
+  - follow-up model turn can immediately use inserted content
 
-### JTBD 4: Reuse A Library (Without Getting Lost)
+### JTBD 4: Save and reuse useful templates
 
-When I’ve saved templates before, I want to find and reuse them quickly so I can stay in flow.
+When a prompt works, I want to save and list it so future runs are faster and more consistent.
 
-- Desired outcomes:
-  - Quick list/search/choose.
-  - Reuse feels like "fill + render", not "open an app".
-- Surface notes:
-  - Web: library UX is a core feature.
-  - ChatGPT App: start with per-chat reuse; account sync can be P1.
+- Functional outcome:
+  - save template with schema
+  - list templates quickly for reuse
+- Tooling outcome:
+  - powered by `save_template` and `list_templates`
 
 ## Secondary Jobs (P1+)
 
-- Share a template (and its schema) with a teammate.
-- Standardize option sets ("Tone", "Audience") across many templates.
-- Portability (export/import) with merge safety.
+- Account-synced template library with auth-backed persistence.
+- Sharable template bundles with safe import behavior.
+- Standardized option sets across multiple templates.
 
 ## Non-Jobs (Guardrails)
 
-- Prompt execution (running against an LLM) is out of scope: PromptFill generates prompts, it does not run them.
-- Long-form content browsing, dashboards, ads, or marketing messaging inside ChatGPT surfaces.
-- Rebuilding ChatGPT’s system composer or chat features inside a widget.
+- PromptFill does not run prompts against models. It prepares prompts.
+- Do not recreate ChatGPT system features (composer, chat thread, navigation shell).
+- Do not turn inline cards into full dashboards or multi-tab app shells.
 
-## Success Metrics (Cross-Surface)
+## Success Metrics
 
-- Time to first correct render (median): < 20 seconds from first tool invocation.
-- Reuse speed: < 10 seconds to render a saved template with defaults.
-- Extraction quality: majority of templates "work" without manual schema surgery.
+- Time to first correct render: median under 20 seconds from first tool call.
+- Reuse speed: median under 10 seconds for saved-template fill and render.
+- In-chat completion rate: user can complete extract -> fill -> render -> insert without leaving chat.
+- Extraction quality: first-pass schema accepted with minor edits in most sessions.
 
-## Spec-Driven Development Hooks
+## Spec Mapping
 
-These jobs should map to runnable "product tests":
+The following must stay in sync:
 
-- `spec/product-tests.json` (machine-readable cases)
-- `chatgpt-app/test/product-spec.test.js` (runner against core logic)
+- Product test cases: `spec/product-tests.json`
+- Executable spec runner: `chatgpt-app/test/product-spec.test.js`
+- Core behavior implementation: `chatgpt-app/src/lib/promptfill-core.js`
 
+Job coverage map:
+
+- JTBD 1 -> `extraction` cases
+- JTBD 2 -> `render` cases
+- JTBD 4 -> `store` cases
+
+JTBD 3 currently has a widget contract test:
+
+- `chatgpt-app/test/widget-contract.test.js`
