@@ -18,8 +18,7 @@ const PrincipleDemo: React.FC<{
   principle: Principle;
   accent: string;
   frame: number;
-  fps: number;
-}> = ({ principle, accent, frame, fps }) => {
+}> = ({ principle, accent, frame }) => {
   // Different animations for each principle
   const demoAnimations: Record<number, React.ReactNode> = {
     // Squash & Stretch - bouncing ball
@@ -504,7 +503,6 @@ export const PrincipleShowcase: React.FC<{
                     principle={principle}
                     accent={accent}
                     frame={frame}
-                    fps={fps}
                   />
                 </div>
 

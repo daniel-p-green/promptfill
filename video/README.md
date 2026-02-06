@@ -1,22 +1,17 @@
-# Remotion video
+# PromptFill videos (Remotion)
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+This folder contains the Remotion compositions used for:
 
-Welcome to your Remotion project!
+- Web app demo videos (honest UI screenshots + highlight overlays)
+- ChatGPT Apps SDK demo videos (inline card feel, conversation-first)
+- End-user story tracks (email, summaries, support, PRDs)
 
 ## Commands
 
 **Install Dependencies**
 
 ```console
-npm i
+npm ci
 ```
 
 **Start Preview**
@@ -25,30 +20,49 @@ npm i
 npm run dev
 ```
 
-**Render video**
+## Render outputs
 
-```console
-npx remotion render
+All renders write into repo root `renders/`.
+
+**Render MP4s (release set)**
+
+From repo root:
+
+```bash
+cd video
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillDemo ../renders/promptfill-demo.mp4 --codec=h264 --crf=18 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillChatGPTAppDemo ../renders/promptfill-chatgpt-app.mp4 --codec=h264 --crf=18 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillFlagshipPromo ../renders/promptfill-flagship.mp4 --codec=h264 --crf=18 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillUserStoryEmail ../renders/promptfill-userstory-email.mp4 --codec=h264 --crf=18 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillUserStorySummary ../renders/promptfill-userstory-summary.mp4 --codec=h264 --crf=18 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillUserStorySupport ../renders/promptfill-userstory-support.mp4 --codec=h264 --crf=18 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion render src/index.ts PromptFillUserStoryPRD ../renders/promptfill-userstory-prd.mp4 --codec=h264 --crf=18 --quiet
 ```
 
-**Upgrade Remotion**
+**Midpoint stills (readability checks)**
 
-```console
-npx remotion upgrade
+From repo root:
+
+```bash
+mkdir -p renders/stills
+cd video
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion still src/index.ts PromptFillFlagshipPromo ../renders/stills/promptfill-flagship-mid.png --frame=720 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion still src/index.ts PromptFillChatGPTAppDemo ../renders/stills/promptfill-chatgpt-mid.png --frame=360 --quiet
+PATH="/opt/homebrew/opt/node@20/bin:$PATH" npx remotion still src/index.ts PromptFillUserStoryEmail ../renders/stills/promptfill-userstory-email-mid.png --frame=180 --quiet
 ```
 
-## Docs
+## Demo GIFs
 
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
+The README uses GIFs generated from the rendered MP4s:
 
-## Help
+From repo root:
 
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
+```bash
+mkdir -p docs/media
+ffmpeg -y -i renders/promptfill-demo.mp4 -vf "fps=12,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=diff[p];[s1][p]paletteuse=dither=sierra2_4a" docs/media/promptfill-demo.gif
+ffmpeg -y -i renders/promptfill-chatgpt-app.mp4 -vf "fps=12,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=diff[p];[s1][p]paletteuse=dither=sierra2_4a" docs/media/promptfill-chatgpt-app.gif
+```
 
-## Issues
+## Composition list
 
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
-
-## License
-
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+See `video/src/Root.tsx`.

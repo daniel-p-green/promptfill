@@ -5,13 +5,21 @@
 </p>
 
 <p align="center">
-  <em>Frames from our Remotion explainer (<code>video/src/PromptFillDemo.tsx</code>).</em>
+  <em>Web app demo GIF (generated from Remotion renders).</em>
 </p>
 
 <p align="center">
   <strong>Local-first prompt library</strong> where a prompt becomes a <strong>fillable form</strong>.
   <br />
   Typed variables · dropdown selectors · share/import/export · one-click copy
+</p>
+
+<p align="center">
+  <img src="docs/media/promptfill-chatgpt-app.gif" alt="PromptFill ChatGPT app demo (Apps SDK inline card)" width="960" />
+</p>
+
+<p align="center">
+  <em>ChatGPT app demo GIF (inline card: extract → fill → render → send back to chat).</em>
 </p>
 
 <p align="center">

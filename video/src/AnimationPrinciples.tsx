@@ -1,5 +1,11 @@
 import React from "react";
-import { AbsoluteFill, Sequence, interpolate, useCurrentFrame } from "remotion";
+import {
+  AbsoluteFill,
+  Sequence,
+  interpolate,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { AnimationTitleCard } from "./scenes/animation/AnimationTitleCard";
 import { PrinciplesOverview } from "./scenes/animation/PrinciplesOverview";
 import { PrincipleShowcase } from "./scenes/animation/PrincipleShowcase";
@@ -88,6 +94,7 @@ export const AnimationPrinciples: React.FC<AnimationPrinciplesProps> = ({
   accent,
 }) => {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
   const fade = (start: number, end: number) =>
     interpolate(frame, [start, end], [0, 1], {
       extrapolateLeft: "clamp",
@@ -104,17 +111,34 @@ export const AnimationPrinciples: React.FC<AnimationPrinciplesProps> = ({
       />
 
       {/* Subtle grid pattern */}
-      <AbsoluteFill
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-          opacity: 0.5,
-        }}
-      />
+      <AbsoluteFill style={{ opacity: 0.5, pointerEvents: "none" }}>
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${width} ${height}`}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <pattern
+              id="grid"
+              width="60"
+              height="60"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 60 0 L 0 0 0 60"
+                fill="none"
+                stroke="rgba(255,255,255,0.02)"
+                strokeWidth="1"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+      </AbsoluteFill>
 
       {/* 0–5s: Title Card */}
-      <Sequence from={0} durationInFrames={5 * 30}>
+      <Sequence durationInFrames={5 * 30}>
         <AnimationTitleCard accent={accent} />
       </Sequence>
 
@@ -157,13 +181,28 @@ export const AnimationPrinciples: React.FC<AnimationPrinciplesProps> = ({
 
       {/* Film grain overlay */}
       <AbsoluteFill
-        style={{
-          backgroundImage:
-            "url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Cfilter id=%22n%22 x=%220%22 y=%220%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22200%22 height=%22200%22 filter=%22url(%23n)%22 opacity=%220.2%22/%3E%3C/svg%3E')",
-          mixBlendMode: "overlay",
-          opacity: 0.1,
-        }}
-      />
+        style={{ mixBlendMode: "overlay", opacity: 0.1, pointerEvents: "none" }}
+      >
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 200 200"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <filter id="film-grain" x="0" y="0" width="100%" height="100%">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.75"
+                numOctaves="2"
+                stitchTiles="stitch"
+              />
+            </filter>
+          </defs>
+          <rect width="200" height="200" filter="url(#film-grain)" opacity="0.2" />
+        </svg>
+      </AbsoluteFill>
 
       {/* Global fade-in */}
       <AbsoluteFill
