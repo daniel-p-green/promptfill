@@ -16,11 +16,14 @@ This folder contains the ChatGPT-native PromptFill surface built with the Apps S
 Tool metadata copy standard:
 
 - Tool descriptions should begin with `Use this when the user wants to...` so trigger intent is explicit.
+- Tool metadata exposes a scoped `Open advanced editor` fullscreen handoff action for complex edits.
 
 Current product direction:
 
 - P0 keeps persistence session/chat scoped.
+- P0 UX promise is chat scoped only (no cross-chat guarantee).
 - P1 adds auth-backed durable storage.
+- P1 durability target is Supabase-backed storage.
 - Inline UX stays conversation-first; avoid recreating a full app shell.
 
 ## Local development
@@ -57,6 +60,7 @@ https://<your-ngrok-subdomain>.ngrok.app/mcp
 
 - Core extraction/render/storage logic lives in `src/lib/promptfill-core.js`.
 - Widget is intentionally lightweight and conversation-first.
+- A dedicated fullscreen editor resource exists for advanced edit handoff (`src/widget/fullscreen-editor.html`).
 - Storage is in-memory for scaffold phase; replace with durable backend for production.
 - Product behavior is spec-driven:
   - source cases: `../spec/product-tests.json`

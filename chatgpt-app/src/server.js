@@ -19,6 +19,7 @@ import {
 const PORT = Number(process.env.PORT ?? 8787);
 const MCP_PATH = process.env.MCP_PATH ?? "/mcp";
 const INLINE_WIDGET_URI = "ui://widget/promptfill-inline-v1.html";
+const FULLSCREEN_EDITOR_URI = "ui://widget/promptfill-fullscreen-v1.html";
 const securitySchemes = [{ type: "noauth" }];
 
 const templateStore = createInMemoryTemplateStore();
@@ -26,6 +27,17 @@ const inlineWidgetHtml = readFileSync(
   new URL("./widget/inline-card.html", import.meta.url),
   "utf8"
 );
+const fullscreenEditorHtml = readFileSync(
+  new URL("./widget/fullscreen-editor.html", import.meta.url),
+  "utf8"
+);
+const fullscreenEditorActions = [
+  {
+    type: "open_resource",
+    resourceUri: FULLSCREEN_EDITOR_URI,
+    label: "Open advanced editor",
+  },
+];
 
 function createTemplateId() {
   return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -59,6 +71,34 @@ function buildServer() {
     ],
   }));
 
+  registerAppResource(
+    server,
+    "promptfill-fullscreen",
+    FULLSCREEN_EDITOR_URI,
+    {},
+    async () => ({
+      contents: [
+        {
+          uri: FULLSCREEN_EDITOR_URI,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: fullscreenEditorHtml,
+          _meta: {
+            ui: {
+              prefersBorder: false,
+              domain: "https://promptfill.example.com",
+              csp: {
+                connectDomains: [],
+                resourceDomains: ["https://persistent.oaistatic.com"],
+              },
+            },
+            "openai/widgetDescription":
+              "Advanced PromptFill editor for larger template edits and variable adjustments.",
+          },
+        },
+      ],
+    })
+  );
+
   registerAppTool(
     server,
     "extract_prompt_fields",
@@ -79,6 +119,7 @@ function buildServer() {
         securitySchemes,
         ui: { resourceUri: INLINE_WIDGET_URI },
         "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
         "openai/toolInvocation/invoking": "Extracting fields...",
         "openai/toolInvocation/invoked": "Fields ready",
       },
@@ -145,6 +186,7 @@ function buildServer() {
         securitySchemes,
         ui: { resourceUri: INLINE_WIDGET_URI },
         "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
         "openai/toolInvocation/invoking": "Rendering prompt...",
         "openai/toolInvocation/invoked": "Rendered",
       },
@@ -253,6 +295,7 @@ function buildServer() {
         securitySchemes,
         ui: { resourceUri: INLINE_WIDGET_URI },
         "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
         "openai/toolInvocation/invoking": "Loading templates...",
         "openai/toolInvocation/invoked": "Templates ready",
       },

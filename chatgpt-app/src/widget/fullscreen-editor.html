@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PromptFill Advanced Editor</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        background: transparent;
+        color: canvastext;
+      }
+
+      .layout {
+        display: grid;
+        gap: 16px;
+        max-width: 860px;
+      }
+
+      .surface {
+        border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
+        border-radius: 14px;
+        background: color-mix(in srgb, canvas 94%, transparent);
+        padding: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      p {
+        margin: 8px 0 0;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 220px;
+        border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
+        border-radius: 10px;
+        background: color-mix(in srgb, canvas 98%, transparent);
+        color: inherit;
+        font: inherit;
+        padding: 10px 12px;
+        resize: vertical;
+      }
+
+      .hint {
+        margin-top: 12px;
+        font-size: 12px;
+        color: color-mix(in srgb, canvastext 66%, transparent);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="surface">
+        <h1>PromptFill Advanced Editor</h1>
+        <p>
+          Use this scoped fullscreen view for large prompt edits while keeping the inline card focused on
+          quick render and insert actions.
+        </p>
+      </section>
+
+      <section class="surface">
+        <textarea readonly>
+Advanced editing handoff is available for:
+- refining long templates
+- adjusting complex variable structures
+- preparing reusable template drafts
+        </textarea>
+        <p class="hint">Return to chat when your draft is ready to continue the conversation-first flow.</p>
+      </section>
+    </main>
+  </body>
+</html>
