@@ -14,6 +14,7 @@ type SegmentedControlProps<T extends string> = {
   onChange: (value: T) => void;
   size?: SegmentedControlSize;
   className?: string;
+  ariaLabel?: string;
 };
 
 const containerBase =
@@ -33,9 +34,14 @@ export function SegmentedControl<T extends string>({
   onChange,
   size = "sm",
   className,
+  ariaLabel,
 }: SegmentedControlProps<T>) {
   return (
-    <div className={cx(containerBase, sizes[size].container, className)} role="tablist">
+    <div
+      className={cx(containerBase, sizes[size].container, className)}
+      role="tablist"
+      aria-label={ariaLabel}
+    >
       {options.map((option) => {
         const selected = option.value === value;
         return (
