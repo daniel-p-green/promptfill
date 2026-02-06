@@ -52,6 +52,14 @@ Environment variables:
 - `PROMPTFILL_SUPABASE_URL` (required when `PROMPTFILL_TEMPLATE_STORE_KIND=supabase`)
 - `PROMPTFILL_SUPABASE_KEY` (required when `PROMPTFILL_TEMPLATE_STORE_KIND=supabase`)
 - `PROMPTFILL_SUPABASE_TABLE` (optional; defaults to `promptfill_templates`)
+- `PROMPTFILL_ALLOW_USER_ID_HEADER` (optional; default `false`, only for trusted internal proxy flows)
+- `PROMPTFILL_ALLOW_BEARER_OWNER_HASH` (optional; default `false`, enables token-derived owner hash tenancy)
+
+Guardrails:
+
+- `PROMPTFILL_TEMPLATE_STORE_KIND=supabase` requires `PROMPTFILL_AUTH_TOKEN`.
+- `PROMPTFILL_TEMPLATE_STORE_KIND=supabase` rejects wildcard CORS origin `*`.
+- user-id header mapping and bearer-hash owner mapping require authenticated mode.
 
 Session behavior:
 
@@ -65,6 +73,8 @@ Supabase schema bootstrap:
 ```bash
 psql "$PROMPTFILL_SUPABASE_URL" -f chatgpt-app/supabase/promptfill_templates.sql
 ```
+
+Schema includes RLS and a service-role-only policy by default.
 
 ## Connect in ChatGPT developer mode
 

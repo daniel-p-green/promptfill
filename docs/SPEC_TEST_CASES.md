@@ -47,6 +47,9 @@ Primary artifacts:
 Additional ChatGPT app contracts now run under `chatgpt-app/test/`:
 
 - `mcp-runtime.test.js`: validates MCP initialization, tool metadata, auth mode, and session-scoped store isolation through a real streamable HTTP client.
+- `owner-resolution.test.js`: validates strict single-tenant owner mapping defaults and explicit opt-in behavior for trusted header/token-derived tenancy.
+- `server-security-guardrails.test.js`: enforces secure server config for Supabase mode (auth token required, wildcard CORS rejected).
+- `supabase-schema-contract.test.js`: enforces RLS + service-role policy requirements in Supabase schema SQL.
 - `tool-metadata.test.js`: enforces tool description trigger phrasing from runtime-listed tool metadata.
 - `widget-contract.test.js`: keeps the inline card conversation-first with bounded actions.
 - `widget-state.test.js`: ensures recoverable error copy and retry state.

@@ -67,6 +67,40 @@ function parseBooleanFlag(value, defaultValue = false) {
   return defaultValue;
 }
 
+function assertSecurityGuardrails({
+  templateStoreKind,
+  allowedOrigins,
+  authToken,
+  allowUserIdHeader,
+  allowBearerTokenOwnerHash,
+}) {
+  if (allowUserIdHeader && !authToken) {
+    throw new Error(
+      "PROMPTFILL_ALLOW_USER_ID_HEADER requires PROMPTFILL_AUTH_TOKEN to avoid unauthenticated user spoofing."
+    );
+  }
+
+  if (allowBearerTokenOwnerHash && !authToken) {
+    throw new Error(
+      "PROMPTFILL_ALLOW_BEARER_OWNER_HASH requires PROMPTFILL_AUTH_TOKEN so caller identity is verified."
+    );
+  }
+
+  if (templateStoreKind !== "supabase") return;
+
+  if (!authToken) {
+    throw new Error(
+      "PROMPTFILL_AUTH_TOKEN is required when PROMPTFILL_TEMPLATE_STORE_KIND=supabase."
+    );
+  }
+
+  if (allowedOrigins.includes("*")) {
+    throw new Error(
+      "PROMPTFILL_ALLOWED_ORIGINS cannot include '*' when PROMPTFILL_TEMPLATE_STORE_KIND=supabase."
+    );
+  }
+}
+
 function normalizeWidgetDomain(value) {
   if (!value || !value.trim()) return DEFAULT_WIDGET_DOMAIN;
   try {
@@ -550,6 +584,14 @@ export function createPromptFillHttpServer({
     false
   ),
 } = {}) {
+  assertSecurityGuardrails({
+    templateStoreKind,
+    allowedOrigins,
+    authToken,
+    allowUserIdHeader,
+    allowBearerTokenOwnerHash,
+  });
+
   const securitySchemes = resolveSecuritySchemes(authToken);
   const normalizedWidgetDomain = normalizeWidgetDomain(widgetDomain);
   const sessionsById = new Map();
