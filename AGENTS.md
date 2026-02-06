@@ -12,6 +12,8 @@ Current direction is resolved:
 - Secondary lab: web prototype in `web/` for UX experimentation.
 - Narrative artifact: product video in `video/`.
 - PromptFill generates prompts; it does not execute prompts.
+- Fullscreen advanced editing handoff is part of P0 ship scope.
+- P1 durable storage target is Supabase.
 
 Rule: never port the full web shell into ChatGPT inline cards.
 
@@ -36,6 +38,11 @@ Each non-trivial task follows this sequence:
 5. Update docs and create a clear handoff summary.
 
 Keep commits small and reversible. Avoid broad refactors in feature branches.
+
+Persistence rule for P0:
+
+- UX contract is chat-scoped state only.
+- Do not imply cross-chat durability until Supabase-backed P1 ships.
 
 ## Definition of Done
 
@@ -89,6 +96,7 @@ Every handoff includes:
 - commands run and results
 - unresolved risks
 - exact next recommended step
+- whether golden prompt threshold passed for release
 
 ## Security and Privacy Guardrails
 
@@ -105,6 +113,11 @@ Core skills for this repo:
 - execution rhythm: `subagent-driven-development`, `using-git-worktrees`
 - product quality: `code-review`, `qa-test-planner`, `security-review-2`
 - domain: `openai-docs`, `remotion-best-practices`
+
+Ownership split:
+
+- Product: golden prompt definitions and quality thresholds.
+- Engineering: harness automation and regression reporting.
 
 Optional external skills discovered via `find-skills`:
 

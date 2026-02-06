@@ -21,6 +21,19 @@
 - Task 7: 0.75 day
 - **Total:** ~5.25 engineering days (single engineer), plus 0.5-1.0 day review and QA buffer.
 
+## Resolved Product Decisions
+
+1. Fullscreen advanced editing handoff ships in P0 (not behind a flag).
+2. P1 durable storage target is Supabase.
+3. Golden prompt ownership model:
+   - Product owns prompt sets and pass/fail thresholds.
+   - Engineering owns harness execution and regression reporting.
+4. Ultimate demo MP4 and GIF artifacts are versioned long-term in this repo.
+5. P0 persistence contract is strictly chat-scoped UX:
+   - no cross-chat guarantee
+   - process-memory reuse is implementation detail only
+   - widget copy must set this expectation clearly
+
 ### Task 1: Tool Metadata and Trigger Quality Hardening
 
 **Files:**
@@ -97,7 +110,7 @@ git add chatgpt-app/src/widget/inline-card.html chatgpt-app/test/widget-state.te
 git commit -m "feat(chatgpt-app): add inline error and retry states"
 ```
 
-### Task 3: Fullscreen Advanced Editing Handoff (Scoped)
+### Task 3: Fullscreen Advanced Editing Handoff (P0 Required)
 
 **Files:**
 - Create: `chatgpt-app/src/widget/fullscreen-editor.html`
@@ -124,6 +137,8 @@ Expected: FAIL with missing fullscreen resource/action.
 registerAppResource("fullscreen_editor", { /* scoped advanced edit view */ });
 ```
 
+Also expose this in the inline card path as a first-class action for advanced schema edits.
+
 **Step 4: Run tests to verify pass**
 
 Run: `npm run test:chatgpt-app`  
@@ -140,6 +155,7 @@ git commit -m "feat(chatgpt-app): add scoped fullscreen advanced editing handoff
 
 **Files:**
 - Create: `chatgpt-app/src/lib/template-store-adapter.js`
+- Create: `chatgpt-app/src/lib/supabase-template-store.js`
 - Modify: `chatgpt-app/src/lib/promptfill-core.js`
 - Modify: `chatgpt-app/src/server.js`
 - Create: `chatgpt-app/test/store-adapter.test.js`
@@ -162,6 +178,8 @@ Expected: FAIL with missing adapter abstraction.
 ```js
 export function createTemplateStoreAdapter(kind = "memory") { /* ... */ }
 ```
+
+Add a Supabase adapter stub that implements the same interface and is not yet required for P0 runtime.
 
 **Step 4: Run tests to verify pass**
 
@@ -212,6 +230,10 @@ Expected: PASS.
 git add spec/tool-trigger-prompts.json chatgpt-app/test/tool-trigger-eval.test.js docs/CHATGPT_APP_RETHINK.md
 git commit -m "test(spec): add golden prompt trigger evaluation harness"
 ```
+
+**Ownership note:**
+- Product curates golden prompts and acceptance thresholds.
+- Engineering runs and reports the harness on each release candidate.
 
 ### Task 6: Release Candidate Stabilization and Handoff
 
@@ -314,3 +336,5 @@ Commit:
 git add video/src/Root.tsx video/src/PromptFillDemo.tsx video/src/PromptFillFlagshipPromo.tsx README.md video/README.md renders/promptfill-ultimate-web.mp4 renders/promptfill-ultimate-chatgpt.mp4 docs/media/promptfill-web-demo.gif docs/media/promptfill-chatgpt-demo.gif
 git commit -m "feat(video): add ultimate web/chatgpt demos and refresh readme media"
 ```
+
+Artifact policy: keep MP4 and GIF deliverables versioned in git for long-term project storytelling.

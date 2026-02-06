@@ -15,6 +15,7 @@ Core promise: a prompt becomes a form, then returns to chat in one move.
 - Primary product: ChatGPT app built with Apps SDK (`chatgpt-app/`).
 - Secondary surface: web app as design/prototyping lab (`web/`).
 - PromptFill generates prompts but does not execute prompts against LLMs.
+- Fullscreen advanced editing handoff ships in P0.
 
 ## Problem
 
@@ -80,8 +81,9 @@ Tool contracts must be explicit, typed, and deterministic.
 
 ### State model
 
-- P0 persistence is session/chat scoped
-- no guarantee of cross-session durability
+- P0 persistence contract is chat scoped
+- no guarantee of cross-chat or cross-session durability
+- process memory reuse is implementation detail, not product promise
 - P1 adds auth-backed persistent storage
 
 ## Quality Requirements
@@ -125,7 +127,7 @@ Tool contracts must be explicit, typed, and deterministic.
 ### Phase P1
 
 - auth and account mapping
-- durable template persistence
+- durable template persistence on Supabase
 - search/update/delete template tools
 
 ### Phase P2
@@ -145,3 +147,12 @@ Tool contracts must be explicit, typed, and deterministic.
 - if a feature improves web UX but weakens chat-native UX, defer it from P0
 - if behavior is important, encode it in spec tests before implementation
 - if a card needs app-like navigation, move the flow to fullscreen or future phase
+
+## Operational Ownership
+
+- Product owns golden prompt sets and trigger quality thresholds.
+- Engineering owns evaluation harness execution and release-gate reporting.
+
+## Media Artifact Policy
+
+- Keep ultimate demo MP4 and GIF assets in-repo for long-term project packaging.
