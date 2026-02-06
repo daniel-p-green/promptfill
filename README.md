@@ -70,6 +70,7 @@ PromptFill is one project with two complementary components:
 
 - Shipped conversation-first inline flow for extract -> fill -> render -> insert.
 - Verified tool metadata contracts, widget contracts, spec cases, web tests, and lint gates.
+- PR-ready release note: `docs/RELEASE_NOTES_2026-02-06.md`
 
 ## How it works
 
