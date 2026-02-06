@@ -56,6 +56,7 @@ Additional ChatGPT app contracts now run under `chatgpt-app/test/`:
 - `fullscreen-contract.test.js`: validates fullscreen handoff resource/action registration.
 - `store-adapter.test.js`: validates memory + Supabase-stub adapter seam behavior.
 - `tool-trigger-eval.test.js`: validates golden prompt fixture schema, expected tool mapping validity, and coverage across all P0 tools.
+- `tool-routing-eval-script.test.js`: validates routing harness fail/skip behavior so CI can strictly enforce live eval when required.
 
 ## Operating Procedure
 

@@ -54,6 +54,7 @@ Environment variables:
 - `PROMPTFILL_SUPABASE_TABLE` (optional; defaults to `promptfill_templates`)
 - `PROMPTFILL_ALLOW_USER_ID_HEADER` (optional; default `false`, only for trusted internal proxy flows)
 - `PROMPTFILL_ALLOW_BEARER_OWNER_HASH` (optional; default `false`, enables token-derived owner hash tenancy)
+- `ROUTING_EVAL_REQUIRED` (routing eval harness only; when `true`, missing `OPENAI_API_KEY` causes a hard failure)
 
 Guardrails:
 

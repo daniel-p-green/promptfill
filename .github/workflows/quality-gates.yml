@@ -46,13 +46,13 @@ jobs:
         run: npm run lint:video
 
   tool-routing-eval:
-    if: ${{ secrets.OPENAI_API_KEY != '' }}
     needs: core-gates
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: gpt-4.1-mini
       ROUTING_MIN_ACCURACY: "0.80"
+      ROUTING_EVAL_REQUIRED: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

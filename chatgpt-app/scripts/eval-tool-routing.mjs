@@ -3,6 +3,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
 const MIN_ACCURACY = Number(process.env.ROUTING_MIN_ACCURACY ?? "0.8");
+const ROUTING_EVAL_REQUIRED = /^(1|true|yes|on)$/i.test(
+  process.env.ROUTING_EVAL_REQUIRED ?? ""
+);
 
 const toolNames = ["extract_prompt_fields", "render_prompt", "save_template", "list_templates"];
 const allowedPredictions = new Set([...toolNames, "NONE"]);
@@ -108,6 +111,12 @@ function calculateSummary(rows) {
 
 async function main() {
   if (!OPENAI_API_KEY.trim()) {
+    if (ROUTING_EVAL_REQUIRED) {
+      console.error(
+        "OPENAI_API_KEY is required because ROUTING_EVAL_REQUIRED=true. Configure the key in CI secrets."
+      );
+      process.exit(1);
+    }
     console.log("Skipping routing eval: OPENAI_API_KEY is not set.");
     process.exit(0);
   }
