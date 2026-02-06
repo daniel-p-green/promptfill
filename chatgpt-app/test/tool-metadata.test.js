@@ -20,6 +20,7 @@ test("tool descriptions start with Use this when the user wants to", async () =>
       "search_templates",
       "update_template",
       "delete_template",
+      "suggest_templates",
     ]) {
       const tool = byName.get(toolName);
       assert.ok(tool, `expected tool metadata for ${toolName}`);

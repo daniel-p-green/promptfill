@@ -25,12 +25,12 @@
         margin: 0 auto;
         display: grid;
         gap: 12px;
-        max-width: 1080px;
+        max-width: 1180px;
       }
 
       .surface {
         border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
-        border-radius: 14px;
+        border-radius: 16px;
         background: color-mix(in srgb, canvas 95%, transparent);
         padding: 14px;
       }
@@ -46,20 +46,36 @@
         line-height: 1.5;
       }
 
-      .grid {
+      .workspace {
         display: grid;
-        gap: 10px;
+        gap: 12px;
       }
 
-      @media (min-width: 980px) {
-        .grid {
-          grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      @media (min-width: 1040px) {
+        .workspace {
+          grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
         }
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .muted {
+        margin-top: 4px;
+        color: color-mix(in srgb, canvastext 66%, transparent);
+        font-size: 12px;
       }
 
       .field {
         display: grid;
         gap: 6px;
+      }
+
+      .field + .field {
+        margin-top: 10px;
       }
 
       .field-label {
@@ -68,23 +84,38 @@
         color: color-mix(in srgb, canvastext 72%, transparent);
       }
 
-      textarea {
+      .search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      textarea,
+      input {
         width: 100%;
-        min-height: 170px;
         border: 1px solid color-mix(in srgb, canvastext 16%, transparent);
         border-radius: 10px;
         background: color-mix(in srgb, canvas 98%, transparent);
         color: inherit;
         font: inherit;
         padding: 10px 12px;
+      }
+
+      textarea {
+        min-height: 160px;
         resize: vertical;
       }
 
       .actions {
         display: flex;
         flex-wrap: wrap;
-        justify-content: flex-end;
         gap: 8px;
+      }
+
+      .actions.right {
+        justify-content: flex-end;
       }
 
       button {
@@ -105,9 +136,50 @@
         color: #fff;
       }
 
+      button.danger {
+        border-color: color-mix(in srgb, #b42318 38%, transparent);
+        color: color-mix(in srgb, #b42318 84%, canvastext);
+      }
+
       button:disabled {
         opacity: 0.55;
         cursor: not-allowed;
+      }
+
+      .library-list {
+        margin-top: 10px;
+        border: 1px solid color-mix(in srgb, canvastext 14%, transparent);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .library-item {
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-bottom: 1px solid color-mix(in srgb, canvastext 9%, transparent);
+        border-radius: 0;
+        background: transparent;
+        padding: 10px 12px;
+        display: grid;
+        gap: 3px;
+      }
+
+      .library-item:last-child {
+        border-bottom: 0;
+      }
+
+      .library-item strong {
+        font-size: 12px;
+      }
+
+      .library-meta {
+        font-size: 11px;
+        color: color-mix(in srgb, canvastext 60%, transparent);
+      }
+
+      .library-item.active {
+        background: color-mix(in srgb, #10a37f 14%, canvas);
       }
 
       .status {
@@ -126,6 +198,17 @@
         background: color-mix(in srgb, canvas 98%, transparent);
       }
 
+      .editor-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      @media (min-width: 1060px) {
+        .editor-grid {
+          grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        }
+      }
+
       .hint {
         margin-top: 12px;
         font-size: 12px;
@@ -136,69 +219,125 @@
   <body>
     <main class="layout">
       <section class="surface">
-        <h1>PromptFill Advanced Editor</h1>
+        <h1>PromptFill Workspace</h1>
         <p>
-          Use this scoped fullscreen view for larger template and schema edits. Render when ready, then
-          insert the final prompt back into conversation.
+          Manage prompts like a living doc: extract structure, edit schema, search your library, and push
+          the final result back into conversation.
         </p>
       </section>
 
-      <section class="surface">
-        <div class="grid">
-          <label class="field">
-            <span class="field-label">Template</span>
-            <textarea id="template-input" spellcheck="false" placeholder="Draft template with {{variables}}..."></textarea>
-          </label>
-          <label class="field">
-            <span class="field-label">Values JSON</span>
-            <textarea id="values-input" spellcheck="false" placeholder='{"recipient_name":"Alex","tone":"friendly"}'>{}</textarea>
-          </label>
-        </div>
-        <div class="field" style="margin-top: 10px">
-          <span class="field-label">Variables JSON</span>
-          <textarea id="variables-input" spellcheck="false" placeholder='[{"name":"recipient_name","type":"string","required":true}]'>[]</textarea>
-        </div>
-      </section>
+      <section class="workspace">
+        <article class="surface">
+          <h2 class="panel-title">Template Library</h2>
+          <p class="muted">Search, open, and manage reusable PromptFill templates.</p>
 
-      <section class="surface">
-        <div class="actions">
-          <button id="insert-button" type="button" disabled>Insert into chat</button>
-          <button id="render-button" class="primary" type="button">Render prompt</button>
-        </div>
-        <p id="status" class="status" style="margin-top: 8px">Waiting for extracted fields...</p>
-        <pre id="rendered-output" class="rendered" hidden></pre>
-        <p class="hint">
-          Tip: start extraction inline, then continue editing here. Extraction results sync automatically
-          when this view receives tool-result updates.
-        </p>
+          <div class="search-row">
+            <input
+              id="template-search-input"
+              type="search"
+              placeholder="Search templates"
+              aria-label="Search templates"
+            />
+            <button id="search-templates-button" type="button">Search</button>
+          </div>
+
+          <div class="actions" style="margin-top: 8px">
+            <button id="list-templates-button" type="button">Refresh</button>
+            <button id="suggest-templates-button" type="button">Starter</button>
+            <button id="clear-selection-button" type="button">New draft</button>
+          </div>
+
+          <div id="template-library" class="library-list" role="list" aria-label="Saved templates"></div>
+        </article>
+
+        <article class="surface">
+          <div class="field">
+            <span class="field-label">Template name</span>
+            <input id="template-name-input" type="text" placeholder="Weekly status update" />
+          </div>
+
+          <div class="actions right" style="margin-top: 10px">
+            <button id="save-template-button" class="primary" type="button">Save</button>
+            <button id="update-template-button" type="button" disabled>Update</button>
+            <button id="delete-template-button" class="danger" type="button" disabled>Delete</button>
+          </div>
+
+          <div class="editor-grid" style="margin-top: 12px">
+            <label class="field">
+              <span class="field-label">Template</span>
+              <textarea id="template-input" spellcheck="false" placeholder="Draft template with {{variables}}..."></textarea>
+            </label>
+            <label class="field">
+              <span class="field-label">Values JSON</span>
+              <textarea id="values-input" spellcheck="false" placeholder='{"recipient_name":"Alex","tone":"friendly"}'>{}</textarea>
+            </label>
+          </div>
+
+          <label class="field" style="margin-top: 10px">
+            <span class="field-label">Variables JSON</span>
+            <textarea id="variables-input" spellcheck="false" placeholder='[{"name":"recipient_name","type":"string","required":true}]'>[]</textarea>
+          </label>
+
+          <div class="actions right" style="margin-top: 10px">
+            <button id="insert-button" type="button" disabled>Insert into chat</button>
+            <button id="render-button" class="primary" type="button">Render prompt</button>
+          </div>
+
+          <p id="status" class="status" style="margin-top: 8px">Waiting for extracted fields...</p>
+          <pre id="rendered-output" class="rendered" hidden></pre>
+          <p class="hint">
+            Tip: start extraction inline, then use this workspace to evolve and manage templates without
+            breaking conversation flow.
+          </p>
+        </article>
       </section>
     </main>
     <script type="module">
+      const templateNameInput = document.getElementById("template-name-input");
       const templateInput = document.getElementById("template-input");
       const variablesInput = document.getElementById("variables-input");
       const valuesInput = document.getElementById("values-input");
+      const templateSearchInput = document.getElementById("template-search-input");
+      const templateLibrary = document.getElementById("template-library");
+
+      const searchTemplatesButton = document.getElementById("search-templates-button");
+      const listTemplatesButton = document.getElementById("list-templates-button");
+      const suggestTemplatesButton = document.getElementById("suggest-templates-button");
+      const clearSelectionButton = document.getElementById("clear-selection-button");
+      const saveTemplateButton = document.getElementById("save-template-button");
+      const updateTemplateButton = document.getElementById("update-template-button");
+      const deleteTemplateButton = document.getElementById("delete-template-button");
       const renderButton = document.getElementById("render-button");
       const insertButton = document.getElementById("insert-button");
+
       const statusEl = document.getElementById("status");
       const renderedOutput = document.getElementById("rendered-output");
 
       let rpcId = 0;
       const pendingRequests = new Map();
+      let activeTemplateId = "";
+      let lastLibraryTemplates = [];
 
       function setStatus(text) {
         statusEl.textContent = text;
       }
 
-      function setRenderedPrompt(promptText, missingRequired = []) {
-        renderedOutput.hidden = false;
-        renderedOutput.textContent = promptText ?? "";
-        if (Array.isArray(missingRequired) && missingRequired.length > 0) {
-          insertButton.disabled = true;
-          setStatus(`Missing required: ${missingRequired.join(", ")}`);
-          return;
-        }
-        insertButton.disabled = !promptText;
-        setStatus(promptText ? "Rendered prompt ready." : "Render a prompt to continue.");
+      function setActiveTemplateId(id) {
+        activeTemplateId = id ? String(id) : "";
+        const hasActiveTemplate = Boolean(activeTemplateId);
+        updateTemplateButton.disabled = !hasActiveTemplate;
+        deleteTemplateButton.disabled = !hasActiveTemplate;
+      }
+
+      function resetWorkspace() {
+        setActiveTemplateId("");
+        templateNameInput.value = "";
+        templateInput.value = "";
+        variablesInput.value = "[]";
+        valuesInput.value = "{}";
+        renderedOutput.hidden = true;
+        renderedOutput.textContent = "";
+        insertButton.disabled = true;
       }
 
       function parseJsonInput(label, raw, fallback) {
@@ -211,6 +350,56 @@
         }
       }
 
+      function renderTemplateLibrary(templates) {
+        lastLibraryTemplates = Array.isArray(templates) ? templates : [];
+
+        if (lastLibraryTemplates.length === 0) {
+          templateLibrary.innerHTML = '<div class="library-item" role="listitem">No templates found.</div>';
+          return;
+        }
+
+        templateLibrary.innerHTML = "";
+        for (const template of lastLibraryTemplates) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `library-item${template.id === activeTemplateId ? " active" : ""}`;
+          button.setAttribute("role", "listitem");
+          button.dataset.templateId = template.id;
+          button.innerHTML = `<strong>${template.name}</strong><span class="library-meta">${template.variable_count ?? 0} fields</span>`;
+          button.addEventListener("click", async () => {
+            if (template.template && Array.isArray(template.variables)) {
+              setActiveTemplateId(template.id ?? "");
+              templateNameInput.value = template.name ?? "";
+              templateInput.value = template.template ?? "";
+              variablesInput.value = JSON.stringify(template.variables ?? [], null, 2);
+              valuesInput.value = "{}";
+              renderedOutput.hidden = true;
+              renderedOutput.textContent = "";
+              insertButton.disabled = true;
+              setStatus(`Loaded starter template "${template.name}".`);
+              renderTemplateLibrary(lastLibraryTemplates);
+              return;
+            }
+            await loadTemplateById(template.id);
+          });
+          templateLibrary.appendChild(button);
+        }
+      }
+
+      function setRenderedPrompt(promptText, missingRequired = []) {
+        renderedOutput.hidden = false;
+        renderedOutput.textContent = promptText ?? "";
+
+        if (Array.isArray(missingRequired) && missingRequired.length > 0) {
+          insertButton.disabled = true;
+          setStatus(`Missing required: ${missingRequired.join(", ")}`);
+          return;
+        }
+
+        insertButton.disabled = !promptText;
+        setStatus(promptText ? "Rendered prompt ready." : "Render a prompt to continue.");
+      }
+
       function applyToolResult(toolResult) {
         const content = toolResult?.structuredContent;
         if (!content || typeof content !== "object") return;
@@ -219,6 +408,9 @@
           templateInput.value = String(content.template ?? "");
           variablesInput.value = JSON.stringify(content.variables ?? [], null, 2);
           valuesInput.value = "{}";
+          if (!templateNameInput.value.trim()) {
+            templateNameInput.value = "New PromptFill Template";
+          }
           renderedOutput.hidden = true;
           renderedOutput.textContent = "";
           insertButton.disabled = true;
@@ -228,6 +420,49 @@
 
         if (content.kind === "render") {
           setRenderedPrompt(content.rendered_prompt ?? "", content.missing_required ?? []);
+          return;
+        }
+
+        if (content.kind === "list" || content.kind === "search" || content.kind === "suggest") {
+          renderTemplateLibrary(content.templates ?? []);
+          setStatus(
+            content.templates?.length
+              ? `Library ready with ${content.templates.length} template${content.templates.length === 1 ? "" : "s"}.`
+              : "No templates found."
+          );
+          return;
+        }
+
+        if (content.kind === "get" && content.template) {
+          const template = content.template;
+          setActiveTemplateId(template.id);
+          templateNameInput.value = template.name ?? "";
+          templateInput.value = template.template ?? "";
+          variablesInput.value = JSON.stringify(template.variables ?? [], null, 2);
+          valuesInput.value = "{}";
+          renderedOutput.hidden = true;
+          renderedOutput.textContent = "";
+          insertButton.disabled = true;
+          renderTemplateLibrary(lastLibraryTemplates);
+          setStatus(`Loaded template \"${template.name}\".`);
+          return;
+        }
+
+        if (content.kind === "save" && content.template?.id) {
+          setActiveTemplateId(content.template.id);
+          renderTemplateLibrary(lastLibraryTemplates);
+          return;
+        }
+
+        if (content.kind === "update" && content.template?.id) {
+          setActiveTemplateId(content.template.id);
+          renderTemplateLibrary(lastLibraryTemplates);
+          return;
+        }
+
+        if (content.kind === "delete" && content.deleted) {
+          resetWorkspace();
+          renderTemplateLibrary(lastLibraryTemplates.filter((item) => item.id !== content.id));
         }
       }
 
@@ -250,6 +485,20 @@
         });
         applyToolResult(response);
         return response;
+      }
+
+      async function loadTemplateById(id) {
+        setStatus("Loading template...");
+        await callTool("get_template", { id });
+      }
+
+      async function refreshLibrary(options = {}) {
+        const query = options.query ?? "";
+        if (query && query.trim()) {
+          await callTool("search_templates", { query: query.trim(), limit: 25 });
+          return;
+        }
+        await callTool("list_templates", {});
       }
 
       window.addEventListener(
@@ -282,11 +531,12 @@
 
       async function initializeBridge() {
         await rpcRequest("ui/initialize", {
-          appInfo: { name: "promptfill-fullscreen", version: "0.1.0" },
+          appInfo: { name: "promptfill-fullscreen", version: "0.2.0" },
           appCapabilities: {},
           protocolVersion: "2026-01-26",
         });
         rpcNotify("ui/notifications/initialized", {});
+        await refreshLibrary();
       }
 
       const bridgeReady = initializeBridge().catch((error) => {
@@ -342,6 +592,134 @@
         } finally {
           insertButton.disabled = false;
         }
+      });
+
+      saveTemplateButton.addEventListener("click", async () => {
+        saveTemplateButton.disabled = true;
+        setStatus("Saving template...");
+
+        try {
+          const variables = parseJsonInput("Variables JSON", variablesInput.value, []);
+          await bridgeReady;
+          const response = await callTool("save_template", {
+            name: templateNameInput.value.trim() || "Untitled template",
+            template: templateInput.value,
+            variables,
+          });
+
+          const savedId = response?.structuredContent?.template?.id;
+          if (savedId) {
+            setActiveTemplateId(savedId);
+            await refreshLibrary({ query: templateSearchInput.value });
+          }
+          setStatus("Template saved.");
+        } catch (error) {
+          console.error("save_template failed", error);
+          setStatus(error instanceof Error ? error.message : "Could not save template.");
+        } finally {
+          saveTemplateButton.disabled = false;
+        }
+      });
+
+      updateTemplateButton.addEventListener("click", async () => {
+        if (!activeTemplateId) {
+          setStatus("Select or save a template first.");
+          return;
+        }
+
+        updateTemplateButton.disabled = true;
+        setStatus("Updating template...");
+
+        try {
+          const variables = parseJsonInput("Variables JSON", variablesInput.value, []);
+          await bridgeReady;
+          await callTool("update_template", {
+            id: activeTemplateId,
+            name: templateNameInput.value.trim() || "Untitled template",
+            template: templateInput.value,
+            variables,
+          });
+          await refreshLibrary({ query: templateSearchInput.value });
+        } catch (error) {
+          console.error("update_template failed", error);
+          setStatus(error instanceof Error ? error.message : "Could not update template.");
+        } finally {
+          updateTemplateButton.disabled = false;
+        }
+      });
+
+      deleteTemplateButton.addEventListener("click", async () => {
+        if (!activeTemplateId) {
+          setStatus("Select a template first.");
+          return;
+        }
+
+        deleteTemplateButton.disabled = true;
+        setStatus("Deleting template...");
+
+        try {
+          await bridgeReady;
+          await callTool("delete_template", { id: activeTemplateId });
+          await refreshLibrary({ query: templateSearchInput.value });
+        } catch (error) {
+          console.error("delete_template failed", error);
+          setStatus(error instanceof Error ? error.message : "Could not delete template.");
+        } finally {
+          deleteTemplateButton.disabled = false;
+        }
+      });
+
+      searchTemplatesButton.addEventListener("click", async () => {
+        searchTemplatesButton.disabled = true;
+        setStatus("Searching templates...");
+        try {
+          await bridgeReady;
+          await refreshLibrary({ query: templateSearchInput.value });
+        } catch (error) {
+          console.error("search_templates failed", error);
+          setStatus("Could not search templates.");
+        } finally {
+          searchTemplatesButton.disabled = false;
+        }
+      });
+
+      listTemplatesButton.addEventListener("click", async () => {
+        listTemplatesButton.disabled = true;
+        setStatus("Refreshing library...");
+        try {
+          await bridgeReady;
+          await refreshLibrary();
+        } catch (error) {
+          console.error("list_templates failed", error);
+          setStatus("Could not load templates.");
+        } finally {
+          listTemplatesButton.disabled = false;
+        }
+      });
+
+      suggestTemplatesButton.addEventListener("click", async () => {
+        suggestTemplatesButton.disabled = true;
+        setStatus("Loading starter templates...");
+        try {
+          await bridgeReady;
+          const query = templateSearchInput.value.trim();
+          await callTool("suggest_templates", {
+            query,
+            use_case: query && !query.includes(" ") ? query.toLowerCase() : "",
+            limit: 12,
+          });
+        } catch (error) {
+          console.error("suggest_templates failed", error);
+          setStatus("Could not load starter templates.");
+        } finally {
+          suggestTemplatesButton.disabled = false;
+        }
+      });
+
+      clearSelectionButton.addEventListener("click", () => {
+        resetWorkspace();
+        renderTemplateLibrary(lastLibraryTemplates);
+        setStatus("Started a new draft.");
       });
     </script>
   </body>

@@ -16,6 +16,7 @@ import {
   extractPromptFields,
   renderPromptTemplate,
 } from "./lib/promptfill-core.js";
+import { suggestStarterTemplates } from "./lib/starter-templates.js";
 import { createTemplateStoreAdapter } from "./lib/template-store-adapter.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -346,6 +347,64 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
         },
       ],
     })
+  );
+
+  registerAppTool(
+    server,
+    "suggest_templates",
+    {
+      title: "Suggest starter templates",
+      description: "Use this when the user wants to start from high-quality PromptFill templates.",
+      inputSchema: {
+        use_case: z.string().optional().describe("Optional use case filter like email, summary, support, or prd."),
+        query: z.string().optional().describe("Optional free-text filter for starter template names."),
+        limit: z.number().int().min(1).max(12).optional().describe("Maximum number of starter templates."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        ui: { resourceUri: INLINE_WIDGET_URI },
+        "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
+        "openai/toolInvocation/invoking": "Finding starter templates...",
+        "openai/toolInvocation/invoked": "Starter templates ready",
+      },
+    },
+    async ({ use_case = "", query = "", limit = 6 }) => {
+      const templates = suggestStarterTemplates({
+        useCase: use_case,
+        query,
+        limit,
+      }).map((item) => ({
+        id: item.id,
+        name: item.name,
+        use_case: item.use_case,
+        template: item.template,
+        variables: item.variables,
+        variable_count: Array.isArray(item.variables) ? item.variables.length : 0,
+      }));
+
+      return {
+        structuredContent: {
+          kind: "suggest",
+          use_case,
+          templates,
+        },
+        content: [
+          {
+            type: "text",
+            text: templates.length
+              ? `Suggested ${templates.length} starter template${templates.length === 1 ? "" : "s"}.`
+              : "No starter templates matched that request.",
+          },
+        ],
+      };
+    }
   );
 
   registerAppTool(

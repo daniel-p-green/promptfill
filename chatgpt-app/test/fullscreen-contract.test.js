@@ -34,6 +34,42 @@ test("inline card offers fullscreen handoff action for advanced edits", async ()
     "fullscreen editor should call render_prompt through the MCP bridge"
   );
   assert.ok(
+    fullscreenHtml.includes('id="template-name-input"'),
+    "fullscreen editor should provide editable template name for library workflows"
+  );
+  assert.ok(
+    fullscreenHtml.includes('id="template-search-input"'),
+    "fullscreen editor should provide searchable template library input"
+  );
+  assert.ok(
+    fullscreenHtml.includes('id="suggest-templates-button"'),
+    "fullscreen editor should provide a starter-template action"
+  );
+  assert.ok(
+    fullscreenHtml.includes("save_template"),
+    "fullscreen editor should support saving templates from fullscreen"
+  );
+  assert.ok(
+    fullscreenHtml.includes("update_template"),
+    "fullscreen editor should support updating saved templates"
+  );
+  assert.ok(
+    fullscreenHtml.includes("delete_template"),
+    "fullscreen editor should support deleting saved templates"
+  );
+  assert.ok(
+    fullscreenHtml.includes("search_templates"),
+    "fullscreen editor should support template library search"
+  );
+  assert.ok(
+    fullscreenHtml.includes("get_template"),
+    "fullscreen editor should support loading selected template details"
+  );
+  assert.ok(
+    fullscreenHtml.includes("suggest_templates"),
+    "fullscreen editor should support curated starter template suggestions"
+  );
+  assert.ok(
     fullscreenHtml.includes("ui/message"),
     "fullscreen editor should support direct insert back into chat"
   );

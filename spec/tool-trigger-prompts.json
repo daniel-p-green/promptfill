@@ -31,6 +31,10 @@
     {
       "prompt": "Delete PromptFill template tpl_123.",
       "expected_tool": "delete_template"
+    },
+    {
+      "prompt": "Show starter PromptFill templates for customer support.",
+      "expected_tool": "suggest_templates"
     }
   ],
   "indirect": [
@@ -61,6 +65,10 @@
     {
       "prompt": "Remove the old template we no longer use.",
       "expected_tool": "delete_template"
+    },
+    {
+      "prompt": "Give me template ideas I can start from for onboarding emails.",
+      "expected_tool": "suggest_templates"
     }
   ],
   "negative": [

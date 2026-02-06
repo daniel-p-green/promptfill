@@ -60,7 +60,8 @@ PromptFill is one project with two complementary components:
   - extract fields from rough prompt text (`extract_prompt_fields`)
   - fill values and render deterministic prompt output (`render_prompt`)
   - insert rendered prompt back into conversation (`ui/message`)
-  - save and list templates in P0 session scope (`save_template`, `list_templates`)
+  - save, list, search, open, update, and delete templates in-session (`save_template`, `list_templates`, `search_templates`, `get_template`, `update_template`, `delete_template`)
+  - start quickly from curated suggestions (`suggest_templates`)
 - In `web/` (prototype lab):
   - iterate on richer prompt-library UX
   - test builder/fill flows before native Apps SDK rollout
@@ -80,6 +81,7 @@ flowchart LR
   D --> E["Rendered prompt"]
   E --> F["Insert into chat via ui/message"]
   E --> G["save_template for reuse"]
+  G --> H["search/get/update/delete template library"]
 ```
 
 ## A prompt becomes a form

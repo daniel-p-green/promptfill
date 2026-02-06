@@ -18,6 +18,15 @@ test("runtime MCP flow invokes tools and keeps template state session-scoped", a
       "session ids should not collide between clients"
     );
 
+    const suggestions = await firstClient.callTool({
+      name: "suggest_templates",
+      arguments: {
+        use_case: "email",
+      },
+    });
+    assert.equal(suggestions?.structuredContent?.kind, "suggest");
+    assert.ok((suggestions?.structuredContent?.templates?.length ?? 0) >= 1);
+
     const extraction = await firstClient.callTool({
       name: "extract_prompt_fields",
       arguments: {

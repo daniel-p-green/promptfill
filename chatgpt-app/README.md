@@ -12,6 +12,11 @@ This folder contains the ChatGPT-native PromptFill surface built with the Apps S
 2. `render_prompt`
 3. `save_template`
 4. `list_templates`
+5. `get_template`
+6. `search_templates`
+7. `update_template`
+8. `delete_template`
+9. `suggest_templates`
 
 Tool metadata copy standard:
 
@@ -65,7 +70,7 @@ Guardrails:
 Session behavior:
 
 - each MCP session gets an isolated template store in P0
-- `save_template` and `list_templates` never share state across different MCP session ids
+- template operations (`save/list/get/search/update/delete`) never share state across different MCP session ids
 - deleting a session (`DELETE /mcp` with session id) clears in-memory session state
 - when `PROMPTFILL_TEMPLATE_STORE_KIND=supabase`, template persistence is owner-scoped by single-tenant namespace
 
@@ -97,7 +102,7 @@ https://<your-ngrok-subdomain>.ngrok.app/mcp
 
 - Core extraction/render/storage logic lives in `src/lib/promptfill-core.js`.
 - Widget is intentionally lightweight and conversation-first.
-- A dedicated fullscreen editor resource exists for advanced edit handoff (`src/widget/fullscreen-editor.html`).
+- A dedicated fullscreen editor resource provides advanced edit handoff plus a searchable template workspace (`src/widget/fullscreen-editor.html`).
 - Storage is in-memory per MCP session for P0; replace with durable backend for production.
 - Product behavior is spec-driven:
   - source cases: `../spec/product-tests.json`
