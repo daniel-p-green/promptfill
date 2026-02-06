@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PromptFill",
-  description: "Shareable prompts, painless customization.",
+  description: "Save your best prompts, fill in the details, and copy polished results fast.",
 };
 
 export default function RootLayout({

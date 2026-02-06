@@ -48,3 +48,8 @@ https://<your-ngrok-subdomain>.ngrok.app/mcp
 - Core extraction/render/storage logic lives in `src/lib/promptfill-core.js`.
 - Widget is intentionally lightweight and conversation-first.
 - Storage is in-memory for scaffold phase; replace with durable backend for production.
+
+Related product docs:
+
+- `docs/JOBS_TO_BE_DONE.md`
+- `docs/CHATGPT_APP_RETHINK.md`

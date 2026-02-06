@@ -1,6 +1,23 @@
 .DS_Store
+node_modules/
+.agents/
+.agent/
+.claude/
+.cline/
+.continue/
+.cursor/
+.factory/
+.kiro/
+.windsurf/
+
+# Root environment files (security hygiene)
 .env
 .env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Sensitive key material
 *.pem
 *.key
 *.p12
