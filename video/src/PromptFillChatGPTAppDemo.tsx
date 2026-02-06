@@ -167,7 +167,7 @@ export const PromptFillChatGPTAppDemo: React.FC<PromptFillChatGPTAppDemoProps> =
             letterSpacing: 0.1,
           }}
         >
-          {productName} · ChatGPT Apps SDK
+          {productName} · ChatGPT app
         </div>
         <div
           style={{
@@ -232,9 +232,9 @@ export const PromptFillChatGPTAppDemo: React.FC<PromptFillChatGPTAppDemoProps> =
             }}
           />
 
-          <StepChip label="1 · extract_prompt_fields" accent={accent} active={step1Active} x={44} />
-          <StepChip label="2 · render_prompt" accent={accent} active={step2Active} x={308} />
-          <StepChip label="3 · ui/message" accent={accent} active={step3Active} x={544} />
+          <StepChip label="1 · Extract fields" accent={accent} active={step1Active} x={44} />
+          <StepChip label="2 · Fill and render" accent={accent} active={step2Active} x={316} />
+          <StepChip label="3 · Send to chat" accent={accent} active={step3Active} x={564} />
 
           <Highlight
             x={838}
@@ -315,7 +315,7 @@ export const PromptFillChatGPTAppDemo: React.FC<PromptFillChatGPTAppDemoProps> =
               fontSize: 20,
             }}
           >
-            Apps SDK bridge in production style
+            Conversation-first card
           </div>
           <div
             style={{
@@ -326,7 +326,7 @@ export const PromptFillChatGPTAppDemo: React.FC<PromptFillChatGPTAppDemoProps> =
               lineHeight: 1.28,
             }}
           >
-            `tools/call` and `ui/message` keep the widget conversation-first.
+            Two quick actions: open when needed, or copy and keep going.
           </div>
         </div>
       </div>

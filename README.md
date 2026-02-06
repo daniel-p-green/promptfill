@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <em>ChatGPT app demo GIF (Apps SDK inline card: extract → fill → render → send back to chat).</em>
+  <em>ChatGPT app demo GIF (inline card: extract → fill → render → send back to chat).</em>
 </p>
 
 <p align="center">
