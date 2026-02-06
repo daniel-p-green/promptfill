@@ -50,6 +50,11 @@ PromptFill makes prompts structured and reusable in conversation: **template + v
   - iterate on richer prompt-library UX
   - test builder/fill flows before native Apps SDK rollout
 
+## Release Candidate Notes (2026-02-06)
+
+- Shipped conversation-first inline flow for extract -> fill -> render -> insert.
+- Verified tool metadata contracts, widget contracts, spec cases, web tests, and lint gates.
+
 ## How it works
 
 ```mermaid

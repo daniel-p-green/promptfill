@@ -2,7 +2,7 @@
 
 Date: 2026-02-06
 Owner: Product
-Status: Active (v2, ChatGPT-native)
+Status: Active (v2, ChatGPT-native, P0 release candidate)
 
 ## Summary
 
@@ -123,6 +123,8 @@ Tool contracts must be explicit, typed, and deterministic.
 - production-hardened tool contracts
 - conversation-first inline card
 - spec-driven behavior suite for extraction/render/store
+- scoped fullscreen advanced editing handoff
+- golden prompt metadata harness with direct/indirect/negative buckets
 
 ### Phase P1
 
@@ -132,9 +134,17 @@ Tool contracts must be explicit, typed, and deterministic.
 
 ### Phase P2
 
-- fullscreen advanced editing surface
 - starter template carousel
 - stronger metadata tuning and multi-tool composition
+
+## Release Candidate Verification (2026-02-06)
+
+The release-candidate gate ran successfully with:
+
+- `npm run test:chatgpt-app`
+- `npm run test:web`
+- `npm run lint:web`
+- `npm run lint:video`
 
 ## Risks
 

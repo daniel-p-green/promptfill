@@ -4,7 +4,7 @@ Date: 2026-02-06
 
 ## Purpose
 
-Shift PromptFill from a standalone, web-first product into a native-feeling ChatGPT app built with the Apps SDK.
+Shift PromptFill from a standalone-oriented product into a native-feeling ChatGPT app built with the Apps SDK.
 
 This document translates OpenAI Apps SDK UX/UI principles into a concrete PromptFill product strategy and implementation plan.
 

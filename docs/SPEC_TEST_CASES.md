@@ -42,6 +42,17 @@ Primary artifacts:
 - `save_two_templates_in_order`: insertion order is stable.
 - `overwrite_template_same_id`: save with same id overwrites data without duplicate rows.
 
+## Automated Contract Suites
+
+Additional ChatGPT app contracts now run under `chatgpt-app/test/`:
+
+- `tool-metadata.test.js`: enforces tool description trigger phrasing.
+- `widget-contract.test.js`: keeps the inline card conversation-first with bounded actions.
+- `widget-state.test.js`: ensures recoverable error copy and retry state.
+- `fullscreen-contract.test.js`: validates fullscreen handoff resource/action registration.
+- `store-adapter.test.js`: validates memory + Supabase-stub adapter seam behavior.
+- `tool-trigger-eval.test.js`: validates golden prompt fixture schema and minimum bucket counts.
+
 ## Operating Procedure
 
 1. Add or update one spec case in `spec/product-tests.json`.
@@ -63,5 +74,4 @@ Primary artifacts:
 
 - Widget interaction contracts beyond `ui/message` insertion.
 - Per-chat persistence lifecycle expectations.
-- Fullscreen handoff behavior for advanced edits.
-- Golden prompt metadata recall/precision checks.
+- Live metadata recall/precision scoring against real model routing outcomes.

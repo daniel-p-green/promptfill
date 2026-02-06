@@ -21,6 +21,11 @@
 - Task 7: 0.75 day
 - **Total:** ~5.25 engineering days (single engineer), plus 0.5-1.0 day review and QA buffer.
 
+## Execution Status (2026-02-06)
+
+- Tasks 1-6 implemented and verified with passing checks.
+- Task 7 is required and reserved for final media artifacts + README positioning updates.
+
 ## Resolved Product Decisions
 
 1. Fullscreen advanced editing handoff ships in P0 (not behind a flag).
@@ -257,7 +262,7 @@ Expected: PASS.
 
 **Step 3: Validate docs consistency**
 
-Run: `rg -n "web-first|standalone-first|companion optional" docs README.md`  
+Run: `rg -n "w[e]b-first|standalone[-]first|companion\\s+optional" docs README.md`  
 Expected: no stale contradictions for product direction.
 
 **Step 4: Commit**
