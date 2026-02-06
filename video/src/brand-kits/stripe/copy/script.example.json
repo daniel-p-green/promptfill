@@ -1,0 +1,26 @@
+{
+  "brandVoice": "confident, friendly, concise",
+  "audience": "busy operators",
+  "offer": "PromptFill branded workflow setup",
+  "scenes": [
+    {
+      "id": "hook",
+      "hook": "Stop wasting hours on busywork"
+    },
+    {
+      "id": "problem",
+      "bullets": ["Manual follow ups", "Messy handoffs", "No visibility"]
+    },
+    {
+      "id": "solution",
+      "claim": "Automate your workflow in 48 hours",
+      "proof": "Templates, integrations, and a reusable branded scene system included"
+    },
+    {
+      "id": "cta",
+      "cta": "Book a call",
+      "url": "https://promptfill.app",
+      "caption": "No redesign required"
+    }
+  ]
+}

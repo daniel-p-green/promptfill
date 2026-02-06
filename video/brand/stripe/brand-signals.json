@@ -1,0 +1,249 @@
+{
+  "generated_at": "2026-02-06T09:31:20.148Z",
+  "brand_slug": "stripe",
+  "inputs": [
+    "https://stripe.com"
+  ],
+  "results": [
+    {
+      "url": "https://stripe.com",
+      "title": "Stripe | Financial Infrastructure to Grow Your Revenue",
+      "meta_description": "Stripe is a financial services platform that helps all types of businesses accept payments, build flexible billing models, and manage money movement.",
+      "stylesheets_analyzed": [],
+      "top_colors": [
+        {
+          "value": "#FFFFFF",
+          "count": 31
+        },
+        {
+          "value": "#000000",
+          "count": 28
+        },
+        {
+          "value": "#181818",
+          "count": 12
+        },
+        {
+          "value": "#010202",
+          "count": 6
+        },
+        {
+          "value": "#4285F4",
+          "count": 5
+        },
+        {
+          "value": "#FF6201",
+          "count": 4
+        },
+        {
+          "value": "#4B73FF",
+          "count": 4
+        },
+        {
+          "value": "#34A853",
+          "count": 3
+        },
+        {
+          "value": "#EA4335",
+          "count": 3
+        },
+        {
+          "value": "#2D2D2D",
+          "count": 3
+        },
+        {
+          "value": "#ED5153",
+          "count": 3
+        },
+        {
+          "value": "#171D27",
+          "count": 2
+        },
+        {
+          "value": "#76B900",
+          "count": 2
+        },
+        {
+          "value": "#003478",
+          "count": 2
+        },
+        {
+          "value": "#0052FF",
+          "count": 2
+        },
+        {
+          "value": "#FBBC05",
+          "count": 2
+        },
+        {
+          "value": "#95BF47",
+          "count": 2
+        },
+        {
+          "value": "#5E8E3E",
+          "count": 2
+        },
+        {
+          "value": "#A4CE4E",
+          "count": 2
+        },
+        {
+          "value": "#0090DA",
+          "count": 2
+        }
+      ],
+      "top_fonts": [],
+      "top_durations": [],
+      "css_variables": {},
+      "keywords": {
+        "modern": 6,
+        "simple": 9,
+        "fast": 20,
+        "secure": 6,
+        "minimal": 5,
+        "powerful": 2,
+        "professional": 8,
+        "friendly": 1
+      },
+      "logo_candidates": [
+        {
+          "src": "https://images.stripeassets.com/fzn2n1nzq965/24BNV3GGtvCprFLrYovyaa/b2eac20a1d5ec75e4bff3888b998d163/enterprise-accordion-hertz.png?w=296&amp;q=90",
+          "alt": "Aerial view of a street intersection where the crosswalks form a slanted parallelogram, imitating the Stripe logo."
+        },
+        {
+          "src": "https://images.stripeassets.com/fzn2n1nzq965/37wKFanVluouT2iEZUbD0H/f75e77141e1330ad81ea18c6aea65f0c/enterprise-accordion-urbn.png?w=296&amp;q=90",
+          "alt": "Exterior view of a clothing boutique with a large window display showcasing garments, where the window frame forms Stripe&#x27;s parallelogram logo."
+        },
+        {
+          "src": "https://images.stripeassets.com/fzn2n1nzq965/1v5hJ2NWvKpQfVbMqOzCpE/c900b9ed4c288f7cf0a0dced5f4983f2/enterprise-accordion-instacart.png?w=296&amp;q=90",
+          "alt": "Overhead view of a door stoop with a grocery delivery bag containing flowers, bread, olive oil, and produce, where the bag&#x27;s shape forms Stripe&#x27;s parallelogram logo."
+        },
+        {
+          "src": "https://images.stripeassets.com/fzn2n1nzq965/5AQ9A87KzwpPy4CD3uPz5C/4afd1a1e9d6e1d698c4c7c74a4868822/enterprise-accordion-lemonde.png?w=296&amp;q=90",
+          "alt": "Street view of a traditional Parisian newspaper kiosk with yellow-framed windows displaying publications, where the window frame forms Stripe&#x27;s parallelogram logo."
+        }
+      ],
+      "sample_text": "Stripe | Financial Infrastructure to Grow Your Revenue .client-variant-wrapper { display: none; } .control.client-variant-wrapper { display: block; } {\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"WebSite\",\"url\":\"https://stripe.com/\",\"name\":\"Stripe\"},{\"@type\":\"Organization\",\"@id\":\"https://stripe.com/#organization\",\"url\":\"https://stripe.com/\",\"name\":\"Stripe\",\"legalName\":\"Stripe, LLC\",\"description\":\"Stripe powers online and in-person payment processing and financial solutions for businesses of all sizes. Accept payments, send payouts, and automate financial processes with a suite of APIs and no-code tools.\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https://images.stripeassets.com/fzn2n1nzq965/1hgcBNd12BfT9VLgbId7By/01d91920114b124fb4cf6d448f9f06eb/favicon.svg\"},\"sameAs\":[\"https://twitter.com/stripe\",\"https://youtube.com/@stripe\",\"https://youtube.com/@StripeDev\",\"https://www.linkedin.com/c"
+    }
+  ],
+  "merged": {
+    "palette_candidates": [
+      {
+        "value": "#FFFFFF",
+        "count": 31
+      },
+      {
+        "value": "#000000",
+        "count": 28
+      },
+      {
+        "value": "#181818",
+        "count": 12
+      },
+      {
+        "value": "#010202",
+        "count": 6
+      },
+      {
+        "value": "#4285F4",
+        "count": 5
+      },
+      {
+        "value": "#FF6201",
+        "count": 4
+      },
+      {
+        "value": "#4B73FF",
+        "count": 4
+      },
+      {
+        "value": "#34A853",
+        "count": 3
+      },
+      {
+        "value": "#EA4335",
+        "count": 3
+      },
+      {
+        "value": "#2D2D2D",
+        "count": 3
+      },
+      {
+        "value": "#ED5153",
+        "count": 3
+      },
+      {
+        "value": "#171D27",
+        "count": 2
+      },
+      {
+        "value": "#76B900",
+        "count": 2
+      },
+      {
+        "value": "#003478",
+        "count": 2
+      },
+      {
+        "value": "#0052FF",
+        "count": 2
+      },
+      {
+        "value": "#FBBC05",
+        "count": 2
+      },
+      {
+        "value": "#95BF47",
+        "count": 2
+      },
+      {
+        "value": "#5E8E3E",
+        "count": 2
+      },
+      {
+        "value": "#A4CE4E",
+        "count": 2
+      },
+      {
+        "value": "#0090DA",
+        "count": 2
+      }
+    ],
+    "font_candidates": [],
+    "motion_duration_candidates": [],
+    "voice_keywords": [
+      {
+        "value": "fast",
+        "count": 20
+      },
+      {
+        "value": "simple",
+        "count": 9
+      },
+      {
+        "value": "professional",
+        "count": 8
+      },
+      {
+        "value": "modern",
+        "count": 6
+      },
+      {
+        "value": "secure",
+        "count": 6
+      },
+      {
+        "value": "minimal",
+        "count": 5
+      },
+      {
+        "value": "powerful",
+        "count": 2
+      },
+      {
+        "value": "friendly",
+        "count": 1
+      }
+    ]
+  }
+}

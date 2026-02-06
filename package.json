@@ -5,6 +5,7 @@
     "dev": "cd web && npm run dev -- --port 3100",
     "dev:web": "cd web && npm run dev -- --port 3100",
     "dev:video": "cd video && npm run dev",
+    "brand:scan": "node tools/brand-scan.mjs",
     "build:web": "cd web && npm run build",
     "test:web": "cd web && npm run test",
     "lint:web": "cd web && npm run lint",
