@@ -8,11 +8,10 @@ import {
 } from "remotion";
 
 const Window: React.FC<{
-  accent: string;
   title: string;
   children: React.ReactNode;
   idx: number;
-}> = ({ accent, title, children, idx }) => {
+}> = ({ title, children, idx }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const start = idx * 12;
@@ -96,7 +95,7 @@ export const FlowDemo: React.FC<{ accent: string; productName: string }> = ({
         </div>
 
         <div style={{ marginTop: 26, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-          <Window accent={accent} title={`${productName} · Library`} idx={0}>
+          <Window title={`${productName} · Library`} idx={0}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
               <Pill accent={accent} text="Search prompts" />
               <div
@@ -136,7 +135,7 @@ export const FlowDemo: React.FC<{ accent: string; productName: string }> = ({
             </div>
           </Window>
 
-          <Window accent={accent} title={`${productName} · Fill variables`} idx={1}>
+          <Window title={`${productName} · Fill variables`} idx={1}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 12, alignItems: "center" }}>
                 <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 14 }}>Audience</div>
@@ -201,7 +200,7 @@ export const FlowDemo: React.FC<{ accent: string; productName: string }> = ({
             </div>
           </Window>
 
-          <Window accent={accent} title={`${productName} · Preview`} idx={2}>
+          <Window title={`${productName} · Preview`} idx={2}>
             <div
               style={{
                 borderRadius: 14,
@@ -234,7 +233,7 @@ export const FlowDemo: React.FC<{ accent: string; productName: string }> = ({
             </div>
           </Window>
 
-          <Window accent={accent} title={`${productName} · Export`} idx={3}>
+          <Window title={`${productName} · Export`} idx={3}>
             <div
               style={{
                 display: "flex",

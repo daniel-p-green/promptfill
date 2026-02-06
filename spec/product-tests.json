@@ -1,0 +1,106 @@
+{
+  "version": "2026-02-06",
+  "extraction": [
+    {
+      "id": "email_basic",
+      "raw_prompt": "Write an email to [recipient name] about {topic}.\nTone: {{tone}}\nContext: <context>",
+      "expected_template": "Write an email to {{recipient_name}} about {{topic}}.\nTone: {{tone}}\nContext: {{context}}",
+      "expected_variables": {
+        "recipient_name": { "type": "string", "required": true },
+        "topic": { "type": "string", "required": true },
+        "tone": {
+          "type": "enum",
+          "required": true,
+          "defaultValue": "concise",
+          "options": ["concise", "friendly", "direct", "formal"]
+        },
+        "context": { "type": "text", "required": true }
+      }
+    },
+    {
+      "id": "boolean_inference",
+      "raw_prompt": "Summarize {{notes}}. Include citations: [include_citations].",
+      "expected_template": "Summarize {{notes}}. Include citations: {{include_citations}}.",
+      "expected_variables": {
+        "notes": { "type": "text", "required": true },
+        "include_citations": { "type": "boolean", "required": true, "defaultValue": false }
+      }
+    },
+    {
+      "id": "enum_axes",
+      "raw_prompt": "Summarize <source text> for {audience} in {format}. Length: {{length}}.",
+      "expected_template": "Summarize {{source_text}} for {{audience}} in {{format}}. Length: {{length}}.",
+      "expected_variables": {
+        "source_text": { "type": "text", "required": true },
+        "audience": {
+          "type": "enum",
+          "required": true,
+          "defaultValue": "execs",
+          "options": ["execs", "engineering", "sales", "customers"]
+        },
+        "format": {
+          "type": "enum",
+          "required": true,
+          "defaultValue": "bullets",
+          "options": ["bullets", "paragraphs", "email", "slack_update"]
+        },
+        "length": {
+          "type": "enum",
+          "required": true,
+          "defaultValue": "short",
+          "options": ["short", "medium", "long"]
+        }
+      }
+    }
+  ],
+  "render": [
+    {
+      "id": "render_missing_required",
+      "template": "Write to {{recipient_name}} about {{topic}} in a {{tone}} tone.",
+      "variables": [
+        { "name": "recipient_name", "type": "string", "required": true, "defaultValue": "" },
+        { "name": "topic", "type": "string", "required": true, "defaultValue": "" },
+        {
+          "name": "tone",
+          "type": "enum",
+          "required": true,
+          "defaultValue": "concise",
+          "options": ["concise", "friendly"]
+        }
+      ],
+      "values": { "recipient_name": "Alex" },
+      "expected": { "missingRequired": ["topic"], "rendered": "Write to Alex about {{topic}} in a concise tone." }
+    },
+    {
+      "id": "render_with_defaults",
+      "template": "Tone: {{tone}}",
+      "variables": [{ "name": "tone", "type": "enum", "required": true, "defaultValue": "friendly", "options": ["friendly"] }],
+      "values": {},
+      "expected": { "missingRequired": [], "rendered": "Tone: friendly" }
+    },
+    {
+      "id": "render_boolean",
+      "template": "Include citations: {{include_citations}}",
+      "variables": [{ "name": "include_citations", "type": "boolean", "required": true, "defaultValue": false }],
+      "values": {},
+      "expected": { "missingRequired": [], "rendered": "Include citations: false" }
+    }
+  ],
+  "store": [
+    {
+      "id": "save_and_list",
+      "templatesToSave": [
+        {
+          "id": "t_1",
+          "name": "Email outreach",
+          "template": "Write to {{recipient_name}} about {{topic}}.",
+          "variables": [],
+          "createdAt": "2026-02-06T00:00:00.000Z"
+        }
+      ],
+      "expectedListCount": 1,
+      "expectedFirstTemplateId": "t_1",
+      "expectedFirstTemplateName": "Email outreach"
+    }
+  ]
+}

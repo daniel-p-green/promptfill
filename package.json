@@ -1,0 +1,15 @@
+{
+  "name": "promptfill",
+  "private": true,
+  "scripts": {
+    "dev": "cd web && npm run dev -- --port 3100",
+    "dev:web": "cd web && npm run dev -- --port 3100",
+    "dev:chatgpt-app": "cd chatgpt-app && npm run dev",
+    "dev:video": "cd video && npm run dev",
+    "build:web": "cd web && npm run build",
+    "test:web": "cd web && npm run test",
+    "test:chatgpt-app": "cd chatgpt-app && npm test",
+    "lint:web": "cd web && npm run lint",
+    "lint:video": "cd video && npm run lint"
+  }
+}

@@ -14,8 +14,18 @@ export function renderTemplate(template: string, vars: TemplateVars): string {
   })
 }
 
-function getPath(obj: any, path: string): unknown {
-  if (!obj) return undefined
-  if (!path.includes('.')) return obj[path]
-  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), obj)
+function getPath(obj: unknown, path: string): unknown {
+  if (obj == null) return undefined
+  if (typeof obj !== 'object') return undefined
+  const record = obj as Record<string, unknown>
+  if (!path.includes('.')) return record[path]
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (acc, part) =>
+        acc && typeof acc === 'object'
+          ? (acc as Record<string, unknown>)[part]
+          : undefined,
+      record
+    )
 }

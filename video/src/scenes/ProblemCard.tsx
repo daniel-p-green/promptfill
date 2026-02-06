@@ -3,7 +3,6 @@ import {
   AbsoluteFill,
   interpolate,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 
 const Bullet: React.FC<{ children: React.ReactNode; accent: string; idx: number }> = ({
@@ -12,7 +11,6 @@ const Bullet: React.FC<{ children: React.ReactNode; accent: string; idx: number 
   idx,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
   const start = idx * 10;
   const o = interpolate(frame, [start, start + 12], [0, 1], {
     extrapolateRight: "clamp",
