@@ -331,7 +331,7 @@ const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames
             boxShadow: `0 0 18px ${accent}66`,
           }}
         />
-        New flagship product film
+        PromptFill web app demo
       </div>
       <div
         style={{
@@ -361,8 +361,8 @@ const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames
           opacity: interpolate(frame, [30, 76], [0, 1], clamp),
         }}
       >
-        Local-first prompt library. Typed variables. Safe AI extraction. Guided onboarding. Designed for repeatable,
-        high-quality prompt workflows.
+        Save proven prompts as templates with variables and defaults. Fill only what changes and copy consistent
+        output in seconds.
       </div>
       <div
         style={{
@@ -414,7 +414,7 @@ const LibraryScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
         accent={accent}
         chip="Capture and discover"
         title="Start in the prompt library."
-        body="Find reusable templates fast, launch from a starter use case, and keep one source of truth instead of scattered snippets."
+        body="Find reusable templates fast, start from proven use cases, and stop hunting through scattered snippets."
         frame={frame}
       />
       <ShotFrame src={staticFile("ui/promptfill-ui-1280x720.png")} frame={frame} durationInFrames={durationInFrames}>
@@ -452,8 +452,8 @@ const LibraryScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
           transform: `translateX(${panelX}px)`,
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>PRD loop coverage</div>
-        <div>Capture quickly, then move directly into structuring and fill workflows without context switching.</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>What users get</div>
+        <div>Capture once, then fill and copy quickly every time the task comes back.</div>
       </div>
     </AbsoluteFill>
   );
@@ -468,9 +468,9 @@ const ExtractionScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
   const scale = interpolate(inProgress, [0, 1], [0.96, 1], clamp);
 
   const notes = [
-    "Found 8 variables from explicit and implicit placeholders.",
-    "Suggested enum controls for tone, audience, and format.",
-    "Kept unreferenced fields to avoid silent schema loss.",
+    "Found variables from both placeholders and plain text.",
+    "Suggested dropdown fields for tone, audience, and format.",
+    "Kept existing fields so nothing disappears by surprise.",
   ];
   const proposed = [
     { name: "audience", type: "enum", status: "added" },
@@ -485,8 +485,8 @@ const ExtractionScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
       <SceneHeader
         accent={accent}
         chip="Structure safely"
-        title="AI assist, behind the same safe modal."
-        body="Extraction quality goes up without changing workflow. Users still review every proposal before apply, with explicit diff and rollback confidence."
+        title="Review extraction before you apply."
+        body="AI suggests variables and field types, then users approve each change so structure stays reliable."
         frame={frame}
       />
       <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 26 }}>
@@ -526,7 +526,7 @@ const ExtractionScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
                 padding: "6px 10px",
               }}
             >
-              source: ai-assist-adapter
+              source: AI extraction
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", height: 414 }}>
@@ -699,7 +699,7 @@ const FillScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
         accent={accent}
         chip="Fill fast"
         title="Typed controls make reuse reliable."
-        body="Every variable renders the right input. Required fields, defaults, and keyboard-first interaction keep prompt reuse under ten seconds."
+        body="Every variable gets the right input. Required fields, defaults, and keyboard-friendly entry keep reuse fast."
         frame={frame}
       />
       <AbsoluteFill
@@ -735,7 +735,7 @@ const FillScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
           transform: `translateY(${panelY}px)`,
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 8 }}>Fast-fill design goals</div>
+        <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 8 }}>Why this feels fast</div>
         <div style={{ fontSize: 15, lineHeight: 1.45 }}>
           - Required indicators and defaults reduce errors.
           <br />
@@ -780,10 +780,10 @@ const UseCasesScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
   const sceneOpacity = fadeInOut(frame, durationInFrames, 16, 20);
   const marqueeX = -((frame * 3.1) % 920);
   const featured = [
-    { title: "Email drafting", vars: "recipient_name · topic · tone · cta" },
-    { title: "PRD generation", vars: "context · audience · doc_type · constraints" },
-    { title: "Support replies", vars: "customer_message · policy_context · tone" },
-    { title: "Code review", vars: "diff · risk_profile · focus_areas" },
+    { title: "Email outreach", vars: "recipient_name · topic · tone · cta" },
+    { title: "Executive summary", vars: "notes · audience · format · length" },
+    { title: "Support reply", vars: "customer_message · policy_context · tone" },
+    { title: "PRD draft", vars: "context · audience · doc_type · constraints" },
   ];
 
   return (
@@ -791,8 +791,8 @@ const UseCasesScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
       <SceneHeader
         accent={accent}
         chip="Real use cases"
-        title="Built for high-frequency prompt work."
-        body="PromptFill targets recurring workflows where structure beats freeform editing. Same template shape, different values, fast output."
+        title="Made for repeat writing tasks."
+        body="Keep one structure for each job, then update only the changing values. Less rework, more consistent output."
         frame={frame}
       />
       <div style={{ position: "absolute", left: 0, right: 0, top: 208, overflow: "hidden" }}>
@@ -890,7 +890,7 @@ const ShareScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
         accent={accent}
         chip="Share and portability"
         title="Move prompts without losing structure."
-        body="Share links, import payloads, and full-library export keep templates portable while preserving variables, defaults, and option bindings."
+        body="Share links, import payloads, and export your library while keeping variables, defaults, and options intact."
         frame={frame}
       />
       <ShotFrame src={staticFile("ui/promptfill-share-1280x720.png")} frame={frame} durationInFrames={durationInFrames}>
@@ -982,8 +982,8 @@ const OnboardingScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
       <SceneHeader
         accent={accent}
         chip="Guided onboarding"
-        title="Teach the workflow in under 90 seconds."
-        body="First-run tutorial anchors users to the core loop: library, fill, build, and share. Clear progression reduces abandonment and accelerates activation."
+        title="Learn the workflow in under 90 seconds."
+        body="A first-run walkthrough shows library, fill, build, and share so new users can reuse templates with confidence."
         frame={frame}
       />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
@@ -1001,7 +1001,7 @@ const OnboardingScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
         >
           <div style={{ color: "white", fontFamily: bodyFont, fontWeight: 700, fontSize: 27 }}>Guided walkthrough</div>
           <div style={{ marginTop: 8, color: "rgba(255,255,255,0.72)", fontFamily: bodyFont, fontSize: 16 }}>
-            Learn PromptFill once. Reuse the workflow forever.
+            Learn PromptFill once. Reuse it every day.
           </div>
           <div
             style={{
@@ -1080,16 +1080,16 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
   const sceneOpacity = fadeInOut(frame, durationInFrames, 16, 26);
   const cards = [
     {
-      title: "Calm UX",
-      body: "OpenAI-adjacent visual language with clear hierarchy.",
+      title: "Consistent output",
+      body: "Reusable structure keeps tone and details stable.",
     },
     {
-      title: "Safe AI",
-      body: "Proposal-first extraction with explicit review and control.",
+      title: "Faster drafting",
+      body: "Fill variables and copy without rebuilding prompts.",
     },
     {
-      title: "Useful by design",
-      body: "Focused loop with less complexity and more daily value.",
+      title: "Team-ready sharing",
+      body: "Share and import templates without losing structure.",
     },
   ];
 
@@ -1109,7 +1109,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
       >
         {productName}
         <br />
-        structured prompts without friction.
+        reusable prompts for real work.
       </div>
       <div
         style={{
@@ -1121,7 +1121,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
           maxWidth: 860,
         }}
       >
-        Capture, structure, fill, preview, and share in one clear system that teams can trust.
+        Capture, structure, fill, preview, and share in one simple system your team can trust.
       </div>
       <div
         style={{
@@ -1177,7 +1177,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
           padding: "9px 13px",
         }}
       >
-        promptfill.app · local-first web mvp
+        promptfill.app · web app
       </div>
     </AbsoluteFill>
   );

@@ -1,13 +1,10 @@
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import {
-  registerAppResource,
-  registerAppTool,
-  RESOURCE_MIME_TYPE,
-} from "@modelcontextprotocol/ext-apps/server";
+import { registerAppResource, registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 
 import {
@@ -15,10 +12,15 @@ import {
   extractPromptFields,
   renderPromptTemplate,
 } from "./lib/promptfill-core.js";
+import {
+  INLINE_WIDGET_URI,
+  RESOURCE_MIME_TYPE,
+  createToolTemplateMeta,
+  createWidgetMeta,
+} from "./lib/apps-metadata.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const MCP_PATH = process.env.MCP_PATH ?? "/mcp";
-const INLINE_WIDGET_URI = "ui://widget/promptfill-inline-v1.html";
 const securitySchemes = [{ type: "noauth" }];
 
 const templateStore = createInMemoryTemplateStore();
@@ -31,7 +33,7 @@ function createTemplateId() {
   return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function buildServer() {
+export function buildServer() {
   const server = new McpServer({
     name: "promptfill-mcp",
     version: "0.1.0",
@@ -43,18 +45,9 @@ function buildServer() {
         uri: INLINE_WIDGET_URI,
         mimeType: RESOURCE_MIME_TYPE,
         text: inlineWidgetHtml,
-        _meta: {
-          ui: {
-            prefersBorder: true,
-            domain: "https://promptfill.example.com",
-            csp: {
-              connectDomains: [],
-              resourceDomains: ["https://persistent.oaistatic.com"],
-            },
-          },
-          "openai/widgetDescription":
-            "Extract prompt fields, fill values, and render the final prompt inline.",
-        },
+        _meta: createWidgetMeta({
+          description: "Extract prompt fields, fill values, and render the final prompt inline.",
+        }),
       },
     ],
   }));
@@ -77,8 +70,7 @@ function buildServer() {
       securitySchemes,
       _meta: {
         securitySchemes,
-        ui: { resourceUri: INLINE_WIDGET_URI },
-        "openai/outputTemplate": INLINE_WIDGET_URI,
+        ...createToolTemplateMeta(),
         "openai/toolInvocation/invoking": "Extracting fields...",
         "openai/toolInvocation/invoked": "Fields ready",
       },
@@ -143,8 +135,7 @@ function buildServer() {
       securitySchemes,
       _meta: {
         securitySchemes,
-        ui: { resourceUri: INLINE_WIDGET_URI },
-        "openai/outputTemplate": INLINE_WIDGET_URI,
+        ...createToolTemplateMeta(),
         "openai/toolInvocation/invoking": "Rendering prompt...",
         "openai/toolInvocation/invoked": "Rendered",
       },
@@ -251,8 +242,7 @@ function buildServer() {
       securitySchemes,
       _meta: {
         securitySchemes,
-        ui: { resourceUri: INLINE_WIDGET_URI },
-        "openai/outputTemplate": INLINE_WIDGET_URI,
+        ...createToolTemplateMeta(),
         "openai/toolInvocation/invoking": "Loading templates...",
         "openai/toolInvocation/invoked": "Templates ready",
       },
@@ -285,65 +275,76 @@ function buildServer() {
   return server;
 }
 
-const httpServer = createServer(async (req, res) => {
-  if (!req.url || !req.method) {
-    res.writeHead(400, { "content-type": "text/plain" });
-    res.end("Invalid request.");
-    return;
-  }
-
-  const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
-
-  if (req.method === "OPTIONS" && url.pathname === MCP_PATH) {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "content-type, mcp-session-id",
-      "Access-Control-Expose-Headers": "Mcp-Session-Id",
-    });
-    res.end();
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/") {
-    res.writeHead(200, { "content-type": "text/plain" });
-    res.end(`PromptFill MCP server is running on ${MCP_PATH}`);
-    return;
-  }
-
-  const allowedMethods = new Set(["GET", "POST", "DELETE"]);
-  if (url.pathname === MCP_PATH && allowedMethods.has(req.method)) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
-
-    const mcpServer = buildServer();
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    });
-
-    res.on("close", () => {
-      transport.close();
-      mcpServer.close();
-    });
-
-    try {
-      await mcpServer.connect(transport);
-      await transport.handleRequest(req, res);
-    } catch (error) {
-      console.error("Error handling MCP request:", error);
-      if (!res.headersSent) {
-        res.writeHead(500, { "content-type": "text/plain" });
-      }
-      res.end("Internal server error.");
+export function createHttpServer() {
+  return createServer(async (req, res) => {
+    if (!req.url || !req.method) {
+      res.writeHead(400, { "content-type": "text/plain" });
+      res.end("Invalid request.");
+      return;
     }
-    return;
-  }
 
-  res.writeHead(404, { "content-type": "text/plain" });
-  res.end("Not found.");
-});
+    const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
 
-httpServer.listen(PORT, () => {
-  console.log(`PromptFill MCP server listening at http://localhost:${PORT}${MCP_PATH}`);
-});
+    if (req.method === "OPTIONS" && url.pathname === MCP_PATH) {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "content-type, mcp-session-id",
+        "Access-Control-Expose-Headers": "Mcp-Session-Id",
+      });
+      res.end();
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/") {
+      res.writeHead(200, { "content-type": "text/plain" });
+      res.end(`PromptFill MCP server is running on ${MCP_PATH}`);
+      return;
+    }
+
+    const allowedMethods = new Set(["GET", "POST", "DELETE"]);
+    if (url.pathname === MCP_PATH && allowedMethods.has(req.method)) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
+
+      const mcpServer = buildServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+      });
+
+      res.on("close", () => {
+        transport.close();
+        mcpServer.close();
+      });
+
+      try {
+        await mcpServer.connect(transport);
+        await transport.handleRequest(req, res);
+      } catch (error) {
+        console.error("Error handling MCP request:", error);
+        if (!res.headersSent) {
+          res.writeHead(500, { "content-type": "text/plain" });
+        }
+        res.end("Internal server error.");
+      }
+      return;
+    }
+
+    res.writeHead(404, { "content-type": "text/plain" });
+    res.end("Not found.");
+  });
+}
+
+export function startServer() {
+  const httpServer = createHttpServer();
+  httpServer.listen(PORT, () => {
+    console.log(`PromptFill MCP server listening at http://localhost:${PORT}${MCP_PATH}`);
+  });
+  return httpServer;
+}
+
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  startServer();
+}

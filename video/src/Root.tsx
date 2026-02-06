@@ -11,6 +11,16 @@ import {
   AnimationPrinciplesKCJazz,
   AnimationPrinciplesKCJazzProps,
 } from "./AnimationPrinciplesKCJazz";
+import {
+  PROMPTFILL_USER_STORY_DURATION_IN_FRAMES,
+  PromptFillUserStory,
+  PromptFillUserStoryProps,
+} from "./PromptFillUserStorySeries";
+import {
+  PROMPTFILL_CHATGPT_APP_DEMO_DURATION_IN_FRAMES,
+  PromptFillChatGPTAppDemo,
+  PromptFillChatGPTAppDemoProps,
+} from "./PromptFillChatGPTAppDemo";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -42,6 +52,82 @@ export const RemotionRoot: React.FC = () => {
               accent: "#10a37f",
               productName: "PromptFill",
             } satisfies PromptFillFlagshipPromoProps
+          }
+        />
+        <Composition
+          id="PromptFillChatGPTAppDemo"
+          component={PromptFillChatGPTAppDemo}
+          durationInFrames={PROMPTFILL_CHATGPT_APP_DEMO_DURATION_IN_FRAMES}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accent: "#10a37f",
+              productName: "PromptFill",
+            } satisfies PromptFillChatGPTAppDemoProps
+          }
+        />
+      </Folder>
+      <Folder name="UserStories">
+        <Composition
+          id="PromptFillUserStoryEmail"
+          component={PromptFillUserStory}
+          durationInFrames={PROMPTFILL_USER_STORY_DURATION_IN_FRAMES}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accent: "#10a37f",
+              productName: "PromptFill",
+              variant: "email",
+            } satisfies PromptFillUserStoryProps
+          }
+        />
+        <Composition
+          id="PromptFillUserStorySummary"
+          component={PromptFillUserStory}
+          durationInFrames={PROMPTFILL_USER_STORY_DURATION_IN_FRAMES}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accent: "#10a37f",
+              productName: "PromptFill",
+              variant: "summary",
+            } satisfies PromptFillUserStoryProps
+          }
+        />
+        <Composition
+          id="PromptFillUserStorySupport"
+          component={PromptFillUserStory}
+          durationInFrames={PROMPTFILL_USER_STORY_DURATION_IN_FRAMES}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accent: "#10a37f",
+              productName: "PromptFill",
+              variant: "support",
+            } satisfies PromptFillUserStoryProps
+          }
+        />
+        <Composition
+          id="PromptFillUserStoryPRD"
+          component={PromptFillUserStory}
+          durationInFrames={PROMPTFILL_USER_STORY_DURATION_IN_FRAMES}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={
+            {
+              accent: "#10a37f",
+              productName: "PromptFill",
+              variant: "prd",
+            } satisfies PromptFillUserStoryProps
           }
         />
       </Folder>
