@@ -50,8 +50,25 @@ export function hasTemplateStoreInterface(store) {
     Boolean(store) &&
     typeof store.saveTemplate === "function" &&
     typeof store.listTemplates === "function" &&
-    typeof store.getTemplate === "function"
+    typeof store.getTemplate === "function" &&
+    typeof store.updateTemplate === "function" &&
+    typeof store.deleteTemplate === "function" &&
+    typeof store.searchTemplates === "function"
   );
+}
+
+function normalizeSearchQuery(query) {
+  return String(query ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function getSearchableText(template) {
+  if (!template || typeof template !== "object") return "";
+  const variableNames = Array.isArray(template.variables)
+    ? template.variables.map((item) => item?.name ?? "").join(" ")
+    : "";
+  return [template.name ?? "", template.template ?? "", variableNames].join(" ").toLowerCase();
 }
 
 export function extractPromptFields(rawPrompt) {
@@ -141,6 +158,49 @@ export function createInMemoryTemplateStore() {
     getTemplate(id) {
       if (!templates.has(id)) return null;
       return clone(templates.get(id));
+    },
+
+    updateTemplate(id, updates = {}) {
+      if (!id || !templates.has(id)) return null;
+
+      const existing = templates.get(id);
+      const next = {
+        ...existing,
+        ...updates,
+        id: existing.id,
+      };
+
+      if (updates.variables !== undefined) {
+        next.variables = Array.isArray(updates.variables) ? updates.variables : [];
+      }
+
+      if (updates.template !== undefined) {
+        next.template = String(updates.template);
+      }
+
+      if (updates.name !== undefined) {
+        next.name = String(updates.name);
+      }
+
+      templates.set(id, clone(next));
+      return clone(next);
+    },
+
+    deleteTemplate(id) {
+      if (!id) return false;
+      return templates.delete(id);
+    },
+
+    searchTemplates(query, options = {}) {
+      const normalized = normalizeSearchQuery(query);
+      const limit = Number.isFinite(options.limit) ? Math.max(1, Math.floor(options.limit)) : 25;
+      const all = Array.from(templates.values());
+
+      const filtered = normalized
+        ? all.filter((template) => getSearchableText(template).includes(normalized))
+        : all;
+
+      return filtered.slice(0, limit).map((item) => clone(item));
     },
   };
 }

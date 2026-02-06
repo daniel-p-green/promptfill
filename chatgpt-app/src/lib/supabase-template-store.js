@@ -27,6 +27,7 @@ function mapRowToTemplate(row) {
     template: row.template,
     variables: Array.isArray(row.variables) ? row.variables : [],
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -70,7 +71,7 @@ export function createSupabaseTemplateStore(options = {}) {
       const { data, error } = await supabase
         .from(table)
         .upsert(row, { onConflict: "owner_id,id" })
-        .select("id,name,template,variables,created_at")
+        .select("id,name,template,variables,created_at,updated_at")
         .single();
 
       if (error) {
@@ -83,7 +84,7 @@ export function createSupabaseTemplateStore(options = {}) {
     async listTemplates() {
       const { data, error } = await supabase
         .from(table)
-        .select("id,name,template,variables,created_at")
+        .select("id,name,template,variables,created_at,updated_at")
         .eq("owner_id", ownerId)
         .order("created_at", { ascending: true });
 
@@ -99,7 +100,7 @@ export function createSupabaseTemplateStore(options = {}) {
 
       const { data, error } = await supabase
         .from(table)
-        .select("id,name,template,variables,created_at")
+        .select("id,name,template,variables,created_at,updated_at")
         .eq("owner_id", ownerId)
         .eq("id", id)
         .maybeSingle();
@@ -109,6 +110,63 @@ export function createSupabaseTemplateStore(options = {}) {
       }
 
       return mapRowToTemplate(data);
+    },
+
+    async updateTemplate(id, updates = {}) {
+      const existing = await this.getTemplate(id);
+      if (!existing) return null;
+
+      const next = {
+        ...existing,
+        ...updates,
+        id: existing.id,
+        variables:
+          updates.variables === undefined
+            ? existing.variables
+            : Array.isArray(updates.variables)
+              ? updates.variables
+              : [],
+        createdAt: existing.createdAt,
+      };
+
+      return this.saveTemplate(next);
+    },
+
+    async deleteTemplate(id) {
+      if (!id) return false;
+      const { error, count } = await supabase
+        .from(table)
+        .delete({ count: "exact" })
+        .eq("owner_id", ownerId)
+        .eq("id", id);
+
+      if (error) {
+        throw new Error(`Supabase deleteTemplate failed: ${error.message}`);
+      }
+
+      if (typeof count === "number") return count > 0;
+      const stillExists = await this.getTemplate(id);
+      return stillExists === null;
+    },
+
+    async searchTemplates(query, options = {}) {
+      const normalized = String(query ?? "").trim().toLowerCase();
+      const limit = Number.isFinite(options.limit) ? Math.max(1, Math.floor(options.limit)) : 25;
+      const listed = await this.listTemplates();
+
+      if (!normalized) {
+        return listed.slice(0, limit);
+      }
+
+      return listed
+        .filter((template) => {
+          const variableNames = Array.isArray(template.variables)
+            ? template.variables.map((item) => item?.name ?? "").join(" ")
+            : "";
+          const haystack = `${template.name ?? ""} ${template.template ?? ""} ${variableNames}`.toLowerCase();
+          return haystack.includes(normalized);
+        })
+        .slice(0, limit);
     },
   };
 }
