@@ -70,6 +70,22 @@ test("inline card offers fullscreen handoff action for advanced edits", async ()
     "fullscreen editor should support curated starter template suggestions"
   );
   assert.ok(
+    fullscreenHtml.includes('id="list-versions-button"'),
+    "fullscreen editor should provide a version history action"
+  );
+  assert.ok(
+    fullscreenHtml.includes('id="version-history"'),
+    "fullscreen editor should render a visible version history list"
+  );
+  assert.ok(
+    fullscreenHtml.includes("list_template_versions"),
+    "fullscreen editor should support reading template version history"
+  );
+  assert.ok(
+    fullscreenHtml.includes("restore_template_version"),
+    "fullscreen editor should support restoring historical versions"
+  );
+  assert.ok(
     fullscreenHtml.includes("ui/message"),
     "fullscreen editor should support direct insert back into chat"
   );

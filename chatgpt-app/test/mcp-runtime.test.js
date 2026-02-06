@@ -88,6 +88,25 @@ test("runtime MCP flow invokes tools and keeps template state session-scoped", a
     assert.equal(updated?.structuredContent?.kind, "update");
     assert.equal(updated?.structuredContent?.template?.name, "Updated email template");
 
+    const versions = await firstClient.callTool({
+      name: "list_template_versions",
+      arguments: { id: savedTemplateId },
+    });
+    assert.equal(versions?.structuredContent?.kind, "versions");
+    assert.ok((versions?.structuredContent?.versions?.length ?? 0) >= 2);
+    const earliestVersionId = versions?.structuredContent?.versions?.[versions.structuredContent.versions.length - 1]?.version_id;
+    assert.ok(earliestVersionId);
+
+    const restored = await firstClient.callTool({
+      name: "restore_template_version",
+      arguments: {
+        id: savedTemplateId,
+        version_id: earliestVersionId,
+      },
+    });
+    assert.equal(restored?.structuredContent?.kind, "restore");
+    assert.equal(restored?.structuredContent?.restored, true);
+
     const firstList = await firstClient.callTool({ name: "list_templates", arguments: {} });
     const secondList = await secondClient.callTool({ name: "list_templates", arguments: {} });
 

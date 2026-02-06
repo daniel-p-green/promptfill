@@ -110,3 +110,35 @@ test("createInMemoryTemplateStore supports search, update, and delete", () => {
   assert.equal(store.getTemplate("t_1"), null);
   assert.equal(store.deleteTemplate("missing"), false);
 });
+
+test("createInMemoryTemplateStore tracks versions and supports restore", () => {
+  const store = createInMemoryTemplateStore();
+
+  store.saveTemplate({
+    id: "t_ver_1",
+    name: "Versioned template",
+    template: "Write for {{audience}}",
+    variables: [{ name: "audience", type: "string", required: true }],
+    createdAt: "2026-02-06T00:00:00.000Z",
+  });
+
+  store.updateTemplate("t_ver_1", {
+    template: "Write for {{audience}} with {{tone}}",
+    variables: [
+      { name: "audience", type: "string", required: true },
+      { name: "tone", type: "enum", required: true, defaultValue: "friendly" },
+    ],
+  });
+
+  const versions = store.listTemplateVersions("t_ver_1");
+  assert.equal(versions.length, 2);
+  assert.equal(versions[0].version_number, 2);
+  assert.equal(versions[1].version_number, 1);
+
+  const restored = store.restoreTemplateVersion("t_ver_1", versions[1].version_id);
+  assert.equal(restored?.template, "Write for {{audience}}");
+
+  const finalVersions = store.listTemplateVersions("t_ver_1");
+  assert.equal(finalVersions.length, 3);
+  assert.equal(finalVersions[0].version_number, 3);
+});

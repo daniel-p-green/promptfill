@@ -770,6 +770,51 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
 
   registerAppTool(
     server,
+    "list_template_versions",
+    {
+      title: "List template versions",
+      description: "Use this when the user wants to inspect historical versions of a template.",
+      inputSchema: {
+        id: z.string().min(1).describe("Template id to inspect."),
+        limit: z.number().int().min(1).max(100).optional().describe("Maximum number of versions."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        ui: { resourceUri: INLINE_WIDGET_URI },
+        "openai/outputTemplate": INLINE_WIDGET_URI,
+        "openai/widgetActions": fullscreenEditorActions,
+        "openai/toolInvocation/invoking": "Loading template versions...",
+        "openai/toolInvocation/invoked": "Version history ready",
+      },
+    },
+    async ({ id, limit = 20 }) => {
+      const versions = await templateStore.listTemplateVersions(id, { limit });
+      return {
+        structuredContent: {
+          kind: "versions",
+          template_id: id,
+          versions,
+        },
+        content: [
+          {
+            type: "text",
+            text: versions.length
+              ? `Found ${versions.length} version${versions.length === 1 ? "" : "s"}.`
+              : "No template versions found.",
+          },
+        ],
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
     "list_templates",
     {
       title: "List saved templates",
@@ -918,6 +963,56 @@ function buildServer({ templateStore, securitySchemes, widgetDomain }) {
           {
             type: "text",
             text: deleted ? `Deleted template "${id}".` : `No template found for id "${id}".`,
+          },
+        ],
+      };
+    }
+  );
+
+  registerAppTool(
+    server,
+    "restore_template_version",
+    {
+      title: "Restore template version",
+      description: "Use this when the user wants to restore a template to a previous version.",
+      inputSchema: {
+        id: z.string().min(1).describe("Template id to restore."),
+        version_id: z.string().min(1).describe("Version id to restore from history."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      securitySchemes,
+      _meta: {
+        securitySchemes,
+        "openai/toolInvocation/invoking": "Restoring template version...",
+        "openai/toolInvocation/invoked": "Restored",
+      },
+    },
+    async ({ id, version_id }) => {
+      const restored = await templateStore.restoreTemplateVersion(id, version_id);
+      return {
+        structuredContent: {
+          kind: "restore",
+          restored: Boolean(restored),
+          template: restored
+            ? {
+                id: restored.id,
+                name: restored.name,
+                variable_count: Array.isArray(restored.variables) ? restored.variables.length : 0,
+                created_at: restored.createdAt,
+                updated_at: restored.updatedAt ?? null,
+              }
+            : null,
+        },
+        content: [
+          {
+            type: "text",
+            text: restored
+              ? `Restored template "${restored.name}" from version "${version_id}".`
+              : `No matching version found for template "${id}".`,
           },
         ],
       };

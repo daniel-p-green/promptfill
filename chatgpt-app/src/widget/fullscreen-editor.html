@@ -153,6 +153,13 @@
         overflow: hidden;
       }
 
+      .section-label {
+        margin: 14px 0 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: color-mix(in srgb, canvastext 72%, transparent);
+      }
+
       .library-item {
         width: 100%;
         text-align: left;
@@ -248,6 +255,12 @@
           </div>
 
           <div id="template-library" class="library-list" role="list" aria-label="Saved templates"></div>
+
+          <p class="section-label">Version history</p>
+          <div class="actions" style="margin-top: 8px">
+            <button id="list-versions-button" type="button" disabled>List versions</button>
+          </div>
+          <div id="version-history" class="library-list" role="list" aria-label="Template version history"></div>
         </article>
 
         <article class="surface">
@@ -304,6 +317,7 @@
       const listTemplatesButton = document.getElementById("list-templates-button");
       const suggestTemplatesButton = document.getElementById("suggest-templates-button");
       const clearSelectionButton = document.getElementById("clear-selection-button");
+      const listVersionsButton = document.getElementById("list-versions-button");
       const saveTemplateButton = document.getElementById("save-template-button");
       const updateTemplateButton = document.getElementById("update-template-button");
       const deleteTemplateButton = document.getElementById("delete-template-button");
@@ -312,11 +326,13 @@
 
       const statusEl = document.getElementById("status");
       const renderedOutput = document.getElementById("rendered-output");
+      const versionHistory = document.getElementById("version-history");
 
       let rpcId = 0;
       const pendingRequests = new Map();
       let activeTemplateId = "";
       let lastLibraryTemplates = [];
+      let lastTemplateVersions = [];
 
       function setStatus(text) {
         statusEl.textContent = text;
@@ -327,6 +343,7 @@
         const hasActiveTemplate = Boolean(activeTemplateId);
         updateTemplateButton.disabled = !hasActiveTemplate;
         deleteTemplateButton.disabled = !hasActiveTemplate;
+        listVersionsButton.disabled = !hasActiveTemplate;
       }
 
       function resetWorkspace() {
@@ -338,6 +355,8 @@
         renderedOutput.hidden = true;
         renderedOutput.textContent = "";
         insertButton.disabled = true;
+        lastTemplateVersions = [];
+        renderVersionHistory(lastTemplateVersions);
       }
 
       function parseJsonInput(label, raw, fallback) {
@@ -383,6 +402,56 @@
             await loadTemplateById(template.id);
           });
           templateLibrary.appendChild(button);
+        }
+      }
+
+      function formatDate(value) {
+        if (!value) return "Unknown time";
+        const date = new Date(value);
+        if (Number.isNaN(date.valueOf())) return "Unknown time";
+        return date.toLocaleString();
+      }
+
+      async function restoreTemplateVersion(versionId) {
+        if (!activeTemplateId || !versionId) return;
+        setStatus("Restoring version...");
+        await callTool("restore_template_version", { id: activeTemplateId, version_id: versionId });
+        await loadTemplateById(activeTemplateId);
+        await loadTemplateVersions();
+        setStatus("Template restored.");
+      }
+
+      function renderVersionHistory(versions) {
+        lastTemplateVersions = Array.isArray(versions) ? versions : [];
+
+        if (!activeTemplateId) {
+          versionHistory.innerHTML =
+            '<div class="library-item" role="listitem">Select a template to view version history.</div>';
+          return;
+        }
+
+        if (lastTemplateVersions.length === 0) {
+          versionHistory.innerHTML = '<div class="library-item" role="listitem">No versions found yet.</div>';
+          return;
+        }
+
+        versionHistory.innerHTML = "";
+        for (const version of lastTemplateVersions) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "library-item";
+          button.setAttribute("role", "listitem");
+          button.dataset.versionId = version.version_id;
+          button.innerHTML = `<strong>v${version.version_number ?? "?"}</strong><span class="library-meta">${formatDate(
+            version.snapshot_at
+          )}</span>`;
+          button.addEventListener("click", () => {
+            restoreTemplateVersion(version.version_id).catch((error) => {
+              console.error("restore_template_version failed", error);
+              setStatus("Could not restore that version.");
+            });
+          });
+          versionHistory.appendChild(button);
         }
       }
 
@@ -445,24 +514,51 @@
           insertButton.disabled = true;
           renderTemplateLibrary(lastLibraryTemplates);
           setStatus(`Loaded template \"${template.name}\".`);
+          loadTemplateVersions().catch((error) => {
+            console.error("list_template_versions failed", error);
+          });
           return;
         }
 
         if (content.kind === "save" && content.template?.id) {
           setActiveTemplateId(content.template.id);
           renderTemplateLibrary(lastLibraryTemplates);
+          loadTemplateVersions().catch((error) => {
+            console.error("list_template_versions failed", error);
+          });
           return;
         }
 
         if (content.kind === "update" && content.template?.id) {
           setActiveTemplateId(content.template.id);
           renderTemplateLibrary(lastLibraryTemplates);
+          loadTemplateVersions().catch((error) => {
+            console.error("list_template_versions failed", error);
+          });
           return;
         }
 
         if (content.kind === "delete" && content.deleted) {
           resetWorkspace();
           renderTemplateLibrary(lastLibraryTemplates.filter((item) => item.id !== content.id));
+          renderVersionHistory([]);
+          return;
+        }
+
+        if (content.kind === "versions") {
+          renderVersionHistory(content.versions ?? []);
+          setStatus(
+            content.versions?.length
+              ? `Version history loaded (${content.versions.length}).`
+              : "No versions available yet."
+          );
+          return;
+        }
+
+        if (content.kind === "restore") {
+          if (!content.restored) {
+            setStatus("Could not restore that version.");
+          }
         }
       }
 
@@ -490,6 +586,14 @@
       async function loadTemplateById(id) {
         setStatus("Loading template...");
         await callTool("get_template", { id });
+      }
+
+      async function loadTemplateVersions() {
+        if (!activeTemplateId) {
+          renderVersionHistory([]);
+          return;
+        }
+        await callTool("list_template_versions", { id: activeTemplateId, limit: 20 });
       }
 
       async function refreshLibrary(options = {}) {
@@ -721,6 +825,26 @@
         renderTemplateLibrary(lastLibraryTemplates);
         setStatus("Started a new draft.");
       });
+
+      listVersionsButton.addEventListener("click", async () => {
+        if (!activeTemplateId) {
+          setStatus("Select a template first.");
+          return;
+        }
+        listVersionsButton.disabled = true;
+        setStatus("Loading version history...");
+        try {
+          await bridgeReady;
+          await loadTemplateVersions();
+        } catch (error) {
+          console.error("list_template_versions failed", error);
+          setStatus("Could not load version history.");
+        } finally {
+          listVersionsButton.disabled = !activeTemplateId;
+        }
+      });
+
+      renderVersionHistory([]);
     </script>
   </body>
 </html>

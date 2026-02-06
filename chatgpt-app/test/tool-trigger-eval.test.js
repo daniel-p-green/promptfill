@@ -13,6 +13,8 @@ const knownTools = new Set([
   "update_template",
   "delete_template",
   "suggest_templates",
+  "list_template_versions",
+  "restore_template_version",
 ]);
 
 test("golden prompts contain direct, indirect, and negative buckets", async () => {

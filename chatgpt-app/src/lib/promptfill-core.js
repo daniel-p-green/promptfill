@@ -45,6 +45,10 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function createVersionId() {
+  return `ver_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function hasTemplateStoreInterface(store) {
   return (
     Boolean(store) &&
@@ -53,7 +57,9 @@ export function hasTemplateStoreInterface(store) {
     typeof store.getTemplate === "function" &&
     typeof store.updateTemplate === "function" &&
     typeof store.deleteTemplate === "function" &&
-    typeof store.searchTemplates === "function"
+    typeof store.searchTemplates === "function" &&
+    typeof store.listTemplateVersions === "function" &&
+    typeof store.restoreTemplateVersion === "function"
   );
 }
 
@@ -141,14 +147,45 @@ export function renderPromptTemplate({ template, variables, values }) {
 
 export function createInMemoryTemplateStore() {
   const templates = new Map();
+  const versionsByTemplateId = new Map();
+
+  function appendVersion(templateRecord) {
+    const snapshotAt = new Date().toISOString();
+    const existing = versionsByTemplateId.get(templateRecord.id) ?? [];
+    const version = {
+      version_id: createVersionId(),
+      version_number: existing.length + 1,
+      template_id: templateRecord.id,
+      name: templateRecord.name,
+      template: templateRecord.template,
+      variables: Array.isArray(templateRecord.variables) ? templateRecord.variables : [],
+      created_at: templateRecord.createdAt,
+      updated_at: templateRecord.updatedAt ?? null,
+      snapshot_at: snapshotAt,
+    };
+    existing.push(version);
+    versionsByTemplateId.set(templateRecord.id, existing);
+    return version;
+  }
 
   return {
     saveTemplate(template) {
       if (!template || !template.id) {
         throw new Error("Template id is required.");
       }
-      templates.set(template.id, clone(template));
-      return clone(template);
+      const existing = templates.get(template.id);
+      const nowIso = new Date().toISOString();
+      const record = {
+        ...(existing ?? {}),
+        ...clone(template),
+        id: template.id,
+        createdAt: existing?.createdAt ?? template.createdAt ?? nowIso,
+        updatedAt: existing ? nowIso : template.updatedAt ?? null,
+      };
+
+      templates.set(record.id, clone(record));
+      appendVersion(record);
+      return clone(record);
     },
 
     listTemplates() {
@@ -182,12 +219,12 @@ export function createInMemoryTemplateStore() {
         next.name = String(updates.name);
       }
 
-      templates.set(id, clone(next));
-      return clone(next);
+      return this.saveTemplate(next);
     },
 
     deleteTemplate(id) {
       if (!id) return false;
+      versionsByTemplateId.delete(id);
       return templates.delete(id);
     },
 
@@ -201,6 +238,32 @@ export function createInMemoryTemplateStore() {
         : all;
 
       return filtered.slice(0, limit).map((item) => clone(item));
+    },
+
+    listTemplateVersions(templateId, options = {}) {
+      const limit = Number.isFinite(options.limit) ? Math.max(1, Math.floor(options.limit)) : 20;
+      const versions = versionsByTemplateId.get(templateId) ?? [];
+      return versions
+        .slice()
+        .sort((a, b) => b.version_number - a.version_number)
+        .slice(0, limit)
+        .map((item) => clone(item));
+    },
+
+    restoreTemplateVersion(templateId, versionId) {
+      if (!templateId || !versionId) return null;
+      const versions = versionsByTemplateId.get(templateId) ?? [];
+      const version = versions.find((item) => item.version_id === versionId);
+      if (!version) return null;
+
+      const existing = templates.get(templateId);
+      return this.saveTemplate({
+        id: templateId,
+        name: version.name,
+        template: version.template,
+        variables: Array.isArray(version.variables) ? version.variables : [],
+        createdAt: existing?.createdAt ?? version.created_at ?? new Date().toISOString(),
+      });
     },
   };
 }

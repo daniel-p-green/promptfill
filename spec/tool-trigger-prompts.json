@@ -35,6 +35,14 @@
     {
       "prompt": "Show starter PromptFill templates for customer support.",
       "expected_tool": "suggest_templates"
+    },
+    {
+      "prompt": "Show version history for PromptFill template tpl_123.",
+      "expected_tool": "list_template_versions"
+    },
+    {
+      "prompt": "Restore PromptFill template tpl_123 to version ver_456.",
+      "expected_tool": "restore_template_version"
     }
   ],
   "indirect": [
@@ -69,6 +77,14 @@
     {
       "prompt": "Give me template ideas I can start from for onboarding emails.",
       "expected_tool": "suggest_templates"
+    },
+    {
+      "prompt": "I need to see older versions of that template before deciding.",
+      "expected_tool": "list_template_versions"
+    },
+    {
+      "prompt": "Bring back the earlier version from this afternoon.",
+      "expected_tool": "restore_template_version"
     }
   ],
   "negative": [

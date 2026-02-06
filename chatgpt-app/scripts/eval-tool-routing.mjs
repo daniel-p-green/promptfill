@@ -17,6 +17,8 @@ const toolNames = [
   "update_template",
   "delete_template",
   "suggest_templates",
+  "list_template_versions",
+  "restore_template_version",
 ];
 const allowedPredictions = new Set([...toolNames, "NONE"]);
 
@@ -26,7 +28,7 @@ const reportPath = new URL("../../output/tool-routing-eval.json", import.meta.ur
 const systemInstruction = [
   "You are evaluating whether a user message should route to a PromptFill tool.",
   "Return exactly one token and no explanation.",
-  "Allowed values: extract_prompt_fields, render_prompt, save_template, list_templates, get_template, search_templates, update_template, delete_template, suggest_templates, NONE.",
+  "Allowed values: extract_prompt_fields, render_prompt, save_template, list_templates, get_template, search_templates, update_template, delete_template, suggest_templates, list_template_versions, restore_template_version, NONE.",
   "Use NONE if no PromptFill tool should be selected.",
 ].join(" ");
 
