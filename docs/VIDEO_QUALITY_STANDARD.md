@@ -73,6 +73,7 @@ Replace with user-facing language:
 
 Before publishing any video:
 
+0. Use Node.js LTS for Remotion (`node@20` recommended).
 1. Render midpoint stills for every composition.
 2. Check at 100% and 75% zoom:
    - no text clipping
@@ -84,3 +85,22 @@ Before publishing any video:
    - `docs/USER_STORIES.md`
    - `docs/PRD.md`
    - `docs/USE_CASES.md`
+
+## Verification Commands
+
+Run these from repo root:
+
+```bash
+npm run test:chatgpt-app
+npm run test:web
+npm run lint:web
+npm run lint:video
+```
+
+Midpoint stills (example):
+
+```bash
+mkdir -p renders/stills
+cd video
+npx remotion still src/index.ts PromptFillFlagshipPromo ../renders/stills/promptfill-flagship-mid.png --frame=720 --quiet
+```

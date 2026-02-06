@@ -64,6 +64,9 @@ const StepChip: React.FC<{
       color: "rgba(255,255,255,0.9)",
       fontFamily: monoFont,
       fontSize: 13,
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
       boxShadow: active ? `0 0 24px ${accent}55` : "none",
     }}
   >
@@ -229,9 +232,9 @@ export const PromptFillChatGPTAppDemo: React.FC<PromptFillChatGPTAppDemoProps> =
             }}
           />
 
-          <StepChip label="Step 1 · extract_prompt_fields" accent={accent} active={step1Active} x={56} />
-          <StepChip label="Step 2 · render_prompt" accent={accent} active={step2Active} x={358} />
-          <StepChip label="Step 3 · ui/message" accent={accent} active={step3Active} x={586} />
+          <StepChip label="1 · extract_prompt_fields" accent={accent} active={step1Active} x={44} />
+          <StepChip label="2 · render_prompt" accent={accent} active={step2Active} x={308} />
+          <StepChip label="3 · ui/message" accent={accent} active={step3Active} x={544} />
 
           <Highlight
             x={838}

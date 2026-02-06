@@ -795,7 +795,7 @@ const UseCasesScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
         body="Keep one structure for each job, then update only the changing values. Less rework, more consistent output."
         frame={frame}
       />
-      <div style={{ position: "absolute", left: 0, right: 0, top: 208, overflow: "hidden" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 304, overflow: "hidden" }}>
         <div
           style={{
             display: "flex",
