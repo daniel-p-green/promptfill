@@ -59,6 +59,14 @@ function parseAllowedOrigins(value) {
     .filter(Boolean);
 }
 
+function parseBooleanFlag(value, defaultValue = false) {
+  if (typeof value !== "string" || !value.trim()) return defaultValue;
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return defaultValue;
+}
+
 function normalizeWidgetDomain(value) {
   if (!value || !value.trim()) return DEFAULT_WIDGET_DOMAIN;
   try {
@@ -188,19 +196,26 @@ function hashTokenToOwnerId(token) {
   return `token_${digest}`;
 }
 
-function resolveOwnerIdForRequest(req, fallbackOwnerId) {
-  const headerUserId = req.headers["x-promptfill-user-id"];
-  if (typeof headerUserId === "string" && headerUserId.trim()) {
-    return sanitizeOwnerId(headerUserId);
-  }
-  if (Array.isArray(headerUserId)) {
-    const first = headerUserId.find((item) => typeof item === "string" && item.trim());
-    if (first) return sanitizeOwnerId(first);
+export function resolveOwnerIdForRequest(req, fallbackOwnerId, options = {}) {
+  const allowUserIdHeader = options.allowUserIdHeader === true;
+  const allowBearerTokenOwnerHash = options.allowBearerTokenOwnerHash === true;
+
+  if (allowUserIdHeader) {
+    const headerUserId = req.headers["x-promptfill-user-id"];
+    if (typeof headerUserId === "string" && headerUserId.trim()) {
+      return sanitizeOwnerId(headerUserId);
+    }
+    if (Array.isArray(headerUserId)) {
+      const first = headerUserId.find((item) => typeof item === "string" && item.trim());
+      if (first) return sanitizeOwnerId(first);
+    }
   }
 
-  const bearerToken = getBearerToken(req);
-  if (bearerToken) {
-    return sanitizeOwnerId(hashTokenToOwnerId(bearerToken));
+  if (allowBearerTokenOwnerHash) {
+    const bearerToken = getBearerToken(req);
+    if (bearerToken) {
+      return sanitizeOwnerId(hashTokenToOwnerId(bearerToken));
+    }
   }
 
   return sanitizeOwnerId(fallbackOwnerId);
@@ -529,6 +544,11 @@ export function createPromptFillHttpServer({
   authToken = (process.env.PROMPTFILL_AUTH_TOKEN ?? "").trim(),
   singleTenantUserId = process.env.PROMPTFILL_SINGLE_TENANT_USER_ID ?? DEFAULT_SINGLE_TENANT_USER_ID,
   widgetDomain = normalizeWidgetDomain(process.env.PROMPTFILL_WIDGET_DOMAIN ?? ""),
+  allowUserIdHeader = parseBooleanFlag(process.env.PROMPTFILL_ALLOW_USER_ID_HEADER ?? "", false),
+  allowBearerTokenOwnerHash = parseBooleanFlag(
+    process.env.PROMPTFILL_ALLOW_BEARER_OWNER_HASH ?? "",
+    false
+  ),
 } = {}) {
   const securitySchemes = resolveSecuritySchemes(authToken);
   const normalizedWidgetDomain = normalizeWidgetDomain(widgetDomain);
@@ -650,7 +670,10 @@ export function createPromptFillHttpServer({
           return;
         }
 
-        const ownerId = resolveOwnerIdForRequest(req, singleTenantUserId);
+        const ownerId = resolveOwnerIdForRequest(req, singleTenantUserId, {
+          allowUserIdHeader,
+          allowBearerTokenOwnerHash,
+        });
         const templateStore = createTemplateStoreAdapter(templateStoreKind, {
           ownerId,
           url: process.env.PROMPTFILL_SUPABASE_URL,
