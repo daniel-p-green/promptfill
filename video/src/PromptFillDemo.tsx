@@ -16,6 +16,7 @@ const grainSvg =
 export type PromptFillDemoProps = {
   productName: string;
   accent: string;
+  componentLabel?: string;
 };
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -141,6 +142,7 @@ const Shot: React.FC<{
 export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
   productName,
   accent,
+  componentLabel = "Web App component",
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -208,6 +210,9 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
             <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>
               {productName}
             </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.66)" }}>
+              {componentLabel}
+            </div>
           </div>
 
           <div
@@ -221,9 +226,9 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
               maxWidth: 980,
             }}
           >
-            Share prompts.
+            Design in web.
             <br />
-            Fill variables like a form.
+            Prototype the full workflow.
           </div>
           <div
             style={{
@@ -234,8 +239,8 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
               lineHeight: 1.35,
             }}
           >
-            PromptFill turns your team’s best prompts into shareable templates with structured fields, dropdowns, and
-            one-click copying.
+            Use the web surface as the fast lab for library UX, variable controls, and rendering polish before native
+            ChatGPT handoff.
           </div>
         </div>
       </AbsoluteFill>
@@ -325,10 +330,11 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
           }}
         >
           <div style={{ fontSize: 44, fontWeight: 760, letterSpacing: -0.9, color: "white" }}>
-            Prompt sharing, solved.
+            {componentLabel}
           </div>
           <div style={{ marginTop: 14, fontSize: 20, color: "rgba(255,255,255,0.68)", maxWidth: 820 }}>
-            Keep templates consistent, make variables explicit, and copy in the format you need.
+            Design and validate prompt-library interactions quickly, then ship the best loop to the native ChatGPT
+            surface.
           </div>
           <div
             style={{
@@ -347,7 +353,7 @@ export const PromptFillDemo: React.FC<PromptFillDemoProps> = ({
           >
             <span style={{ color: accent }}>{productName}</span>
             <span style={{ color: "rgba(255,255,255,0.55)" }}>·</span>
-            Web app MVP now, extension next.
+            Design/prototyping lab for the full project.
           </div>
         </div>
       </AbsoluteFill>

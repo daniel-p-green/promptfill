@@ -1,11 +1,18 @@
 # PromptFill
 
 <p align="center">
-  <img src="docs/media/promptfill-demo.gif" alt="PromptFill demo (captured from Remotion scenes)" width="960" />
+  <strong>One project. Two complementary components.</strong>
 </p>
 
 <p align="center">
-  <em>Frames from our Remotion explainer (<code>video/src/PromptFillDemo.tsx</code>).</em>
+  <img src="docs/media/promptfill-web-demo.gif" alt="PromptFill Web App component demo GIF" width="460" />
+  <img src="docs/media/promptfill-chatgpt-demo.gif" alt="PromptFill ChatGPT Apps SDK component demo GIF" width="460" />
+</p>
+
+<p align="center">
+  <strong>Web App component:</strong> design and prototyping lab for prompt-library UX.
+  <br />
+  <strong>ChatGPT Apps SDK component:</strong> native in-chat product loop (extract → fill → render → insert).
 </p>
 
 <p align="center">
@@ -16,6 +23,7 @@
 
 <p align="center">
   <a href="#why">Why</a>
+  · <a href="#project-components">Project components</a>
   · <a href="#what-you-can-do-today-mvp">What you can do today</a>
   · <a href="#how-it-works">How it works</a>
   · <a href="#a-prompt-becomes-a-form">Example</a>
@@ -38,6 +46,13 @@ Teams tend to store prompts as raw text in docs/snippets/DMs. Over time:
 PromptFill makes prompts structured and reusable in conversation: **template + variables + fill + render + insert**.
 
 > PromptFill generates prompts — it doesn’t run them against an LLM.
+
+## Project components
+
+PromptFill is one project with two complementary components:
+
+- `Web App component` (`web/`): design/prototyping lab for high-velocity workflow iteration.
+- `ChatGPT Apps SDK component` (`chatgpt-app/`): native product surface optimized for in-chat completion.
 
 ## What you can do today (MVP)
 

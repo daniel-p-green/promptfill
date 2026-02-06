@@ -50,6 +50,7 @@ export const PROMPTFILL_FLAGSHIP_DURATION_IN_FRAMES =
 export type PromptFillFlagshipPromoProps = {
   accent: string;
   productName: string;
+  componentLabel?: string;
 };
 
 type SceneProps = PromptFillFlagshipPromoProps & {
@@ -293,7 +294,7 @@ const PulseHighlight: React.FC<{
   );
 };
 
-const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames }) => {
+const HeroScene: React.FC<SceneProps> = ({ accent, productName, componentLabel, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const opacity = fadeInOut(frame, durationInFrames, 16, 22);
@@ -331,7 +332,7 @@ const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames
             boxShadow: `0 0 18px ${accent}66`,
           }}
         />
-        New ChatGPT-native product film
+        {componentLabel ?? "ChatGPT Apps SDK component"}
       </div>
       <div
         style={{
@@ -1075,7 +1076,7 @@ const OnboardingScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
   );
 };
 
-const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames }) => {
+const ClosingScene: React.FC<SceneProps> = ({ accent, productName, componentLabel, durationInFrames }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const sceneOpacity = fadeInOut(frame, durationInFrames, 16, 26);
@@ -1110,7 +1111,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
       >
         {productName}
         <br />
-        structured prompts without friction.
+        in-chat prompt completion.
       </div>
       <div
         style={{
@@ -1178,7 +1179,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
           padding: "9px 13px",
         }}
       >
-        apps-sdk-native · chatgpt-first
+        apps-sdk-native · {componentLabel ?? "ChatGPT Apps SDK component"}
       </div>
     </AbsoluteFill>
   );
@@ -1190,7 +1191,11 @@ const FilmGrain: React.FC = () => (
   </AbsoluteFill>
 );
 
-export const PromptFillFlagshipPromo: React.FC<PromptFillFlagshipPromoProps> = ({ accent, productName }) => {
+export const PromptFillFlagshipPromo: React.FC<PromptFillFlagshipPromoProps> = ({
+  accent,
+  productName,
+  componentLabel = "ChatGPT Apps SDK component",
+}) => {
   return (
     <AbsoluteFill
       style={{
@@ -1200,7 +1205,12 @@ export const PromptFillFlagshipPromo: React.FC<PromptFillFlagshipPromoProps> = (
       <CinematicBackdrop accent={accent} />
       <Series>
         <Series.Sequence durationInFrames={HERO_FRAMES}>
-          <HeroScene accent={accent} productName={productName} durationInFrames={HERO_FRAMES} />
+          <HeroScene
+            accent={accent}
+            productName={productName}
+            componentLabel={componentLabel}
+            durationInFrames={HERO_FRAMES}
+          />
         </Series.Sequence>
         <Series.Sequence durationInFrames={LIBRARY_FRAMES}>
           <LibraryScene accent={accent} productName={productName} durationInFrames={LIBRARY_FRAMES} />
@@ -1221,7 +1231,12 @@ export const PromptFillFlagshipPromo: React.FC<PromptFillFlagshipPromoProps> = (
           <OnboardingScene accent={accent} productName={productName} durationInFrames={ONBOARDING_FRAMES} />
         </Series.Sequence>
         <Series.Sequence durationInFrames={CLOSING_FRAMES}>
-          <ClosingScene accent={accent} productName={productName} durationInFrames={CLOSING_FRAMES} />
+          <ClosingScene
+            accent={accent}
+            productName={productName}
+            componentLabel={componentLabel}
+            durationInFrames={CLOSING_FRAMES}
+          />
         </Series.Sequence>
       </Series>
       <FilmGrain />

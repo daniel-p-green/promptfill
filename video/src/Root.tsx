@@ -15,7 +15,7 @@ import {
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Folder name="Marketing">
+      <Folder name="PromptFill-Ultimate-Demos">
         <Composition
           id="PromptFillDemo"
           component={PromptFillDemo}
@@ -27,6 +27,7 @@ export const RemotionRoot: React.FC = () => {
             {
               accent: "#10a37f",
               productName: "PromptFill",
+              componentLabel: "Web App component",
             } satisfies PromptFillDemoProps
           }
         />
@@ -41,6 +42,7 @@ export const RemotionRoot: React.FC = () => {
             {
               accent: "#10a37f",
               productName: "PromptFill",
+              componentLabel: "ChatGPT Apps SDK component",
             } satisfies PromptFillFlagshipPromoProps
           }
         />

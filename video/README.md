@@ -1,54 +1,37 @@
-# Remotion video
+# PromptFill Remotion Demos
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+This package renders the two primary project narratives:
 
-Welcome to your Remotion project!
+- `PromptFillDemo` -> **Web App component** (design/prototyping lab)
+- `PromptFillFlagshipPromo` -> **ChatGPT Apps SDK component** (native in-chat product)
 
-## Commands
+## Local preview
 
-**Install Dependencies**
-
-```console
-npm i
-```
-
-**Start Preview**
-
-```console
+```bash
+cd video
+npm install
 npm run dev
 ```
 
-**Render video**
+## List available compositions
 
-```console
-npx remotion render
+```bash
+cd video
+npx remotion compositions src/index.ts
 ```
 
-**Upgrade Remotion**
+## Render ultimate MP4 artifacts
 
-```console
-npx remotion upgrade
+```bash
+cd video
+npx remotion render src/index.ts PromptFillDemo ../renders/promptfill-ultimate-web.mp4
+npx remotion render src/index.ts PromptFillFlagshipPromo ../renders/promptfill-ultimate-chatgpt.mp4
 ```
 
-## Docs
+## Generate README GIF artifacts
 
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
-
-## Help
-
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
-
-## Issues
-
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
-
-## License
-
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+```bash
+mkdir -p ../docs/media
+ffmpeg -y -i ../renders/promptfill-ultimate-web.mp4 -vf "fps=12,scale=960:-1:flags=lanczos" ../docs/media/promptfill-web-demo.gif
+ffmpeg -y -i ../renders/promptfill-ultimate-chatgpt.mp4 -vf "fps=12,scale=960:-1:flags=lanczos" ../docs/media/promptfill-chatgpt-demo.gif
+```
