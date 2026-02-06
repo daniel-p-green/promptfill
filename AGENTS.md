@@ -85,6 +85,7 @@ If using the Skills CLI ecosystem:
 - Planning: `obra/superpowers@executing-plans`
 - Isolation: `obra/superpowers@using-git-worktrees`
 - Iteration loop: `obra/superpowers@subagent-driven-development`
+- Motion direction (local): `skills/remotion-motion-director` for brand-controlled, storyboard-first Remotion execution.
 
 Install example:
 
@@ -97,4 +98,3 @@ npx skills add obra/superpowers@executing-plans -g -y
 - Treat all card content as potentially visible; avoid surfacing secrets or sensitive personal data.
 - Never commit API keys; keep `.env*` out of git.
 - Prefer read-only tools unless a write is essential; annotate tools accordingly.
-
