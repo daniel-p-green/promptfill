@@ -298,12 +298,12 @@ const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames
   const { fps } = useVideoConfig();
   const opacity = fadeInOut(frame, durationInFrames, 16, 22);
 
-  const headline = "A prompt becomes a form.";
+  const headline = "From rough ask to ready prompt.";
   const charCount = Math.floor(interpolate(frame, [8, 84], [0, headline.length], clamp));
   const typed = headline.slice(0, charCount);
   const cursorVisible = charCount < headline.length && Math.floor(frame / 7) % 2 === 0;
 
-  const pillars = ["Capture", "Structure", "Fill", "Share"];
+  const pillars = ["Ask", "Extract", "Render", "Insert"];
 
   return (
     <AbsoluteFill style={{ padding: "76px 70px", opacity }}>
@@ -331,7 +331,7 @@ const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames
             boxShadow: `0 0 18px ${accent}66`,
           }}
         />
-        New flagship product film
+        New ChatGPT-native product film
       </div>
       <div
         style={{
@@ -361,8 +361,8 @@ const HeroScene: React.FC<SceneProps> = ({ accent, productName, durationInFrames
           opacity: interpolate(frame, [30, 76], [0, 1], clamp),
         }}
       >
-        Local-first prompt library. Typed variables. Safe AI extraction. Guided onboarding. Designed for repeatable,
-        high-quality prompt workflows.
+        Conversation-first entry. Atomic tools. Inline card rendering. One action sends the final prompt back into
+        chat.
       </div>
       <div
         style={{
@@ -412,22 +412,22 @@ const LibraryScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
     <AbsoluteFill>
       <SceneHeader
         accent={accent}
-        chip="Capture and discover"
-        title="Start in the prompt library."
-        body="Find reusable templates fast, launch from a starter use case, and keep one source of truth instead of scattered snippets."
+        chip="From shell to native"
+        title="Prototype in web. Deliver in ChatGPT."
+        body="The web app taught us the workflow. The product now extracts only the atomic loop that feels native inside conversation."
         frame={frame}
       />
       <ShotFrame src={staticFile("ui/promptfill-ui-1280x720.png")} frame={frame} durationInFrames={durationInFrames}>
         <PulseHighlight
           rect={HIGHLIGHTS_1280x720.ui.library}
-          label="Search + starter templates"
+          label="Workflow source of truth"
           accent={accent}
           frame={frame}
           delay={30}
         />
         <PulseHighlight
           rect={HIGHLIGHTS_1280x720.ui.copyActions}
-          label="Render + copy actions"
+          label="Keep the fast render loop"
           accent={accent}
           frame={frame}
           delay={58}
@@ -452,8 +452,9 @@ const LibraryScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
           transform: `translateX(${panelX}px)`,
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>PRD loop coverage</div>
-        <div>Capture quickly, then move directly into structuring and fill workflows without context switching.</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Product decision</div>
+        <div>Do not port the full shell. Keep extraction, fill, and render as compact tools that fit inline cards and
+          chat rhythm.</div>
       </div>
     </AbsoluteFill>
   );
@@ -468,9 +469,9 @@ const ExtractionScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
   const scale = interpolate(inProgress, [0, 1], [0.96, 1], clamp);
 
   const notes = [
-    "Found 8 variables from explicit and implicit placeholders.",
-    "Suggested enum controls for tone, audience, and format.",
-    "Kept unreferenced fields to avoid silent schema loss.",
+    "Structured output keeps the card and model in sync.",
+    "Enum suggestions reduce follow-up clarifications.",
+    "Proposal-first flow prevents silent schema loss.",
   ];
   const proposed = [
     { name: "audience", type: "enum", status: "added" },
@@ -484,9 +485,9 @@ const ExtractionScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
     <AbsoluteFill style={{ opacity: sceneOpacity }}>
       <SceneHeader
         accent={accent}
-        chip="Structure safely"
-        title="AI assist, behind the same safe modal."
-        body="Extraction quality goes up without changing workflow. Users still review every proposal before apply, with explicit diff and rollback confidence."
+        chip="Apps SDK tools"
+        title="Tools stay atomic and model-friendly."
+        body="extract_prompt_fields, render_prompt, save_template, and list_templates keep invocation clear, typed, and reliable across turns."
         frame={frame}
       />
       <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 26 }}>
@@ -526,7 +527,7 @@ const ExtractionScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
                 padding: "6px 10px",
               }}
             >
-              source: ai-assist-adapter
+              source: extract_prompt_fields
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1.15fr 1fr", height: 414 }}>
@@ -697,9 +698,9 @@ const FillScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
     <AbsoluteFill>
       <SceneHeader
         accent={accent}
-        chip="Fill fast"
-        title="Typed controls make reuse reliable."
-        body="Every variable renders the right input. Required fields, defaults, and keyboard-first interaction keep prompt reuse under ten seconds."
+        chip="Inline card loop"
+        title="Fill values, render, and send to chat."
+        body="No duplicate composer. User asks in chat, fields appear inline, and the rendered prompt goes back to the thread via ui/message."
         frame={frame}
       />
       <AbsoluteFill
@@ -741,7 +742,7 @@ const FillScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
           <br />
           - Sensible tab order for rapid keyboard entry.
           <br />
-          - Copy action stays one move away.
+          - Render and insert actions stay one move away.
         </div>
         <div
           style={{
@@ -754,7 +755,7 @@ const FillScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
             color: "rgba(255,255,255,0.72)",
           }}
         >
-          Shortcut hint: Cmd+Shift+C to copy rendered prompt
+          Final action: Insert into chat (ui/message)
         </div>
       </div>
     </AbsoluteFill>
@@ -790,9 +791,9 @@ const UseCasesScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
     <AbsoluteFill style={{ opacity: sceneOpacity }}>
       <SceneHeader
         accent={accent}
-        chip="Real use cases"
-        title="Built for high-frequency prompt work."
-        body="PromptFill targets recurring workflows where structure beats freeform editing. Same template shape, different values, fast output."
+        chip="Trigger quality"
+        title="Easy for the model to invoke."
+        body="Direct commands and fuzzy asks both map to a small toolset, so the model can confidently call PromptFill in real conversations."
         frame={frame}
       />
       <div style={{ position: "absolute", left: 0, right: 0, top: 208, overflow: "hidden" }}>
@@ -888,15 +889,15 @@ const ShareScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
     <AbsoluteFill>
       <SceneHeader
         accent={accent}
-        chip="Share and portability"
-        title="Move prompts without losing structure."
-        body="Share links, import payloads, and full-library export keep templates portable while preserving variables, defaults, and option bindings."
+        chip="State strategy"
+        title="P0 is session-scoped. P1 adds account sync."
+        body="Start with fast in-chat completion and scoped persistence. Add durable, authenticated template libraries once native behavior is proven."
         frame={frame}
       />
       <ShotFrame src={staticFile("ui/promptfill-share-1280x720.png")} frame={frame} durationInFrames={durationInFrames}>
         <PulseHighlight
           rect={HIGHLIGHTS_1280x720.share.linkRow}
-          label="Share link + import payload"
+          label="save_template + list_templates"
           accent={accent}
           frame={frame}
           delay={32}
@@ -924,7 +925,7 @@ const ShareScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
             fontSize: 19,
           }}
         >
-          Local-first by default
+          Persistence roadmap
         </div>
         <div
           style={{
@@ -935,10 +936,10 @@ const ShareScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
             fontSize: 15,
           }}
         >
-          Export to JSON, re-import with safe merge behavior, and keep workflows resilient across machines.
+          P0 keeps state light and fast for chat sessions. P1 adds auth-backed sync without changing the core loop.
         </div>
         <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {["share link", "import", "export json", "merge-safe"].map((tag) => (
+          {["p0: session", "p1: auth sync", "safe defaults", "durable later"].map((tag) => (
             <div
               key={tag}
               style={{
@@ -961,10 +962,10 @@ const ShareScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
 };
 
 const onboardingSteps = [
-  { title: "Explore your library", body: "Find a starter template and open it quickly." },
-  { title: "Fill variables and render", body: "Type values once and preview updates live." },
-  { title: "Shape the template", body: "Refine schema, defaults, and required fields." },
-  { title: "Share or import", body: "Distribute prompt workflows with no drift." },
+  { title: "Ask in chat", body: "Describe intent or paste a rough prompt in the composer." },
+  { title: "Extract fields", body: "Tool output creates typed variables and sensible defaults." },
+  { title: "Render inline", body: "Fill values in the card and preview the final prompt." },
+  { title: "Insert and continue", body: "Send rendered text to chat and keep momentum." },
 ];
 
 const OnboardingScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => {
@@ -981,9 +982,9 @@ const OnboardingScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
     <AbsoluteFill style={{ opacity: sceneOpacity }}>
       <SceneHeader
         accent={accent}
-        chip="Guided onboarding"
-        title="Teach the workflow in under 90 seconds."
-        body="First-run tutorial anchors users to the core loop: library, fill, build, and share. Clear progression reduces abandonment and accelerates activation."
+        chip="Conversational onboarding"
+        title="The conversation is the onboarding."
+        body="No long tutorial needed. The first task teaches the loop naturally: ask, extract, render, insert."
         frame={frame}
       />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
@@ -1001,7 +1002,7 @@ const OnboardingScene: React.FC<SceneProps> = ({ accent, durationInFrames }) => 
         >
           <div style={{ color: "white", fontFamily: bodyFont, fontWeight: 700, fontSize: 27 }}>Guided walkthrough</div>
           <div style={{ marginTop: 8, color: "rgba(255,255,255,0.72)", fontFamily: bodyFont, fontSize: 16 }}>
-            Learn PromptFill once. Reuse the workflow forever.
+            Learn PromptFill in one turn. Reuse every turn.
           </div>
           <div
             style={{
@@ -1080,16 +1081,16 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
   const sceneOpacity = fadeInOut(frame, durationInFrames, 16, 26);
   const cards = [
     {
-      title: "Calm UX",
-      body: "OpenAI-adjacent visual language with clear hierarchy.",
+      title: "Native fit",
+      body: "Designed for inline cards, fullscreen handoffs, and the system composer.",
     },
     {
-      title: "Safe AI",
-      body: "Proposal-first extraction with explicit review and control.",
+      title: "Composable tools",
+      body: "Atomic actions the model can call confidently with explicit contracts.",
     },
     {
-      title: "Useful by design",
-      body: "Focused loop with less complexity and more daily value.",
+      title: "Fast completion",
+      body: "From rough ask to inserted prompt in seconds, without leaving chat.",
     },
   ];
 
@@ -1121,7 +1122,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
           maxWidth: 860,
         }}
       >
-        Capture, structure, fill, preview, and share in one clear system that teams can trust.
+        Ask, extract, render, and continue the conversation without leaving ChatGPT.
       </div>
       <div
         style={{
@@ -1177,7 +1178,7 @@ const ClosingScene: React.FC<SceneProps> = ({ accent, productName, durationInFra
           padding: "9px 13px",
         }}
       >
-        promptfill.app · local-first web mvp
+        apps-sdk-native · chatgpt-first
       </div>
     </AbsoluteFill>
   );
