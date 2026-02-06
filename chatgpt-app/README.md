@@ -59,6 +59,10 @@ Environment variables:
 - `PROMPTFILL_SUPABASE_TABLE` (optional; defaults to `promptfill_templates`)
 - `PROMPTFILL_ALLOW_USER_ID_HEADER` (optional; default `false`, only for trusted internal proxy flows)
 - `PROMPTFILL_ALLOW_BEARER_OWNER_HASH` (optional; default `false`, enables token-derived owner hash tenancy)
+- `PROMPTFILL_OWNER_ID_MODE` (`single_tenant` default, optional `bearer_hash` or `signed_header`)
+- `PROMPTFILL_OWNER_ID_HEADER` (optional; defaults to `x-promptfill-user-id`)
+- `PROMPTFILL_OWNER_ID_SIGNATURE_HEADER` (optional; defaults to `x-promptfill-user-signature`)
+- `PROMPTFILL_OWNER_ID_SIGNATURE_SECRET` (required when `PROMPTFILL_OWNER_ID_MODE=signed_header`)
 - `ROUTING_EVAL_REQUIRED` (routing eval harness only; when `true`, missing `OPENAI_API_KEY` causes a hard failure)
 
 Guardrails:
@@ -66,6 +70,7 @@ Guardrails:
 - `PROMPTFILL_TEMPLATE_STORE_KIND=supabase` requires `PROMPTFILL_AUTH_TOKEN`.
 - `PROMPTFILL_TEMPLATE_STORE_KIND=supabase` rejects wildcard CORS origin `*`.
 - user-id header mapping and bearer-hash owner mapping require authenticated mode.
+- `PROMPTFILL_OWNER_ID_MODE=signed_header` requires valid HMAC signature on owner header.
 
 Session behavior:
 

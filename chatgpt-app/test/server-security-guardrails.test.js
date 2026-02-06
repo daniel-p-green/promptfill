@@ -37,6 +37,47 @@ test("user-id header mapping requires bearer auth mode", () => {
   );
 });
 
+test("signed-header identity mode requires bearer auth mode", () => {
+  assert.throws(
+    () =>
+      createPromptFillHttpServer({
+        templateStoreKind: "memory",
+        authToken: "",
+        ownerIdMode: "signed_header",
+        ownerIdSignatureSecret: "top-secret",
+      }),
+    /PROMPTFILL_AUTH_TOKEN/,
+    "signed-header identity should require auth token mode"
+  );
+});
+
+test("signed-header identity mode requires signature secret", () => {
+  assert.throws(
+    () =>
+      createPromptFillHttpServer({
+        templateStoreKind: "memory",
+        authToken: "secret-token",
+        ownerIdMode: "signed_header",
+        ownerIdSignatureSecret: "",
+      }),
+    /PROMPTFILL_OWNER_ID_SIGNATURE_SECRET/,
+    "signed-header identity should require signature secret"
+  );
+});
+
+test("bearer-hash identity mode requires bearer auth mode", () => {
+  assert.throws(
+    () =>
+      createPromptFillHttpServer({
+        templateStoreKind: "memory",
+        authToken: "",
+        ownerIdMode: "bearer_hash",
+      }),
+    /PROMPTFILL_AUTH_TOKEN/,
+    "bearer-hash identity should require auth token mode"
+  );
+});
+
 test("supabase mode allows secure config", () => {
   const server = createPromptFillHttpServer({
     templateStoreKind: "supabase",
@@ -46,4 +87,3 @@ test("supabase mode allows secure config", () => {
 
   server.close();
 });
-

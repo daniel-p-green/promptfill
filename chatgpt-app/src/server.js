@@ -1,4 +1,4 @@
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
@@ -29,6 +29,12 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:*",
   "http://127.0.0.1:*",
 ];
+const OWNER_ID_MODE_SINGLE_TENANT = "single_tenant";
+const OWNER_ID_MODE_BEARER_HASH = "bearer_hash";
+const OWNER_ID_MODE_SIGNED_HEADER = "signed_header";
+const DEFAULT_OWNER_ID_MODE = OWNER_ID_MODE_SINGLE_TENANT;
+const DEFAULT_OWNER_ID_HEADER = "x-promptfill-user-id";
+const DEFAULT_OWNER_ID_SIGNATURE_HEADER = "x-promptfill-user-signature";
 const DEFAULT_SINGLE_TENANT_USER_ID = "promptfill_single_tenant";
 const DEFAULT_WIDGET_DOMAIN = "https://web-sandbox.oaiusercontent.com";
 
@@ -68,12 +74,44 @@ function parseBooleanFlag(value, defaultValue = false) {
   return defaultValue;
 }
 
+function normalizeOwnerIdMode(value, { allowUserIdHeader = false, allowBearerTokenOwnerHash = false } = {}) {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized) {
+    if (
+      [OWNER_ID_MODE_SINGLE_TENANT, OWNER_ID_MODE_BEARER_HASH, OWNER_ID_MODE_SIGNED_HEADER].includes(
+        normalized
+      )
+    ) {
+      return normalized;
+    }
+    throw new Error(
+      `PROMPTFILL_OWNER_ID_MODE must be one of: ${OWNER_ID_MODE_SINGLE_TENANT}, ${OWNER_ID_MODE_BEARER_HASH}, ${OWNER_ID_MODE_SIGNED_HEADER}.`
+    );
+  }
+
+  if (allowUserIdHeader) return OWNER_ID_MODE_SIGNED_HEADER;
+  if (allowBearerTokenOwnerHash) return OWNER_ID_MODE_BEARER_HASH;
+  return DEFAULT_OWNER_ID_MODE;
+}
+
+function normalizeHeaderName(value, fallback) {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  return normalized || fallback;
+}
+
 function assertSecurityGuardrails({
   templateStoreKind,
   allowedOrigins,
   authToken,
   allowUserIdHeader,
   allowBearerTokenOwnerHash,
+  ownerIdMode,
+  ownerIdSignatureSecret,
 }) {
   if (allowUserIdHeader && !authToken) {
     throw new Error(
@@ -84,6 +122,24 @@ function assertSecurityGuardrails({
   if (allowBearerTokenOwnerHash && !authToken) {
     throw new Error(
       "PROMPTFILL_ALLOW_BEARER_OWNER_HASH requires PROMPTFILL_AUTH_TOKEN so caller identity is verified."
+    );
+  }
+
+  if (ownerIdMode === OWNER_ID_MODE_SIGNED_HEADER && !authToken) {
+    throw new Error(
+      "PROMPTFILL_AUTH_TOKEN is required when PROMPTFILL_OWNER_ID_MODE=signed_header."
+    );
+  }
+
+  if (ownerIdMode === OWNER_ID_MODE_BEARER_HASH && !authToken) {
+    throw new Error(
+      "PROMPTFILL_AUTH_TOKEN is required when PROMPTFILL_OWNER_ID_MODE=bearer_hash."
+    );
+  }
+
+  if (ownerIdMode === OWNER_ID_MODE_SIGNED_HEADER && !ownerIdSignatureSecret) {
+    throw new Error(
+      "PROMPTFILL_OWNER_ID_SIGNATURE_SECRET is required when PROMPTFILL_OWNER_ID_MODE=signed_header."
     );
   }
 
@@ -231,26 +287,66 @@ function hashTokenToOwnerId(token) {
   return `token_${digest}`;
 }
 
-export function resolveOwnerIdForRequest(req, fallbackOwnerId, options = {}) {
-  const allowUserIdHeader = options.allowUserIdHeader === true;
-  const allowBearerTokenOwnerHash = options.allowBearerTokenOwnerHash === true;
+function signOwnerId(ownerId, secret) {
+  return createHmac("sha256", secret).update(ownerId).digest("hex");
+}
 
-  if (allowUserIdHeader) {
-    const headerUserId = req.headers["x-promptfill-user-id"];
-    if (typeof headerUserId === "string" && headerUserId.trim()) {
-      return sanitizeOwnerId(headerUserId);
+function safeSignatureMatch(expected, provided) {
+  const expectedBuffer = Buffer.from(expected);
+  const providedBuffer = Buffer.from(provided);
+  if (expectedBuffer.length !== providedBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, providedBuffer);
+}
+
+function readHeaderString(req, headerName) {
+  const raw = req.headers[headerName];
+  if (typeof raw === "string" && raw.trim()) return raw.trim();
+  if (Array.isArray(raw)) {
+    const first = raw.find((item) => typeof item === "string" && item.trim());
+    if (first) return first.trim();
+  }
+  return "";
+}
+
+export function resolveOwnerIdForRequest(req, fallbackOwnerId, options = {}) {
+  const ownerIdMode = normalizeOwnerIdMode(options.ownerIdMode, {
+    allowUserIdHeader: options.allowUserIdHeader === true,
+    allowBearerTokenOwnerHash: options.allowBearerTokenOwnerHash === true,
+  });
+  const ownerIdHeader = normalizeHeaderName(options.ownerIdHeader, DEFAULT_OWNER_ID_HEADER);
+  const ownerIdSignatureHeader = normalizeHeaderName(
+    options.ownerIdSignatureHeader,
+    DEFAULT_OWNER_ID_SIGNATURE_HEADER
+  );
+  const ownerIdSignatureSecret = String(options.ownerIdSignatureSecret ?? "").trim();
+
+  if (ownerIdMode === OWNER_ID_MODE_SIGNED_HEADER) {
+    const rawOwnerId = readHeaderString(req, ownerIdHeader);
+    if (!rawOwnerId) {
+      throw new Error(`Signed owner identity requires header "${ownerIdHeader}".`);
     }
-    if (Array.isArray(headerUserId)) {
-      const first = headerUserId.find((item) => typeof item === "string" && item.trim());
-      if (first) return sanitizeOwnerId(first);
+    if (!ownerIdSignatureSecret) {
+      throw new Error("Invalid owner signature configuration.");
     }
+    const signature = readHeaderString(req, ownerIdSignatureHeader);
+    if (!signature) {
+      throw new Error(`Signed owner identity requires header "${ownerIdSignatureHeader}".`);
+    }
+
+    const expectedSignature = signOwnerId(rawOwnerId, ownerIdSignatureSecret);
+    if (!safeSignatureMatch(expectedSignature, signature)) {
+      throw new Error("Invalid owner signature.");
+    }
+
+    return sanitizeOwnerId(rawOwnerId);
   }
 
-  if (allowBearerTokenOwnerHash) {
+  if (ownerIdMode === OWNER_ID_MODE_BEARER_HASH) {
     const bearerToken = getBearerToken(req);
-    if (bearerToken) {
-      return sanitizeOwnerId(hashTokenToOwnerId(bearerToken));
+    if (!bearerToken) {
+      throw new Error("Bearer token is required for bearer_hash owner identity mode.");
     }
+    return sanitizeOwnerId(hashTokenToOwnerId(bearerToken));
   }
 
   return sanitizeOwnerId(fallbackOwnerId);
@@ -838,18 +934,36 @@ export function createPromptFillHttpServer({
   authToken = (process.env.PROMPTFILL_AUTH_TOKEN ?? "").trim(),
   singleTenantUserId = process.env.PROMPTFILL_SINGLE_TENANT_USER_ID ?? DEFAULT_SINGLE_TENANT_USER_ID,
   widgetDomain = normalizeWidgetDomain(process.env.PROMPTFILL_WIDGET_DOMAIN ?? ""),
+  ownerIdMode = process.env.PROMPTFILL_OWNER_ID_MODE ?? DEFAULT_OWNER_ID_MODE,
+  ownerIdHeader = process.env.PROMPTFILL_OWNER_ID_HEADER ?? DEFAULT_OWNER_ID_HEADER,
+  ownerIdSignatureHeader =
+    process.env.PROMPTFILL_OWNER_ID_SIGNATURE_HEADER ?? DEFAULT_OWNER_ID_SIGNATURE_HEADER,
+  ownerIdSignatureSecret = process.env.PROMPTFILL_OWNER_ID_SIGNATURE_SECRET ?? "",
   allowUserIdHeader = parseBooleanFlag(process.env.PROMPTFILL_ALLOW_USER_ID_HEADER ?? "", false),
   allowBearerTokenOwnerHash = parseBooleanFlag(
     process.env.PROMPTFILL_ALLOW_BEARER_OWNER_HASH ?? "",
     false
   ),
 } = {}) {
+  const normalizedOwnerIdMode = normalizeOwnerIdMode(ownerIdMode, {
+    allowUserIdHeader,
+    allowBearerTokenOwnerHash,
+  });
+  const normalizedOwnerIdHeader = normalizeHeaderName(ownerIdHeader, DEFAULT_OWNER_ID_HEADER);
+  const normalizedOwnerIdSignatureHeader = normalizeHeaderName(
+    ownerIdSignatureHeader,
+    DEFAULT_OWNER_ID_SIGNATURE_HEADER
+  );
+  const normalizedOwnerIdSignatureSecret = String(ownerIdSignatureSecret ?? "").trim();
+
   assertSecurityGuardrails({
     templateStoreKind,
     allowedOrigins,
     authToken,
     allowUserIdHeader,
     allowBearerTokenOwnerHash,
+    ownerIdMode: normalizedOwnerIdMode,
+    ownerIdSignatureSecret: normalizedOwnerIdSignatureSecret,
   });
 
   const securitySchemes = resolveSecuritySchemes(authToken);
@@ -973,8 +1087,10 @@ export function createPromptFillHttpServer({
         }
 
         const ownerId = resolveOwnerIdForRequest(req, singleTenantUserId, {
-          allowUserIdHeader,
-          allowBearerTokenOwnerHash,
+          ownerIdMode: normalizedOwnerIdMode,
+          ownerIdHeader: normalizedOwnerIdHeader,
+          ownerIdSignatureHeader: normalizedOwnerIdSignatureHeader,
+          ownerIdSignatureSecret: normalizedOwnerIdSignatureSecret,
         });
         const templateStore = createTemplateStoreAdapter(templateStoreKind, {
           ownerId,
