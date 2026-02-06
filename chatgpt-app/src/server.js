@@ -11,10 +11,10 @@ import {
 import { z } from "zod";
 
 import {
-  createInMemoryTemplateStore,
   extractPromptFields,
   renderPromptTemplate,
 } from "./lib/promptfill-core.js";
+import { createTemplateStoreAdapter } from "./lib/template-store-adapter.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const MCP_PATH = process.env.MCP_PATH ?? "/mcp";
@@ -22,7 +22,7 @@ const INLINE_WIDGET_URI = "ui://widget/promptfill-inline-v1.html";
 const FULLSCREEN_EDITOR_URI = "ui://widget/promptfill-fullscreen-v1.html";
 const securitySchemes = [{ type: "noauth" }];
 
-const templateStore = createInMemoryTemplateStore();
+const templateStore = createTemplateStoreAdapter(process.env.PROMPTFILL_TEMPLATE_STORE_KIND ?? "memory");
 const inlineWidgetHtml = readFileSync(
   new URL("./widget/inline-card.html", import.meta.url),
   "utf8"

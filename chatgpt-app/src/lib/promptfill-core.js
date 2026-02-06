@@ -45,6 +45,15 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+export function hasTemplateStoreInterface(store) {
+  return (
+    Boolean(store) &&
+    typeof store.saveTemplate === "function" &&
+    typeof store.listTemplates === "function" &&
+    typeof store.getTemplate === "function"
+  );
+}
+
 export function extractPromptFields(rawPrompt) {
   const seen = new Set();
   const variables = [];
