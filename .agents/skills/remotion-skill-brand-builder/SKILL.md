@@ -1,6 +1,6 @@
 ---
 name: remotion-skill-brand-builder
-description: Build an on-brand Remotion foundation by running a question-heavy brand intake, scraping style signals from websites, and generating reusable brand tokens, motion presets, and composition defaults for consistent high-quality video output.
+description: Build an opinionated, on-brand Remotion system using intake + brand scan + enforced hierarchy/copy/scene grammar. Generates both a portable @brand-kit package and a starter project scaffold for consistent professional output.
 ---
 
 # Remotion Skill Brand Builder
@@ -9,7 +9,15 @@ Use this skill when the user wants to:
 - Create a branded Remotion system from scratch
 - Match an existing website, product UI, or brand guide
 - Improve consistency across multiple videos/compositions
-- Turn brand strategy into reusable animation tokens and presets
+- Turn brand strategy into reusable tokens + copy schema + scene grammar
+- Produce both:
+  - Portable kit: `@brand-kit/<brand>`
+  - Starter project: scaffolded Remotion app using that kit
+
+Default v1 strategy:
+- Optimize first for Reels 9:16, also support YouTube 16:9
+- Use TypeScript + zod for script validation
+- Enforce hierarchy through primitives, not ad-hoc styles
 
 ## Workflow
 
@@ -34,57 +42,64 @@ Use official sources first:
 - Brand guidelines page
 - Social pages with strong brand consistency
 
-Use the scraper script to gather candidate tokens:
+Use the project scanner to gather candidate tokens/signals:
 
 ```bash
-python3 scripts/scrape_brand_signals.py \
+npm run brand:scan -- \
   --url https://example.com \
-  --url https://example.com/pricing \
-  --out video/brand/research/brand-signals.json
+  --brand-slug example
 ```
 
 Then manually verify the scraped output with screenshots and visual judgment. Scraped CSS values are hints, not ground truth.
 
-### 3) Synthesize the brand system
-Using interview answers + scraped signals, generate the deliverables in `video/brand/` following `references/output-contract.md`:
-- `video/brand/BRAND_PROFILE.md`
-- `video/brand/brand-tokens.json`
-- `video/brand/motion-presets.ts`
-- `video/brand/composition-defaults.json`
-- `video/brand/scene-blueprints.md`
+### 3) Build the portable core kit
+Using interview answers + scanned signals, generate the deliverables following `references/output-contract.md`:
+- Core kit package under `packages/brand-kit-<brand>/`
+- Enforced copy schema under `copy/schema.ts`
+- Typography/layout primitives
+- Motion preset system tied to energy
+- Script-driven scene templates (Hook/Problem/Solution/CTA)
 
 Copy starter examples from `assets/` if useful.
 
-### 4) Wire into Remotion code
-Create or update imports so scenes consume brand tokens and motion presets, not ad-hoc values.
+### 4) Generate starter project output
+Create a starter Remotion project that embeds or depends on the kit:
 
-Minimum implementation target:
-- One shared module that exports tokens/presets
-- One sample composition that demonstrates intro, content beat, and outro with brand-consistent timing
+```bash
+npm run brand:starter -- --out ./starter-<brand> --mode embed
+# or
+npm run brand:starter -- --out ./starter-<brand> --mode dependency
+```
+
+Starter must include:
+- `src/Root.tsx`
+- `src/comps/DemoReel.tsx`
+- `script.json`
+- `render:reels` and `render:yt` scripts
 
 ### 5) Validate consistency
 Run checks:
 1. `npm --prefix video run lint`
 2. `npm --prefix video run build`
-3. Render at least one representative composition
+3. Render at least one representative composition for each target format
 
 Then verify:
-- Typography hierarchy is consistent
+- Typography hierarchy uses approved primitives and limits
 - Color usage follows semantic token mapping
-- Motion rhythm matches the intended voice
-- Captions/VO pacing fits on-screen animation
+- Motion rhythm matches the intended energy profile
+- Copy constraints are enforced by schema (hook length, bullets, CTA limits)
 
 ## Guardrails
 
 - Never copy proprietary assets without permission.
 - Treat scraping as reference extraction, not duplication.
 - Ask for explicit confirmation before imitating a competitor style closely.
-- Prefer reusable tokens and presets over one-off scene styling.
+- Prefer reusable grammar and primitives over one-off scene styling.
 
 ## Output Standard
 
 The final response for brand-build requests should include:
 1. Brand assumptions used
 2. Files created/updated
-3. How tokens map to scene behavior
+3. How hierarchy/copy/motion grammar is enforced
 4. What to tweak first for the next iteration

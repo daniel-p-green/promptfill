@@ -18,7 +18,7 @@
     "@remotion/eslint-config-flat": "4.0.417",
     "@types/react": "19.2.7",
     "@types/web": "0.0.166",
-    "eslint": "9.19.0",
+    "eslint": "9.39.2",
     "playwright-core": "1.58.1",
     "prettier": "3.6.0",
     "typescript": "5.9.3"
@@ -34,5 +34,9 @@
   },
   "sideEffects": [
     "*.css"
-  ]
+  ],
+  "overrides": {
+    "@eslint/plugin-kit": "0.3.4",
+    "webpack": "5.105.0"
+  }
 }

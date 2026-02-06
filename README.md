@@ -77,6 +77,7 @@ ffmpeg -y -loop 1 -t 4 -i video/public/ui/promptfill-share-1280x720.png -vf "fps
 The repo now includes a portable, ready-to-render brand kit scaffold for Remotion:
 
 - `video/src/brand-kits/stripe/` (tokens, provider, components, motion presets, templates, rules)
+- `packages/brand-kit-stripe/` (`@brand-kit/stripe` portable package form)
 - `video/public/brand/stripe/logo.svg`
 - `docs/plans/2026-02-06-remotion-skill-brand-builder-v1-prd.md`
 
@@ -112,4 +113,18 @@ Quick renders:
 cd video
 npm run render:stripe:reels
 npm run render:stripe:yt
+```
+
+### Create a starter project scaffold
+
+Embed mode (copies kit source into starter):
+
+```bash
+npm run brand:starter -- --out ./starter-stripe --mode embed
+```
+
+Dependency mode (starter depends on local `@brand-kit/stripe` package):
+
+```bash
+npm run brand:starter -- --out ./starter-stripe-dep --mode dependency
 ```

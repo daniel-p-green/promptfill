@@ -1,0 +1,24 @@
+{
+  "fps": 30,
+  "durationBuckets": {
+    "6s": 180,
+    "15s": 450,
+    "30s": 900,
+    "60s": 1800
+  },
+  "formats": {
+    "reels-9x16": { "width": 1080, "height": 1920 },
+    "youtube-16x9": { "width": 1920, "height": 1080 },
+    "square-1x1": { "width": 1080, "height": 1080 }
+  },
+  "safeAreas": {
+    "horizontalInsetPercent": 0.06,
+    "verticalInsetPercent": 0.06
+  },
+  "captionDefaults": {
+    "maxLines": 2,
+    "fontSize": 42,
+    "lineHeight": 1.2,
+    "bottomOffset": 120
+  }
+}

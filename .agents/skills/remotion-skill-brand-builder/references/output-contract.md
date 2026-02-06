@@ -1,96 +1,65 @@
 # Output Contract
 
-The skill should generate these artifacts for a new brand setup.
+The skill should generate two outputs:
 
-## 1) `video/brand/BRAND_PROFILE.md`
+1. A portable core kit (`@brand-kit/<brand>`)
+2. A starter project scaffold that uses the kit
 
-Required sections:
-- Objective
-- Audience
-- Voice and tone
-- Visual language
-- Motion language
-- Audio language
-- Do/Don't list
-- Acceptance checklist
+## 1) Core kit package
 
-## 2) `video/brand/brand-tokens.json`
+Target location pattern:
 
-Expected shape:
+- `packages/brand-kit-<brand>/`
 
-```json
-{
-  "brand": "Example",
-  "version": "1.0.0",
-  "colors": {
-    "bg": "#0B0D12",
-    "surface": "#121621",
-    "text": "#F3F5F8",
-    "muted": "#98A2B3",
-    "accent": "#2D7FF9",
-    "success": "#1FA971",
-    "warning": "#F4B740",
-    "danger": "#EA4D4D"
-  },
-  "typography": {
-    "display": "Inter",
-    "body": "Inter",
-    "mono": "JetBrains Mono",
-    "scale": {
-      "hero": 84,
-      "h1": 64,
-      "h2": 48,
-      "h3": 36,
-      "body": 28,
-      "small": 22
-    }
-  },
-  "spacing": {
-    "xs": 8,
-    "sm": 16,
-    "md": 24,
-    "lg": 32,
-    "xl": 48
-  },
-  "radius": {
-    "sm": 8,
-    "md": 14,
-    "lg": 20
-  }
-}
+Minimum package files:
+
+- `package.json` (name `@brand-kit/<brand>`)
+- `src/index.ts`
+- `src/brand/tokens.json`
+- `src/brand/tokens.ts`
+- `src/brand/fonts.ts`
+- `src/copy/schema.ts` (zod)
+- `src/copy/exampleScript.ts`
+- `src/remotion/components/typography/*`
+- `src/remotion/components/layout/*`
+- `src/remotion/motion/*`
+- `src/starter/ScriptDrivenReel.tsx`
+
+Schema rules (minimum):
+
+- Hook: <= 8 words
+- Problem bullets: max 3 bullets, 2-4 words each
+- CTA text: 2-4 words
+- One scene = one primary purpose
+
+## 2) Starter scaffold
+
+Generate with:
+
+```bash
+npm run brand:starter -- --out ./starter-<brand> --mode embed
 ```
 
-## 3) `video/brand/motion-presets.ts`
+Starter must include:
 
-Expected exports:
-- `timing`
-- `easing`
-- `springs`
-- `transitions`
-- `enter()`, `exit()`, `emphasize()` helpers
+- `src/index.ts`
+- `src/Root.tsx`
+- `src/comps/DemoReel.tsx`
+- `script.json`
+- `public/brand/<brand>/logo.svg`
+- render scripts for reels + youtube
 
-All durations should be frame-aware and derived from `fps`.
+## 3) Verification contract
 
-## 4) `video/brand/composition-defaults.json`
+Run:
 
-Required keys:
-- `fps`
-- `durationInFrames`
-- `width`
-- `height`
-- `safeAreas`
-- `captionDefaults`
-
-## 5) `video/brand/scene-blueprints.md`
-
-Include at least:
-- Hook scene blueprint
-- Proof/demo scene blueprint
-- CTA scene blueprint
-- Motion notes per scene
+1. `npm --prefix video run lint`
+2. `npm --prefix video run build`
+3. Render at least one still or clip from each format composition
 
 ## Quality bar
 
-- No hardcoded one-off visual values inside scene files when a token exists.
-- Every animation type used in a scene maps to a named motion preset.
-- Text and contrast remain readable at mobile-safe sizes.
+- No hardcoded freestyle text styles in scenes when primitives exist.
+- Copy and hierarchy constraints enforced by schema and components.
+- Safe zones are format-aware (Reels first, YouTube supported).
+- Motion variants map to explicit energy presets only.

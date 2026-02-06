@@ -2,8 +2,8 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 458:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+/***/ 458
+(__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) {
 
 
 // EXTERNAL MODULE: ./node_modules/remotion/dist/esm/index.mjs
@@ -1514,10 +1514,10 @@ const RemotionRoot = () => {
 (0,esm.registerRoot)(RemotionRoot);
 
 
-/***/ }),
+/***/ },
 
-/***/ 6507:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 6507
+(__unused_webpack_module, exports) {
 
 var __webpack_unused_export__;
 
@@ -1532,7 +1532,8 @@ const getEnvVariables = () => {
     if (window.remotion_isStudio) {
         // For the Studio, we already set the environment variables in index-html.ts.
         // We just add NODE_ENV here.
-        if (false) {}
+        if (false) // removed by dead control flow
+{}
         return {
             NODE_ENV: "production",
         };
@@ -1662,10 +1663,10 @@ exports.d = injectCSS;
 `);
 
 
-/***/ }),
+/***/ },
 
-/***/ 3610:
-/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+/***/ 3610
+(__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) {
 
 var react__WEBPACK_IMPORTED_MODULE_0___namespace_cache;
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6540);
@@ -1678,10 +1679,10 @@ if (typeof globalThis === 'undefined') {
 }
 
 
-/***/ }),
+/***/ },
 
-/***/ 8972:
-/***/ ((module, __webpack_exports__, __webpack_require__) => {
+/***/ 8972
+(module, __webpack_exports__, __webpack_require__) {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   A: () => (__WEBPACK_DEFAULT_EXPORT__)
@@ -1700,10 +1701,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, "/*! tailwindcss v4.1.1 | MIT License |
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
 
-/***/ }),
+/***/ },
 
-/***/ 6314:
-/***/ ((module) => {
+/***/ 6314
+(module) {
 
 
 
@@ -1772,10 +1773,10 @@ module.exports = function (cssWithMappingToString) {
   return list;
 };
 
-/***/ }),
+/***/ },
 
-/***/ 4991:
-/***/ ((module) => {
+/***/ 4991
+(module) {
 
 
 
@@ -1814,10 +1815,10 @@ module.exports = function cssWithMappingToString(item) {
   return [content].join("\n");
 };
 
-/***/ }),
+/***/ },
 
-/***/ 1247:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ 1247
+(__unused_webpack_module, exports, __webpack_require__) {
 
 /**
  * @license React
@@ -17870,10 +17871,10 @@ exports.hydrateRoot = function (container, initialChildren, options) {
 exports.version = "19.2.3";
 
 
-/***/ }),
+/***/ },
 
-/***/ 6221:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ 6221
+(__unused_webpack_module, exports, __webpack_require__) {
 
 /**
  * @license React
@@ -18087,10 +18088,10 @@ exports.useFormStatus = function () {
 exports.version = "19.2.3";
 
 
-/***/ }),
+/***/ },
 
-/***/ 5338:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 5338
+(module, __unused_webpack_exports, __webpack_require__) {
 
 
 
@@ -18102,7 +18103,8 @@ function checkDCE() {
   ) {
     return;
   }
-  if (false) {}
+  if (false) // removed by dead control flow
+{}
   try {
     // Verify that the code above has been dead code eliminated (DCE'd).
     __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE(checkDCE);
@@ -18118,13 +18120,14 @@ if (true) {
   // DevTools can report bad minification during injection.
   checkDCE();
   module.exports = __webpack_require__(1247);
-} else {}
+} else // removed by dead control flow
+{}
 
 
-/***/ }),
+/***/ },
 
-/***/ 961:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 961
+(module, __unused_webpack_exports, __webpack_require__) {
 
 
 
@@ -18136,7 +18139,8 @@ function checkDCE() {
   ) {
     return;
   }
-  if (false) {}
+  if (false) // removed by dead control flow
+{}
   try {
     // Verify that the code above has been dead code eliminated (DCE'd).
     __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE(checkDCE);
@@ -18152,13 +18156,14 @@ if (true) {
   // DevTools can report bad minification during injection.
   checkDCE();
   module.exports = __webpack_require__(6221);
-} else {}
+} else // removed by dead control flow
+{}
 
 
-/***/ }),
+/***/ },
 
-/***/ 9698:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 9698
+(__unused_webpack_module, exports) {
 
 /**
  * @license React
@@ -18196,10 +18201,10 @@ exports.jsx = jsxProd;
 exports.jsxs = jsxProd;
 
 
-/***/ }),
+/***/ },
 
-/***/ 9869:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 9869
+(__unused_webpack_module, exports) {
 
 /**
  * @license React
@@ -18745,34 +18750,36 @@ exports.useTransition = function () {
 exports.version = "19.2.3";
 
 
-/***/ }),
+/***/ },
 
-/***/ 6540:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 6540
+(module, __unused_webpack_exports, __webpack_require__) {
 
 
 
 if (true) {
   module.exports = __webpack_require__(9869);
-} else {}
+} else // removed by dead control flow
+{}
 
 
-/***/ }),
+/***/ },
 
-/***/ 4848:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 4848
+(module, __unused_webpack_exports, __webpack_require__) {
 
 
 
 if (true) {
   module.exports = __webpack_require__(9698);
-} else {}
+} else // removed by dead control flow
+{}
 
 
-/***/ }),
+/***/ },
 
-/***/ 4477:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 4477
+(__unused_webpack_module, exports) {
 
 /**
  * @license React
@@ -19116,22 +19123,23 @@ exports.unstable_wrapCallback = function (callback) {
 };
 
 
-/***/ }),
+/***/ },
 
-/***/ 9982:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 9982
+(module, __unused_webpack_exports, __webpack_require__) {
 
 
 
 if (true) {
   module.exports = __webpack_require__(4477);
-} else {}
+} else // removed by dead control flow
+{}
 
 
-/***/ }),
+/***/ },
 
-/***/ 5072:
-/***/ ((module) => {
+/***/ 5072
+(module) {
 
 
 
@@ -19218,10 +19226,10 @@ module.exports = function (list, options) {
   };
 };
 
-/***/ }),
+/***/ },
 
-/***/ 7659:
-/***/ ((module) => {
+/***/ 7659
+(module) {
 
 
 
@@ -19258,10 +19266,10 @@ function insertBySelector(insert, style) {
 }
 module.exports = insertBySelector;
 
-/***/ }),
+/***/ },
 
-/***/ 540:
-/***/ ((module) => {
+/***/ 540
+(module) {
 
 
 
@@ -19274,10 +19282,10 @@ function insertStyleElement(options) {
 }
 module.exports = insertStyleElement;
 
-/***/ }),
+/***/ },
 
-/***/ 5056:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 5056
+(module, __unused_webpack_exports, __webpack_require__) {
 
 
 
@@ -19290,10 +19298,10 @@ function setAttributesWithoutAttributes(styleElement) {
 }
 module.exports = setAttributesWithoutAttributes;
 
-/***/ }),
+/***/ },
 
-/***/ 7825:
-/***/ ((module) => {
+/***/ 7825
+(module) {
 
 
 
@@ -19357,10 +19365,10 @@ function domAPI(options) {
 }
 module.exports = domAPI;
 
-/***/ }),
+/***/ },
 
-/***/ 1113:
-/***/ ((module) => {
+/***/ 1113
+(module) {
 
 
 
@@ -19377,10 +19385,10 @@ function styleTagTransform(css, styleElement) {
 }
 module.exports = styleTagTransform;
 
-/***/ }),
+/***/ },
 
-/***/ 3482:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+/***/ 3482
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 /* unused harmony export setBundleModeAndUpdate */
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6540);
@@ -19729,10 +19737,10 @@ if (typeof window !== "undefined") {
 
 
 
-/***/ }),
+/***/ },
 
-/***/ 3947:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+/***/ 3947
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -25726,7 +25734,8 @@ var getEnvVariables = () => {
     }
     return { ...JSON.parse(param), NODE_ENV: "production" };
   }
-  if (false) {}
+  if (false) // removed by dead control flow
+{}
   return {
     NODE_ENV: "production"
   };
@@ -27953,10 +27962,10 @@ addSequenceStackTraces(Sequence);
 
 
 
-/***/ }),
+/***/ },
 
-/***/ 9382:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+/***/ 9382
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -28659,10 +28668,10 @@ var NoReactInternals = {
 
 
 
-/***/ }),
+/***/ },
 
-/***/ 4476:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+/***/ 4476
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
@@ -32783,7 +32792,7 @@ var z = /*#__PURE__*/Object.freeze({
 
 
 
-/***/ })
+/***/ }
 
 /******/ 	});
 /************************************************************************/
@@ -32848,7 +32857,7 @@ var z = /*#__PURE__*/Object.freeze({
 /******/ 			__webpack_require__.r(ns);
 /******/ 			var def = {};
 /******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
-/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 			for(var current = mode & 2 && value; (typeof current == 'object' || typeof current == 'function') && !~leafPrototypes.indexOf(current); current = getProto(current)) {
 /******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
 /******/ 			}
 /******/ 			def['default'] = () => (value);
@@ -32928,7 +32937,6 @@ var z = /*#__PURE__*/Object.freeze({
 /******/ 				script = document.createElement('script');
 /******/ 		
 /******/ 				script.charset = 'utf-8';
-/******/ 				script.timeout = 120;
 /******/ 				if (__webpack_require__.nc) {
 /******/ 					script.setAttribute("nonce", __webpack_require__.nc);
 /******/ 				}
@@ -32984,7 +32992,7 @@ var z = /*#__PURE__*/Object.freeze({
 /******/ 		// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
 /******/ 		// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
 /******/ 		if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
-/******/ 		scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
+/******/ 		scriptUrl = scriptUrl.replace(/^blob:/, "").replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
 /******/ 		__webpack_require__.p = scriptUrl;
 /******/ 	})();
 /******/ 	
