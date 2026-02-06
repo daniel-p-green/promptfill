@@ -1,0 +1,44 @@
+{
+  "direct": [
+    {
+      "prompt": "Use PromptFill to extract fields from this draft prompt.",
+      "expected_tool": "extract_prompt_fields"
+    },
+    {
+      "prompt": "Render this PromptFill template with my current values.",
+      "expected_tool": "render_prompt"
+    },
+    {
+      "prompt": "Save this as a reusable PromptFill template named Weekly Update.",
+      "expected_tool": "save_template"
+    }
+  ],
+  "indirect": [
+    {
+      "prompt": "Turn this rough prompt into a template I can fill quickly.",
+      "expected_tool": "extract_prompt_fields"
+    },
+    {
+      "prompt": "Show me the final prompt text with the fields I already filled in.",
+      "expected_tool": "render_prompt"
+    },
+    {
+      "prompt": "What templates do I already have saved here?",
+      "expected_tool": "list_templates"
+    }
+  ],
+  "negative": [
+    {
+      "prompt": "Summarize this meeting transcript in five bullets.",
+      "expected_tool": null
+    },
+    {
+      "prompt": "Debug this TypeScript error in my React component.",
+      "expected_tool": null
+    },
+    {
+      "prompt": "Plan a three-day trip to San Diego.",
+      "expected_tool": null
+    }
+  ]
+}

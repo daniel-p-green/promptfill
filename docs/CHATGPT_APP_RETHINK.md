@@ -145,6 +145,12 @@ Maintain three buckets for ongoing metadata tuning:
 
 Run these prompts during each iteration to improve recall and precision.
 
+Repo harness:
+
+- Fixture: `spec/tool-trigger-prompts.json`
+- Contract test: `chatgpt-app/test/tool-trigger-eval.test.js`
+- Minimum standard: each bucket (`direct`, `indirect`, `negative`) must contain at least 3 non-empty prompts.
+
 ## UX Mapping from Existing PromptFill
 
 ### Keep in ChatGPT app P0
