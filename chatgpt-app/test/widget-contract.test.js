@@ -7,6 +7,7 @@ test("inline widget is conversation-first and can insert rendered text", async (
 
   assert.ok(!html.includes('id="prompt-input"'));
   assert.ok(!html.toLowerCase().includes("paste a rough prompt here"));
+  assert.ok((html.match(/<button\b/g) ?? []).length <= 2, "widget should keep at most two actions");
   assert.ok(html.includes('id="insert-button"'), "widget should include an insert button");
   assert.ok(html.includes("ui/message"), "widget should use ui/message to insert text into chat");
 });

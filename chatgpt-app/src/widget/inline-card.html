@@ -368,7 +368,7 @@
           });
         } catch (error) {
           console.error("render_prompt failed", error);
-          setStatus("Could not render prompt.");
+          setStatus("Could not render. Try again.");
         } finally {
           renderButton.disabled = false;
         }
@@ -392,14 +392,14 @@
           });
 
           if (result?.isError) {
-            setStatus("Could not insert into chat.");
+            setStatus("Could not insert into chat. Try again.");
             return;
           }
 
           setStatus("Inserted into chat.");
         } catch (error) {
           console.error("ui/message failed", error);
-          setStatus("Could not insert into chat.");
+          setStatus("Could not insert into chat. Try again.");
         } finally {
           insertButton.disabled = false;
         }
