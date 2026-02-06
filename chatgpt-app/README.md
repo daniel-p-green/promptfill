@@ -13,6 +13,10 @@ This folder contains the ChatGPT-native PromptFill surface built with the Apps S
 3. `save_template`
 4. `list_templates`
 
+Tool metadata copy standard:
+
+- Tool descriptions should begin with `Use this when the user wants to...` so trigger intent is explicit.
+
 Current product direction:
 
 - P0 keeps persistence session/chat scoped.

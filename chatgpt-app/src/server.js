@@ -115,7 +115,7 @@ function buildServer() {
     {
       title: "Render final prompt",
       description:
-        "Use this when the user has field values and wants the final rendered prompt text.",
+        "Use this when the user wants to render their filled template into final prompt text.",
       inputSchema: {
         template: z.string().min(1).describe("Prompt template containing {{variables}}."),
         variables: z
@@ -241,7 +241,7 @@ function buildServer() {
     "list_templates",
     {
       title: "List saved templates",
-      description: "Use this when the user asks what PromptFill templates are already saved.",
+      description: "Use this when the user wants to see which PromptFill templates are already saved.",
       inputSchema: {},
       annotations: {
         readOnlyHint: true,
