@@ -170,7 +170,6 @@ export const AnimationTitleCard: React.FC<{ accent: string }> = ({
                   i < Math.floor((frame - 20) / 3) % 13
                     ? accent
                     : "rgba(255,255,255,0.15)",
-                transition: "background 0.1s",
               }}
             />
           ))}

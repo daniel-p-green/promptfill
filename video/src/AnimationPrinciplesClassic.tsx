@@ -217,12 +217,28 @@ export const AnimationPrinciplesClassic: React.FC<
 
         {/* Paper texture overlay */}
         <AbsoluteFill
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23paper)' opacity='0.08'/%3E%3C/svg%3E")`,
-            mixBlendMode: "multiply",
-            opacity: 0.5,
-          }}
-        />
+          style={{ mixBlendMode: "multiply", opacity: 0.5, pointerEvents: "none" }}
+        >
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <filter id="paper" x="0" y="0" width="100%" height="100%">
+                <feTurbulence
+                  type="fractalNoise"
+                  baseFrequency="0.04"
+                  numOctaves="5"
+                  stitchTiles="stitch"
+                />
+              </filter>
+            </defs>
+            <rect width="100" height="100" filter="url(#paper)" opacity="0.08" />
+          </svg>
+        </AbsoluteFill>
 
         {/* Aged vignette */}
         <AbsoluteFill
@@ -233,7 +249,7 @@ export const AnimationPrinciplesClassic: React.FC<
         />
 
         {/* 0–6s: Title Card */}
-        <Sequence from={0} durationInFrames={6 * 30}>
+        <Sequence durationInFrames={6 * 30}>
           <ClassicTitleCard accentWarm={accentWarm} />
         </Sequence>
 

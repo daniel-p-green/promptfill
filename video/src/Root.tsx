@@ -12,6 +12,14 @@ import {
   AnimationPrinciplesKCJazzProps,
 } from "./AnimationPrinciplesKCJazz";
 import {
+  AnimationPrinciples,
+  AnimationPrinciplesProps,
+} from "./AnimationPrinciples";
+import {
+  AnimationPrinciplesClassic,
+  AnimationPrinciplesClassicProps,
+} from "./AnimationPrinciplesClassic";
+import {
   PROMPTFILL_USER_STORY_DURATION_IN_FRAMES,
   PromptFillUserStory,
   PromptFillUserStoryProps,
