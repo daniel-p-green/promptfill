@@ -1,0 +1,5 @@
+<svg width="240" height="70" viewBox="0 0 240 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="2" width="236" height="66" rx="18" fill="#111A2D" stroke="#635BFF" stroke-width="3"/>
+  <text x="24" y="45" fill="#F7FAFF" font-family="Inter, sans-serif" font-size="30" font-weight="700">stripe</text>
+  <circle cx="200" cy="35" r="8" fill="#00D4FF"/>
+</svg>

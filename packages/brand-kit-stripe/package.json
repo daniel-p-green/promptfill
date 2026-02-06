@@ -1,0 +1,22 @@
+{
+  "name": "@brand-kit/stripe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable Stripe-flavored Remotion brand kit with enforced hierarchy, copy schema, and scene grammar.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./copy/schema": "./src/copy/schema.ts",
+    "./copy/exampleScript": "./src/copy/exampleScript.ts",
+    "./Root": "./src/Root.tsx",
+    "./starter/ScriptDrivenReel": "./src/starter/ScriptDrivenReel.tsx"
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "react": ">=19",
+    "remotion": "^4.0.417",
+    "zod": "3.22.3"
+  }
+}

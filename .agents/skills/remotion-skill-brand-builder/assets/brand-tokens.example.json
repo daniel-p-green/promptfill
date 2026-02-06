@@ -1,0 +1,40 @@
+{
+  "brand": "Acme",
+  "version": "1.0.0",
+  "colors": {
+    "bg": "#0A0D14",
+    "surface": "#121828",
+    "text": "#F5F7FF",
+    "muted": "#9AA4B2",
+    "accent": "#4A7CFF",
+    "accentAlt": "#37C9B7",
+    "success": "#29B474",
+    "warning": "#E8B045",
+    "danger": "#E45B5B"
+  },
+  "typography": {
+    "display": "Sora",
+    "body": "Inter",
+    "mono": "JetBrains Mono",
+    "scale": {
+      "hero": 80,
+      "h1": 60,
+      "h2": 44,
+      "h3": 34,
+      "body": 26,
+      "small": 20
+    }
+  },
+  "spacing": {
+    "xs": 8,
+    "sm": 16,
+    "md": 24,
+    "lg": 32,
+    "xl": 48
+  },
+  "radius": {
+    "sm": 8,
+    "md": 14,
+    "lg": 20
+  }
+}

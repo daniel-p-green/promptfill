@@ -1,5 +1,6 @@
 import "./index.css";
 import { Composition, Folder } from "remotion";
+import { StripeBrandKitRoot } from "./brand-kits/stripe/Root";
 import { PromptFillDemo, PromptFillDemoProps } from "./PromptFillDemo";
 import {
   PROMPTFILL_FLAGSHIP_DURATION_IN_FRAMES,
@@ -209,6 +210,7 @@ export const RemotionRoot: React.FC = () => {
           }
         />
       </Folder>
+      <StripeBrandKitRoot />
     </>
   );
 };
