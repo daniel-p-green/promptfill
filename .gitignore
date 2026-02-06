@@ -9,3 +9,8 @@ node_modules/
 .factory/
 .kiro/
 .windsurf/
+
+# environment files
+.env
+.env.*
+!.env.example
