@@ -26,3 +26,12 @@ test("store adapter supports in-memory implementation and future backend swap", 
 test("store adapter rejects unknown adapter kinds", () => {
   assert.throws(() => createTemplateStoreAdapter("unknown"), /Unknown template store adapter kind/);
 });
+
+test("supabase adapter kind is available as a P1 stub", () => {
+  const store = createTemplateStoreAdapter("supabase");
+  assert.equal(typeof store.saveTemplate, "function");
+  assert.equal(typeof store.listTemplates, "function");
+  assert.equal(typeof store.getTemplate, "function");
+
+  assert.throws(() => store.listTemplates(), /Supabase template store stub cannot list templates yet/);
+});

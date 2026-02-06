@@ -1,7 +1,9 @@
 import { createInMemoryTemplateStore, hasTemplateStoreInterface } from "./promptfill-core.js";
+import { createSupabaseTemplateStore } from "./supabase-template-store.js";
 
 const ADAPTER_FACTORIES = {
   memory: () => createInMemoryTemplateStore(),
+  supabase: () => createSupabaseTemplateStore(),
 };
 
 export function createTemplateStoreAdapter(kind = "memory") {
