@@ -1,0 +1,137 @@
+const PLACEHOLDER_PATTERN = /\{\{\s*([^{}<>\[\]]+?)\s*\}\}|\{\s*([^{}<>\[\]]+?)\s*\}|\[\s*([^{}<>\[\]]+?)\s*\]|<\s*([^{}<>\[\]]+?)\s*>/g;
+
+const ENUM_OPTION_SETS = {
+  tone: ["concise", "friendly", "direct", "formal"],
+  audience: ["execs", "engineering", "sales", "customers"],
+  format: ["bullets", "paragraphs", "email", "slack_update"],
+  length: ["short", "medium", "long"],
+  style: ["friendly", "crisp", "executive", "casual"],
+  language: ["english", "spanish", "french", "german"],
+};
+
+const TEXT_HINTS = ["context", "notes", "transcript", "thread", "paste", "input", "source"];
+const BOOLEAN_HINTS = ["include", "exclude", "enabled", "disabled", "allow", "deny", "true", "false"];
+
+function toSnakeCase(input) {
+  return String(input)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+}
+
+function inferVariableType(name) {
+  const lower = name.toLowerCase();
+
+  for (const key of Object.keys(ENUM_OPTION_SETS)) {
+    if (lower.includes(key)) {
+      return { type: "enum", options: ENUM_OPTION_SETS[key], defaultValue: ENUM_OPTION_SETS[key][0] };
+    }
+  }
+
+  if (TEXT_HINTS.some((hint) => lower.includes(hint))) {
+    return { type: "text", defaultValue: "" };
+  }
+
+  if (BOOLEAN_HINTS.some((hint) => lower.includes(hint))) {
+    return { type: "boolean", defaultValue: false };
+  }
+
+  return { type: "string", defaultValue: "" };
+}
+
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+export function extractPromptFields(rawPrompt) {
+  const seen = new Set();
+  const variables = [];
+
+  const template = String(rawPrompt).replace(PLACEHOLDER_PATTERN, (_full, a, b, c, d) => {
+    const rawName = a ?? b ?? c ?? d ?? "";
+    const name = toSnakeCase(rawName);
+    if (!name) return _full;
+
+    if (!seen.has(name)) {
+      seen.add(name);
+      const inferred = inferVariableType(name);
+      variables.push({
+        name,
+        type: inferred.type,
+        required: true,
+        defaultValue: inferred.defaultValue,
+        ...(inferred.options ? { options: inferred.options } : {}),
+      });
+    }
+
+    return `{{${name}}}`;
+  });
+
+  return { template, variables };
+}
+
+function valueToString(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  return String(value);
+}
+
+export function renderPromptTemplate({ template, variables, values }) {
+  const safeTemplate = String(template ?? "");
+  const safeVariables = Array.isArray(variables) ? variables : [];
+  const safeValues = values && typeof values === "object" ? values : {};
+  const missingRequired = [];
+  const resolved = {};
+
+  for (const variable of safeVariables) {
+    const name = variable?.name;
+    if (!name) continue;
+
+    const fromValues = safeValues[name];
+    const value = fromValues !== undefined && fromValues !== "" ? fromValues : variable.defaultValue;
+    const stringValue = valueToString(value);
+
+    if (variable.required && stringValue === "") {
+      missingRequired.push(name);
+      continue;
+    }
+
+    resolved[name] = stringValue;
+  }
+
+  const rendered = safeTemplate.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (match, rawName) => {
+    const name = toSnakeCase(rawName);
+    if (!name) return match;
+    if (Object.prototype.hasOwnProperty.call(resolved, name)) {
+      return resolved[name];
+    }
+    return match;
+  });
+
+  return { rendered, missingRequired };
+}
+
+export function createInMemoryTemplateStore() {
+  const templates = new Map();
+
+  return {
+    saveTemplate(template) {
+      if (!template || !template.id) {
+        throw new Error("Template id is required.");
+      }
+      templates.set(template.id, clone(template));
+      return clone(template);
+    },
+
+    listTemplates() {
+      return Array.from(templates.values()).map((item) => clone(item));
+    },
+
+    getTemplate(id) {
+      if (!templates.has(id)) return null;
+      return clone(templates.get(id));
+    },
+  };
+}

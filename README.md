@@ -190,6 +190,7 @@ variables:
 ## Repo layout
 
 - `web/` — Next.js web MVP (library + builder + share/import/export)
+- `chatgpt-app/` — Apps SDK scaffold (MCP server + inline widget for ChatGPT dev mode)
 - `video/` — Remotion marketing/explainer scenes (uses real UI screenshots + highlight boxes)
 - `docs/` — PRD + use cases + user stories + AI extraction spec
 
@@ -229,7 +230,9 @@ ffmpeg -y \
 
 ## Docs
 
+- `docs/JOBS_TO_BE_DONE.md` — JTBD anchor for product intent
 - `docs/PRD.md` — product requirements
 - `docs/USE_CASES.md` — prompt patterns where structure wins
 - `docs/USER_STORIES.md` — MVP stories
 - `docs/AI_EXTRACTION_SPEC.md` — AI-assisted variable extraction spec
+- `docs/CHATGPT_APP_RETHINK.md` — ChatGPT Apps SDK product strategy notes
