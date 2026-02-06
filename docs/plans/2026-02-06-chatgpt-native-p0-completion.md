@@ -23,8 +23,13 @@
 
 ## Execution Status (2026-02-06)
 
-- Tasks 1-6 implemented and verified with passing checks.
-- Task 7 is required and reserved for final media artifacts + README positioning updates.
+- Tasks 1-7 implemented and verified with passing checks.
+- Ultimate demo media and README dual-component positioning are complete:
+  - `renders/promptfill-ultimate-web.mp4`
+  - `renders/promptfill-ultimate-chatgpt.mp4`
+  - `docs/media/promptfill-web-demo.gif`
+  - `docs/media/promptfill-chatgpt-demo.gif`
+- Post-plan quality increment complete: template version history + restore flow across memory store, Supabase store, MCP tools, fullscreen editor, and contracts.
 
 ## Resolved Product Decisions
 
