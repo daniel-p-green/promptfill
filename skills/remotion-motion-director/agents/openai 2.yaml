@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remotion Motion Director"
+  short_description: "Brand-controlled cinematic Remotion direction"
+  default_prompt: "Use $remotion-motion-director to produce a storyboard-first, premium motion plan with explicit brand and pacing controls."

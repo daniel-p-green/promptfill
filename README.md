@@ -339,3 +339,4 @@ npm run brand:starter -- --out ./starter-stripe-dep --mode dependency
 - `docs/USER_STORIES.md` — MVP stories
 - `docs/AI_EXTRACTION_SPEC.md` — AI-assisted variable extraction spec
 - `docs/CHATGPT_APP_RETHINK.md` — ChatGPT Apps SDK product strategy notes
+- `docs/MASTER_TUTORIAL_ZERO_TO_HERO.md` — end-to-end content production playbook (setup to production)

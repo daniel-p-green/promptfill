@@ -37,6 +37,8 @@ const HIGHLIGHTS_FILE = path.join(VIDEO_DIR, "src", "ui", "highlights.ts");
 
 const DEFAULT_PORT = Number(process.env.PF_PORT || "3200");
 const SHARE_ORIGIN = String(process.env.PF_SHARE_ORIGIN || "https://promptfill.app");
+const ONBOARDING_KEY = "promptfill:onboarding:v1";
+const UI_KEY = "promptfill:ui:v1";
 
 const argv = process.argv.slice(2);
 const hasFlag = (flag) => argv.includes(flag);
@@ -115,6 +117,7 @@ export const HIGHLIGHTS_1280x720 = {
 
 const main = async () => {
   let server = null;
+  let killServer = null;
   let serverUrl = process.env.PF_URL ? String(process.env.PF_URL) : null;
   if (serverUrl && !serverUrl.endsWith("/")) serverUrl += "/";
 
@@ -135,7 +138,7 @@ const main = async () => {
       stdio: "inherit",
     });
     // Best-effort teardown.
-    const killServer = () => {
+    killServer = () => {
       if (!server) return;
       try {
         server.kill("SIGTERM");
@@ -164,6 +167,7 @@ const main = async () => {
   await fs.mkdir(UI_DIR, { recursive: true });
 
   let browser;
+  let context;
   try {
     browser = await chromium.launch({ channel: "chrome", headless: true });
   } catch (error) {
@@ -175,11 +179,28 @@ const main = async () => {
     );
   }
 
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 },
-    deviceScaleFactor: 1,
-  });
-  const page = await context.newPage();
+  try {
+    context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 1,
+    });
+
+    // Ensure captures are deterministic: no welcome modal.
+    await context.addInitScript(
+      ({ onboardingKey }) => {
+        window.localStorage.setItem(
+          onboardingKey,
+          JSON.stringify({
+            complete: true,
+            dismissed: true,
+            completedSteps: ["library", "fill", "build", "share"],
+          })
+        );
+      },
+      { onboardingKey: ONBOARDING_KEY }
+    );
+
+    const page = await context.newPage();
 
   const rect = async (selector) => {
     const out = await page.evaluate((sel) => {
@@ -198,58 +219,89 @@ const main = async () => {
     return target;
   };
 
-  await page.goto(serverUrl, { waitUntil: "networkidle" });
+    await page.goto(serverUrl, { waitUntil: "networkidle" });
 
-  // Ensure the expanded library is visible (capture is based on expanded layout).
-  const expandButton = page.getByRole("button", { name: "Expand library" });
-  if (await expandButton.isVisible().catch(() => false)) {
-    await expandButton.click();
+    // Ensure the expanded library is visible (capture is based on expanded layout).
+    const expandButton = page.getByRole("button", { name: "Expand library" });
+    if (await expandButton.isVisible().catch(() => false)) {
+      await expandButton.click();
+      await page.waitForTimeout(150);
+    }
+
+    // UI state (fill view).
+    await page.waitForSelector('[data-pf-video="library-pane"]');
+    await page.waitForSelector('[data-pf-video="copy-actions"]');
+    await screenshot("promptfill-ui-1280x720.png");
+    await fs.copyFile(
+      path.join(UI_DIR, "promptfill-ui-1280x720.png"),
+      path.join(UI_DIR, "promptfill-ui.png")
+    );
+
+    const uiLibrary = rectWithPadding(await rect('[data-pf-video="library-pane"]'), 8);
+    const uiCopyActions = rectWithPadding(await rect('[data-pf-video="copy-actions"]'), 12);
+
+    // Collapsed library variant (used as a lighter background in the end-user series).
+    const collapseButton = page.getByRole("button", { name: "Collapse library" });
+    if (await collapseButton.isVisible().catch(() => false)) {
+      await collapseButton.click();
+      await page.waitForTimeout(200);
+    }
+    await screenshot("promptfill-collapsed-1280x720.png");
+    if (await expandButton.isVisible().catch(() => false)) {
+      await expandButton.click();
+      await page.waitForTimeout(200);
+    }
+
+    // Inline-card variant (used as a ChatGPT app-style surface in the end-user series).
+    await page.goto(`${serverUrl}inline`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Copy" }).waitFor();
     await page.waitForTimeout(150);
+    await screenshot("promptfill-inline-1280x720.png");
+
+    // Back to main UI for drawer + share captures.
+    await page.goto(serverUrl, { waitUntil: "networkidle" });
+
+    // Drawer state (requires advanced mode for the "Quick fill panel" action).
+    await page.evaluate((uiKey) => {
+      window.localStorage.setItem(uiKey, JSON.stringify({ libraryCollapsed: false, advancedMode: true }));
+    }, UI_KEY);
+    await page.reload({ waitUntil: "networkidle" });
+    if (await expandButton.isVisible().catch(() => false)) {
+      await expandButton.click();
+      await page.waitForTimeout(150);
+    }
+    await page.getByRole("button", { name: "Quick fill panel" }).click();
+    await page.waitForSelector('[data-pf-video="drawer-fields"]');
+    await page.waitForTimeout(150);
+    await screenshot("promptfill-drawer-1280x720.png");
+    await fs.copyFile(
+      path.join(UI_DIR, "promptfill-drawer-1280x720.png"),
+      path.join(UI_DIR, "promptfill-drawer.png")
+    );
+    const drawerFields = rectWithPadding(await rect('[data-pf-video="drawer-fields"]'), 14);
+    await page.keyboard.press("Escape");
+    await page.waitForSelector('[data-pf-video="drawer-fields"]', { state: "detached" }).catch(() => {});
+
+    // Share state.
+    await page.getByRole("button", { name: "Share" }).click();
+    await page.waitForSelector('[data-pf-video="share-link-row"]');
+    await page.waitForTimeout(150);
+    await screenshot("promptfill-share-1280x720.png");
+    await fs.copyFile(
+      path.join(UI_DIR, "promptfill-share-1280x720.png"),
+      path.join(UI_DIR, "promptfill-share.png")
+    );
+    const shareLinkRow = rectWithPadding(await rect('[data-pf-video="share-link-row"]'), 12);
+
+    await writeHighlights({ uiLibrary, uiCopyActions, drawerFields, shareLinkRow });
+  } finally {
+    await context?.close().catch(() => {});
+    await browser?.close().catch(() => {});
+    killServer?.();
   }
-
-  // UI state (Fill view).
-  await page.getByRole("tab", { name: "Fill" }).click().catch(() => {});
-  await page.waitForSelector('[data-pf-video="library-pane"]');
-  await page.waitForSelector('[data-pf-video="copy-actions"]');
-  await screenshot("promptfill-ui-1280x720.png");
-  await fs.copyFile(
-    path.join(UI_DIR, "promptfill-ui-1280x720.png"),
-    path.join(UI_DIR, "promptfill-ui.png")
-  );
-
-  const uiLibrary = rectWithPadding(await rect('[data-pf-video="library-pane"]'), 8);
-  const uiCopyActions = rectWithPadding(await rect('[data-pf-video="copy-actions"]'), 12);
-
-  // Drawer state.
-  await page.getByRole("button", { name: /Variables \(\d+\)/ }).click();
-  await page.waitForSelector('[data-pf-video="drawer-fields"]');
-  await page.waitForTimeout(150);
-  await screenshot("promptfill-drawer-1280x720.png");
-  await fs.copyFile(
-    path.join(UI_DIR, "promptfill-drawer-1280x720.png"),
-    path.join(UI_DIR, "promptfill-drawer.png")
-  );
-  const drawerFields = rectWithPadding(await rect('[data-pf-video="drawer-fields"]'), 14);
-  await page.getByRole("button", { name: "Close", exact: true }).click();
-
-  // Share state.
-  await page.getByRole("button", { name: "Share" }).click();
-  await page.waitForSelector('[data-pf-video="share-link-row"]');
-  await page.waitForTimeout(150);
-  await screenshot("promptfill-share-1280x720.png");
-  await fs.copyFile(
-    path.join(UI_DIR, "promptfill-share-1280x720.png"),
-    path.join(UI_DIR, "promptfill-share.png")
-  );
-  const shareLinkRow = rectWithPadding(await rect('[data-pf-video="share-link-row"]'), 12);
-
-  await writeHighlights({ uiLibrary, uiCopyActions, drawerFields, shareLinkRow });
-
-  await browser.close();
-  if (server) server.kill("SIGTERM");
 };
 
 main().catch((error) => {
   console.error(error);
-  process.exitCode = 1;
+  process.exit(1);
 });
