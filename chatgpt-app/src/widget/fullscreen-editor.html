@@ -242,6 +242,8 @@
             <input
               id="template-search-input"
               type="search"
+              name="template_search"
+              autocomplete="off"
               placeholder="Search templates"
               aria-label="Search templates"
             />
@@ -265,8 +267,14 @@
 
         <article class="surface">
           <div class="field">
-            <span class="field-label">Template name</span>
-            <input id="template-name-input" type="text" placeholder="Weekly status update" />
+            <label class="field-label" for="template-name-input">Template name</label>
+            <input
+              id="template-name-input"
+              type="text"
+              name="template_name"
+              autocomplete="off"
+              placeholder="Weekly status update"
+            />
           </div>
 
           <div class="actions right" style="margin-top: 10px">
@@ -278,17 +286,35 @@
           <div class="editor-grid" style="margin-top: 12px">
             <label class="field">
               <span class="field-label">Template</span>
-              <textarea id="template-input" spellcheck="false" placeholder="Draft template with {{variables}}..."></textarea>
+              <textarea
+                id="template-input"
+                name="template"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Draft template with {{variables}}…"
+              ></textarea>
             </label>
             <label class="field">
               <span class="field-label">Values JSON</span>
-              <textarea id="values-input" spellcheck="false" placeholder='{"recipient_name":"Alex","tone":"friendly"}'>{}</textarea>
+              <textarea
+                id="values-input"
+                name="values_json"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder='{"recipient_name":"Alex","tone":"friendly"}'
+              >{}</textarea>
             </label>
           </div>
 
           <label class="field" style="margin-top: 10px">
             <span class="field-label">Variables JSON</span>
-            <textarea id="variables-input" spellcheck="false" placeholder='[{"name":"recipient_name","type":"string","required":true}]'>[]</textarea>
+            <textarea
+              id="variables-input"
+              name="variables_json"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder='[{"name":"recipient_name","type":"string","required":true}]'
+            >[]</textarea>
           </label>
 
           <div class="actions right" style="margin-top: 10px">
@@ -296,7 +322,9 @@
             <button id="render-button" class="primary" type="button">Render prompt</button>
           </div>
 
-          <p id="status" class="status" style="margin-top: 8px">Waiting for extracted fields...</p>
+          <p id="status" class="status" aria-live="polite" style="margin-top: 8px">
+            Waiting for extracted fields…
+          </p>
           <pre id="rendered-output" class="rendered" hidden></pre>
           <p class="hint">
             Tip: start extraction inline, then use this workspace to evolve and manage templates without
@@ -414,7 +442,7 @@
 
       async function restoreTemplateVersion(versionId) {
         if (!activeTemplateId || !versionId) return;
-        setStatus("Restoring version...");
+        setStatus("Restoring version…");
         await callTool("restore_template_version", { id: activeTemplateId, version_id: versionId });
         await loadTemplateById(activeTemplateId);
         await loadTemplateVersions();
@@ -584,7 +612,7 @@
       }
 
       async function loadTemplateById(id) {
-        setStatus("Loading template...");
+        setStatus("Loading template…");
         await callTool("get_template", { id });
       }
 
@@ -650,7 +678,7 @@
 
       renderButton.addEventListener("click", async () => {
         renderButton.disabled = true;
-        setStatus("Rendering prompt...");
+        setStatus("Rendering prompt…");
 
         try {
           const variables = parseJsonInput("Variables JSON", variablesInput.value, []);
@@ -677,7 +705,7 @@
         }
 
         insertButton.disabled = true;
-        setStatus("Inserting into chat...");
+        setStatus("Inserting into chat…");
 
         try {
           await bridgeReady;
@@ -700,7 +728,7 @@
 
       saveTemplateButton.addEventListener("click", async () => {
         saveTemplateButton.disabled = true;
-        setStatus("Saving template...");
+        setStatus("Saving template…");
 
         try {
           const variables = parseJsonInput("Variables JSON", variablesInput.value, []);
@@ -732,7 +760,7 @@
         }
 
         updateTemplateButton.disabled = true;
-        setStatus("Updating template...");
+        setStatus("Updating template…");
 
         try {
           const variables = parseJsonInput("Variables JSON", variablesInput.value, []);
@@ -758,8 +786,14 @@
           return;
         }
 
+        const confirmed = window.confirm("Delete this template? This action cannot be undone.");
+        if (!confirmed) {
+          setStatus("Delete canceled.");
+          return;
+        }
+
         deleteTemplateButton.disabled = true;
-        setStatus("Deleting template...");
+        setStatus("Deleting template…");
 
         try {
           await bridgeReady;
@@ -775,7 +809,7 @@
 
       searchTemplatesButton.addEventListener("click", async () => {
         searchTemplatesButton.disabled = true;
-        setStatus("Searching templates...");
+        setStatus("Searching templates…");
         try {
           await bridgeReady;
           await refreshLibrary({ query: templateSearchInput.value });
@@ -789,7 +823,7 @@
 
       listTemplatesButton.addEventListener("click", async () => {
         listTemplatesButton.disabled = true;
-        setStatus("Refreshing library...");
+        setStatus("Refreshing library…");
         try {
           await bridgeReady;
           await refreshLibrary();
@@ -803,7 +837,7 @@
 
       suggestTemplatesButton.addEventListener("click", async () => {
         suggestTemplatesButton.disabled = true;
-        setStatus("Loading starter templates...");
+        setStatus("Loading starter templates…");
         try {
           await bridgeReady;
           const query = templateSearchInput.value.trim();
@@ -832,7 +866,7 @@
           return;
         }
         listVersionsButton.disabled = true;
-        setStatus("Loading version history...");
+        setStatus("Loading version history…");
         try {
           await bridgeReady;
           await loadTemplateVersions();

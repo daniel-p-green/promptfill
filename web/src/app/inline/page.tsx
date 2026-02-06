@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { renderTemplate } from "@/lib/templateRender";
 
 const brand = "var(--pf-accent)";
@@ -83,11 +84,6 @@ export default function InlineCard() {
     }
   };
 
-  const handleOpen = () => {
-    // Use the persisted selection; the main app hydrates from localStorage.
-    window.location.href = "/";
-  };
-
   return (
     <div className="pf-shell min-h-screen bg-[color:var(--pf-bg)] p-6 text-[color:var(--pf-text)]">
       <div className="mx-auto w-full max-w-[560px]">
@@ -104,12 +100,12 @@ export default function InlineCard() {
                 {prompt?.description || "Prompt as a form — render once, reuse anywhere."}
               </div>
             </div>
-            <button
+            <Link
+              href="/"
               className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-xs font-semibold text-[color:var(--pf-text)] hover:bg-[color:rgba(13,13,13,0.05)]"
-              onClick={handleOpen}
             >
               Expand
-            </button>
+            </Link>
           </div>
 
           {missingRequired.length ? (
@@ -131,12 +127,12 @@ export default function InlineCard() {
           </div>
 
           <div className="mt-4 flex items-center justify-end gap-2">
-            <button
+            <Link
+              href="/"
               className="rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-xs font-semibold text-[color:var(--pf-text)] hover:bg-[color:rgba(13,13,13,0.05)]"
-              onClick={handleOpen}
             >
               Open
-            </button>
+            </Link>
             <button
               className="rounded-[10px] bg-[#0d0d0d] px-3 py-2 text-xs font-semibold text-white hover:bg-[#0d0d0dcc] active:bg-[#0d0d0de5] disabled:opacity-40"
               onClick={handleCopy}

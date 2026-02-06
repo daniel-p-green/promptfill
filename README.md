@@ -181,6 +181,7 @@ npm run dev:video
 ```bash
 npm run test:chatgpt-app
 npm run test:web
+npm run test:a11y
 npm run lint:web
 npm run lint:video
 ```

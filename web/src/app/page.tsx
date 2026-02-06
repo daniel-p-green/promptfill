@@ -719,7 +719,7 @@ const Drawer = ({
             </div>
             {actions ? <div className="mt-3 flex items-center justify-end">{actions}</div> : null}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto px-5 py-4">{children}</div>
+          <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-5 py-4">{children}</div>
           {footer ? (
             <div className="border-t border-[color:var(--pf-border)] bg-[color:var(--pf-surface-muted)] px-5 py-4">
               {footer}
@@ -797,6 +797,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [pendingVariableDeleteName, setPendingVariableDeleteName] = useState<string | null>(null);
   const [isVariableModalOpen, setIsVariableModalOpen] = useState(false);
   const [isExtractProposalOpen, setIsExtractProposalOpen] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -1415,6 +1416,13 @@ export default function Home() {
     });
   };
 
+  const handleConfirmDeleteVariable = () => {
+    if (!pendingVariableDeleteName) return;
+    handleDeleteVariable(pendingVariableDeleteName);
+    setPendingVariableDeleteName(null);
+    setNotice(`Deleted field "${pendingVariableDeleteName}".`);
+  };
+
   const handleDuplicate = () => {
     if (!selectedPrompt) return;
     const copy: PromptItem = {
@@ -1867,6 +1875,8 @@ export default function Home() {
                 </div>
                 <textarea
                   className="mt-2 min-h-[104px] w-full resize-y rounded-[10px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2.5 text-sm leading-6 text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
+                  name="quick_capture"
+                  autoComplete="off"
                   placeholder="Example: Write an email to Alex about Q2 pricing update."
                   aria-label="Paste a prompt from notes"
                   value={quickCaptureText}
@@ -1880,7 +1890,7 @@ export default function Home() {
                   onClick={handleQuickCapture}
                   disabled={isCapturing}
                 >
-                  {isCapturing ? "Saving..." : "Save to library"}
+                  {isCapturing ? "Saving…" : "Save to library"}
                 </Button>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
@@ -1908,6 +1918,8 @@ export default function Home() {
               <div className="mt-3">
                 <input
                   type="text"
+                  name="prompt_search"
+                  autoComplete="off"
                   placeholder="Search saved prompts"
                   aria-label="Search saved prompts"
                   className="w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
@@ -1977,6 +1989,8 @@ export default function Home() {
                   <div className="min-w-0 flex-1">
                     <input
                       value={selectedPrompt.name}
+                      name="prompt_name"
+                      autoComplete="off"
                       onChange={(event) =>
                         updatePrompt((prompt) => ({ ...prompt, name: event.target.value }))
                       }
@@ -1985,6 +1999,8 @@ export default function Home() {
                     />
                     <input
                       value={selectedPrompt.description}
+                      name="prompt_description"
+                      autoComplete="off"
                       onChange={(event) =>
                         updatePrompt((prompt) => ({ ...prompt, description: event.target.value }))
                       }
@@ -2019,6 +2035,8 @@ export default function Home() {
                           <div className="flex items-center gap-2">
                             <input
                               value={newTagValue}
+                              name="new_tag"
+                              autoComplete="off"
                               onChange={(event) => setNewTagValue(event.target.value)}
                               placeholder="tag-name"
                               className="rounded-full border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-1 text-xs text-[color:var(--pf-text)] placeholder:text-[color:var(--pf-text-tertiary)] focus:outline-none"
@@ -2100,7 +2118,7 @@ export default function Home() {
                     onClick={handleExtract}
                     disabled={isExtracting}
                   >
-                    {isExtracting ? "Finding fields..." : "Suggest fields (AI)"}
+                    {isExtracting ? "Finding fields…" : "Suggest fields (AI)"}
                   </Button>
                 ) : null}
               </div>
@@ -2524,6 +2542,8 @@ export default function Home() {
                     <div className="text-sm font-semibold text-[color:var(--pf-text)]">Template</div>
                     <textarea
                       className="mt-3 h-[240px] w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] p-3 font-mono text-[13px] leading-6 text-[color:var(--pf-text)] focus:outline-none"
+                      name="template_editor"
+                      autoComplete="off"
                       value={selectedPrompt.template}
                       onChange={(event) =>
                         updatePrompt((prompt) => ({ ...prompt, template: event.target.value }))
@@ -2667,7 +2687,7 @@ export default function Home() {
                                   type="button"
                                   size="sm"
                                   variant="dangerSecondary"
-                                  onClick={() => handleDeleteVariable(variable.name)}
+                                  onClick={() => setPendingVariableDeleteName(variable.name)}
                                 >
                                   Delete
                                 </Button>
@@ -3441,7 +3461,7 @@ export default function Home() {
                   </div>
                 ))}
                 {pendingImport.length > 5 ? (
-                  <div className="text-xs text-[color:var(--pf-text-tertiary)]">...and {pendingImport.length - 5} more</div>
+                  <div className="text-xs text-[color:var(--pf-text-tertiary)]">…and {pendingImport.length - 5} more</div>
                 ) : null}
               </div>
             ) : (
@@ -3616,6 +3636,7 @@ export default function Home() {
         <div data-pf-video="drawer-fields" className="space-y-2">
           {sortedFillVariables.map((variable) => {
             const value = selectedPrompt.values[variable.name];
+            const fieldLabelText = humanizeVariableName(variable.name);
             const commonClassName =
               "w-full rounded-[12px] border border-[color:var(--pf-border)] bg-[color:var(--pf-surface)] px-3 py-2 text-sm text-[color:var(--pf-text)] focus:outline-none";
             const header = (
@@ -3627,7 +3648,7 @@ export default function Home() {
                 )}
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold text-[color:var(--pf-text)]">
-                    {humanizeVariableName(variable.name)}
+                    {fieldLabelText}
                   </div>
                   <div className="truncate font-mono text-[11px] text-[color:var(--pf-text-tertiary)]">
                     {"{{"}
@@ -3651,6 +3672,9 @@ export default function Home() {
                     <div className="w-[210px] flex-none">
                       <select
                         className={commonClassName}
+                        name={variable.name}
+                        autoComplete="off"
+                        aria-label={`Fill ${fieldLabelText}`}
                         value={selectedValue}
                         onChange={(event) =>
                           updatePrompt((prompt) => ({
@@ -3681,7 +3705,7 @@ export default function Home() {
                   {header}
                   <Toggle
                     checked={boolValue}
-                    aria-label={variable.name}
+                    aria-label={`Fill ${fieldLabelText}`}
                     onCheckedChange={(checked) =>
                       updatePrompt((prompt) => ({
                         ...prompt,
@@ -3705,6 +3729,9 @@ export default function Home() {
                       <input
                         className={commonClassName}
                         type="number"
+                        name={variable.name}
+                        autoComplete="off"
+                        aria-label={`Fill ${fieldLabelText}`}
                         value={String(resolved)}
                         onChange={(event) =>
                           updatePrompt((prompt) => ({
@@ -3732,6 +3759,9 @@ export default function Home() {
                   {header}
                   <textarea
                     className={cx(commonClassName, "mt-2 min-h-[92px] resize-y")}
+                    name={variable.name}
+                    autoComplete="off"
+                    aria-label={`Fill ${fieldLabelText}`}
                     value={resolved}
                     onChange={(event) =>
                       updatePrompt((prompt) => ({
@@ -3756,6 +3786,9 @@ export default function Home() {
                     <input
                       className={commonClassName}
                       type="text"
+                      name={variable.name}
+                      autoComplete="off"
+                      aria-label={`Fill ${fieldLabelText}`}
                       value={resolved}
                       onChange={(event) =>
                         updatePrompt((prompt) => ({
@@ -3800,6 +3833,31 @@ export default function Home() {
 	          </div>
 	        </div>
 	      </Modal>
+
+      <Modal
+        open={Boolean(pendingVariableDeleteName)}
+        title="Delete field"
+        description="This removes the field and its related values from this prompt."
+        onClose={() => setPendingVariableDeleteName(null)}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-[color:var(--pf-text-secondary)]">
+            Are you sure you want to delete{" "}
+            <span className="font-mono text-[color:var(--pf-text)]">
+              {pendingVariableDeleteName ?? ""}
+            </span>
+            ?
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="button" size="sm" variant="secondary" onClick={() => setPendingVariableDeleteName(null)}>
+              Cancel
+            </Button>
+            <Button type="button" size="sm" variant="danger" onClick={handleConfirmDeleteVariable}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

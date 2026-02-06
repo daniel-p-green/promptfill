@@ -9,6 +9,7 @@
     "build:web": "cd web && npm run build",
     "test:web": "cd web && npm run test",
     "test:chatgpt-app": "cd chatgpt-app && npm test",
+    "test:a11y": "node --test chatgpt-app/test/widget-a11y-contract.test.js && cd web && npm run test:a11y",
     "eval:tool-routing": "cd chatgpt-app && npm run eval:tool-routing",
     "lint:web": "cd web && npm run lint",
     "lint:video": "cd video && npm run lint"

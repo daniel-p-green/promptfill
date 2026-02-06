@@ -162,7 +162,7 @@
         <button id="render-button" class="primary" type="button" disabled>Render prompt</button>
       </div>
 
-      <div id="status" class="status">Waiting for extracted fields...</div>
+      <div id="status" class="status">Waiting for extracted fields…</div>
       <pre id="rendered" class="rendered" hidden></pre>
       <div class="hint">This inline card keeps interactions lightweight and conversation-first.</div>
     </article>
@@ -216,6 +216,8 @@
 
           if (variable.type === "text") {
             const input = document.createElement("textarea");
+            input.name = variable.name;
+            input.autocomplete = "off";
             input.value = String(current);
             input.addEventListener("input", (event) => {
               fieldValues[variable.name] = event.currentTarget.value;
@@ -223,6 +225,8 @@
             wrapper.appendChild(input);
           } else if (variable.type === "enum" && Array.isArray(variable.options) && variable.options.length > 0) {
             const select = document.createElement("select");
+            select.name = variable.name;
+            select.autocomplete = "off";
             for (const option of variable.options) {
               const optionEl = document.createElement("option");
               optionEl.value = option;
@@ -238,6 +242,8 @@
           } else if (variable.type === "boolean") {
             const input = document.createElement("input");
             input.type = "checkbox";
+            input.name = variable.name;
+            input.autocomplete = "off";
             const normalized =
               current === true ||
               current === "true" ||
@@ -252,6 +258,8 @@
           } else if (variable.type === "number") {
             const input = document.createElement("input");
             input.type = "number";
+            input.name = variable.name;
+            input.autocomplete = "off";
             input.value = current === "" || current === undefined || current === null ? "" : String(current);
             input.addEventListener("input", (event) => {
               const raw = event.currentTarget.value;
@@ -266,6 +274,8 @@
           } else {
             const input = document.createElement("input");
             input.type = "text";
+            input.name = variable.name;
+            input.autocomplete = "off";
             input.value = String(current);
             input.addEventListener("input", (event) => {
               fieldValues[variable.name] = event.currentTarget.value;
@@ -389,7 +399,7 @@
         if (!extraction) return;
 
         renderButton.disabled = true;
-        setStatus("Rendering prompt...");
+        setStatus("Rendering prompt…");
 
         try {
           await bridgeReady;
@@ -414,7 +424,7 @@
         }
 
         insertButton.disabled = true;
-        setStatus("Inserting into chat...");
+        setStatus("Inserting into chat…");
 
         try {
           await bridgeReady;

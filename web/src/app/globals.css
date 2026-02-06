@@ -154,6 +154,12 @@ textarea {
   background: color-mix(in srgb, var(--pf-surface) 88%, transparent);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .pf-fade-lift {
+    animation: none;
+  }
+}
+
 .pf-spotlight {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--pf-accent) 40%, transparent), var(--pf-shadow-elevated);
 }
