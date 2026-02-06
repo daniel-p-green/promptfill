@@ -2,7 +2,7 @@
 name: remotion-motion-director
 description: Senior-level Remotion direction with granular brand and motion control. Use when creating or refining videos that need precise style systems, storyboarding, cinematic pacing, and iterative quality critique (Apple-inspired restraint, without copying Apple assets).
 metadata:
-  version: 0.3.0
+  version: 0.3.1
   tags: remotion, motion-design, brand-system, storyboard, creative-direction
 ---
 
@@ -60,6 +60,14 @@ Use these before generating custom files from scratch:
 - `assets/scene-template.tsx`
 - `assets/remotion-root-template.tsx`
 - `assets/qa-scorecard-template.md`
+
+## Starter example
+
+For a runnable reference implementation, see:
+
+- `examples/motion-director-starter/README.md`
+
+This starter demonstrates how to wire storyboard and motion tokens into a minimal Remotion project structure.
 
 ## Quality bar
 

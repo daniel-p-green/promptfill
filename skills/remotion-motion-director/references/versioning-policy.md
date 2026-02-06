@@ -28,3 +28,4 @@ From skill root:
 | 0.1.0 | 2026-02-06 | Initial release: brand control schema, motion principles, rubric, and version bump script. |
 | 0.2.0 | 2026-02-06 | Add implementation map and non-blocking default behavior. |
 | 0.3.0 | 2026-02-06 | Add reusable storyboard, token, scene/root, and QA templates. |
+| 0.3.1 | 2026-02-06 | Add runnable starter scaffold and CI validation workflow. |
